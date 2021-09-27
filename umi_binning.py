@@ -1,28 +1,61 @@
 from Bio.Seq import Seq
 from Bio import SeqIO
-from cutadapt.parser import AdapterParser
+from cutadapt.parser import FrontAdapter, BackAdapter, LinkedAdapter
 import re
+import numpy as np
+from sklearn.cluster import AffinityPropagation
+import distance
 
 class UMIBinner():
 
     def __init__(self):
         self.umi_pattern = re.compile('[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}')
+        self.umi_length = 18
+
+    def reverse_complement(self, seq): return str(Seq(seq).reverse_complement())
+
+    def make_linked_adapter(self, adapterSeq1, adapterSeq2, name, max_errors=0.2, min_overlap=11, front_required=True, back_required=True):
+        adapter1 = FrontAdapter(adapterSeq1, max_errors=max_errors, min_overlap=min_overlap)
+        adapter2 = BackAdapter(adapterSeq2, max_errors=max_errors, min_overlap=min_overlap)
+        linkedAdapter = LinkedAdapter(adapter1, adapter2, name=name, front_required=front_required, back_required=back_required)
+        return linkedAdapter
 
     def set_adapters_for_future_matching(self, forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2):
-        parser = AdapterParser(
-                max_errors=0.2, min_overlap=11, read_wildcards=False,
-                adapter_wildcards=False, indels=False)
+        self.forward = self.make_linked_adapter(forwardAdapter1, forwardAdapter2, 'front')
+        self.forward_pair = self.make_linked_adapter(self.reverse_complement(reverseAdapter2), self.reverse_complement(reverseAdapter1), 'front_pair')
+        self.reverse = self.make_linked_adapter(reverseAdapter1, reverseAdapter2, 'reverse')
+        self.reverse_pair = self.make_linked_adapter(self.reverse_complement(forwardAdapter2), self.reverse_complement(forwardAdapter1), 'reverse_pair')
 
-        forward = forwardAdapter1 + '...' + forwardAdapter2
-        forward_pair = str(Seq(reverseAdapter2).reverse_complement()) + '...' + str(Seq(reverseAdapter1).reverse_complement())
-        reverse = reverseAdapter1 + '...' + reverseAdapter2
-        reverse_pair = str(Seq(forwardAdapter2).reverse_complement()) + '...' + str(Seq(forwardAdapter1).reverse_complement())
+    def extract_umi_from_linked_adapters(self, seq, umi_patterned = True):
 
-        self.forward, self.forward_pair, self.reverse, self.reverse_pair = parser.parse_multi(
-            [('front',forward), ('back',forward_pair), ('front',reverse), ('back',reverse_pair)]
-        )
 
-    def match_sequence_to_adapters(self,seq, strict=False):
+        read1 = seq[self.forward_adapter_start_index:self.forward_adapter_stop_index]
+        read2 = seq[-self.reverse_adapter_stop_index:-self.reverse_adapter_start_index]
+        if self.reverse_adapter_start_index==0: read2 = seq[-self.reverse_adapter_stop_index:]
+        reverse = False
+        #print('read1: '+read1)
+        #print('read2: '+read2)
+
+        match1 = self.forward.match_to(read1)
+        match2 = self.forward_pair.match_to(read2)
+
+        if match1 is None or match2 is None:
+            reverse = True
+
+            read1 = seq[self.reverse_adapter_start_index:self.reverse_adapter_stop_index]
+            read2 = seq[-self.forward_adapter_stop_index:-self.forward_adapter_start_index]
+            if self.forward_adapter_start_index==0: read2 = seq[-self.forward_adapter_stop_index:]
+
+            match1 = self.reverse.match_to(read1)
+            match2 = self.reverse_pair.match_to(read2)
+            if match1 is None or match2 is None: return None
+
+        trimmedRead = match1.trimmed(read1) + match2.trimmed(read2)
+        if reverse: trimmedRead = self.reverse_complement(trimmedRead)
+        if umi_patterned and not self.umi_pattern.match(trimmedRead): return None
+        return trimmedRead
+
+    def get_adapter_indices(self, seq):
         baseEndNumber = 200
         read1 = seq[:baseEndNumber]
         read2 = seq[-baseEndNumber:]
@@ -35,20 +68,53 @@ class UMIBinner():
             reverse = True
             match1 = self.reverse.match_to(read1)
             match2 = self.reverse_pair.match_to(read2)
-            if match1 is None or match2 is None: return None
 
-        trimmedRead = match1.trimmed(read1) + match2.trimmed(read2)
-        if reverse: trimmedRead = str(Seq(trimmedRead).reverse_complement())
-        #if strict and not self.umi_pattern.match(trimmedRead): return None
-        return trimmedRead
+        if match1 is None or match2 is None: return -1, -1
+        if not reverse: return match1.front_match.rstart, baseEndNumber - match2.front_match.rstop - match2.back_match.rstop
+        else: return baseEndNumber - match2.front_match.rstop - match2.back_match.rstop, match1.front_match.rstart
 
-    def extract_umi_pairs_from_file(self, filePath):
-        with open(filePath) as file:
-            fileParser = SeqIO.parse(file, 'fastq')
-            for record in fileParser:
-                seq = str(record.seq)
-                seq = self.match_sequence_to_adapters(seq)
-                #if seq is not None: yield seq
-                yield seq
+    def set_adapter_indices(self, indices, indel = 10):
+        forward_start_index, reverse_start_index = np.median(indices, axis=0)
+        self.forward_adapter_start_index = int(forward_start_index - indel)
+        self.reverse_adapter_start_index = int(reverse_start_index - indel)
+        self.forward_adapter_stop_index = int(forward_start_index + len(self.forward.front_adapter.sequence) + self.umi_length + len(self.forward.back_adapter.sequence) + indel)
+        self.reverse_adapter_stop_index = int(reverse_start_index + len(self.reverse.front_adapter.sequence) + self.umi_length + len(self.reverse.back_adapter.sequence) + indel)
 
-# NOTE: Porechop and filtlong occur here. It looks like they were not used in the first test. Circle back to later.
+        if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
+        if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
+
+
+    def find_consensus_sequences(self, umiSeqs):
+        # TODO: currently setting as 'exemplar' sequence, in future do consensus sequence
+        consensusSeqs = []
+        lev_similarity = -1*np.array([[distance.levenshtein(w1,w2) for w1 in umiSeqs] for w2 in umiSeqs])
+        affprop = AffinityPropagation(affinity="precomputed", damping=0.5, random_state=None)
+        affprop.fit(lev_similarity)
+        for cluster_id in np.unique(affprop.labels_):
+            exemplar = umiSeqs[affprop.cluster_centers_indices_[cluster_id]]
+            consensusSeqs.append(exemplar)
+        return consensusSeqs, affprop.labels_
+
+    def identify_adapter_start_end_indices(self, file):
+        allIndices = []
+        with open(file) as handle:
+            for record in SeqIO.parse(handle, "fastq"):
+                indices = self.get_adapter_indices(str(record.seq))
+                if indices != (-1,-1): allIndices.append(indices)
+        self.set_adapter_indices(allIndices)
+
+    def identify_umi_sequences(self, file):
+        with open(file) as handle:
+            umi_sequences = [self.extract_umi_from_linked_adapters(str(record.seq), umi_patterned=False) for record in SeqIO.parse(handle, "fastq")]
+        umi_sequences = list(filter(None, umi_sequences))
+        return umi_sequences
+
+
+    def identify_consensus_umi_sequences_from_file(self, file):
+        print(1)
+        self.identify_adapter_start_end_indices(file)
+        print(2)
+        umi_sequences = self.identify_umi_sequences(file)
+        print(3)
+        consensus_sequences, consensus_labels = self.find_consensus_sequences(umi_sequences)
+        return consensus_labels
