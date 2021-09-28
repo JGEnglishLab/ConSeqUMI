@@ -240,13 +240,14 @@ class MyTest(unittest.TestCase):
         reverseAdapter1 = 'AATGATACGGCGACCACCGAGATC'
         reverseAdapter2 = 'CGACATCGAGGTGCCAAAC'
         self.UMIBins = ub.UMIBinner()
+        self.UMIBins.is_umi_patterned = False
         self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
 
         consensus1 = [0,1,0,1,0,1,0,1,0,1,0,1,0,1]
 
-        consensus2 = self.UMIBins.identify_consensus_umi_sequences_from_file('test/tdd_example.fq')
+        consensus2 = self.UMIBins.identify_consensus_umi_sequences_from_files(['test/tdd_example.fq'])
 
-        self.assertListEqual(list(consensus2), consensus1)
+        self.assertListEqual(list(consensus2.labels_), consensus1)
 
 def create_test_file():
     u = ub.UMIBinner()

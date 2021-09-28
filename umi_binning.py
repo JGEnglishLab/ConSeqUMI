@@ -11,6 +11,7 @@ class UMIBinner():
     def __init__(self):
         self.umi_pattern = re.compile('[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}')
         self.umi_length = 18
+        self.is_umi_patterned = True
 
     def reverse_complement(self, seq): return str(Seq(seq).reverse_complement())
 
@@ -26,15 +27,12 @@ class UMIBinner():
         self.reverse = self.make_linked_adapter(reverseAdapter1, reverseAdapter2, 'reverse')
         self.reverse_pair = self.make_linked_adapter(self.reverse_complement(forwardAdapter2), self.reverse_complement(forwardAdapter1), 'reverse_pair')
 
-    def extract_umi_from_linked_adapters(self, seq, umi_patterned = True):
-
+    def extract_umi_from_linked_adapters(self, seq):
 
         read1 = seq[self.forward_adapter_start_index:self.forward_adapter_stop_index]
         read2 = seq[-self.reverse_adapter_stop_index:-self.reverse_adapter_start_index]
         if self.reverse_adapter_start_index==0: read2 = seq[-self.reverse_adapter_stop_index:]
         reverse = False
-        #print('read1: '+read1)
-        #print('read2: '+read2)
 
         match1 = self.forward.match_to(read1)
         match2 = self.forward_pair.match_to(read2)
@@ -52,7 +50,7 @@ class UMIBinner():
 
         trimmedRead = match1.trimmed(read1) + match2.trimmed(read2)
         if reverse: trimmedRead = self.reverse_complement(trimmedRead)
-        if umi_patterned and not self.umi_pattern.match(trimmedRead): return None
+        if self.is_umi_patterned and not self.umi_pattern.match(trimmedRead): return None
         return trimmedRead
 
     def get_adapter_indices(self, seq):
@@ -82,6 +80,10 @@ class UMIBinner():
 
         if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
         if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
+        print(self.forward_adapter_start_index)
+        print(self.forward_adapter_stop_index)
+        print(self.reverse_adapter_start_index)
+        print(self.reverse_adapter_stop_index)
 
 
     def find_consensus_sequences(self, umiSeqs):
@@ -93,28 +95,33 @@ class UMIBinner():
         for cluster_id in np.unique(affprop.labels_):
             exemplar = umiSeqs[affprop.cluster_centers_indices_[cluster_id]]
             consensusSeqs.append(exemplar)
-        return consensusSeqs, affprop.labels_
+        return consensusSeqs, affprop
 
-    def identify_adapter_start_end_indices(self, file):
+    def identify_adapter_start_end_indices(self, files):
         allIndices = []
-        with open(file) as handle:
-            for record in SeqIO.parse(handle, "fastq"):
-                indices = self.get_adapter_indices(str(record.seq))
-                if indices != (-1,-1): allIndices.append(indices)
+        for file in files:
+            with open(file) as handle:
+                for record in SeqIO.parse(handle, "fastq"):
+                    indices = self.get_adapter_indices(str(record.seq))
+                    if indices != (-1,-1): allIndices.append(indices)
         self.set_adapter_indices(allIndices)
 
-    def identify_umi_sequences(self, file):
-        with open(file) as handle:
-            umi_sequences = [self.extract_umi_from_linked_adapters(str(record.seq), umi_patterned=False) for record in SeqIO.parse(handle, "fastq")]
+    def identify_umi_sequences(self, files):
+        umi_sequences = []
+        for file in files:
+            with open(file) as handle:
+                umi_sequences.extend([self.extract_umi_from_linked_adapters(str(record.seq)) for record in SeqIO.parse(handle, "fastq")])
         umi_sequences = list(filter(None, umi_sequences))
         return umi_sequences
 
 
-    def identify_consensus_umi_sequences_from_file(self, file):
-        print(1)
-        self.identify_adapter_start_end_indices(file)
-        print(2)
-        umi_sequences = self.identify_umi_sequences(file)
-        print(3)
-        consensus_sequences, consensus_labels = self.find_consensus_sequences(umi_sequences)
-        return consensus_labels
+    def identify_consensus_umi_sequences_from_files(self, files):
+        self.identify_adapter_start_end_indices(files)
+        umi_sequences = self.identify_umi_sequences(files)
+        print('seq1: ' + str(len(umi_sequences)))
+        umi_sequences = [x for x in umi_sequences if len(x)==36]
+        print('seq2: ' + str(len(umi_sequences)))
+        import pickle
+        pickle.dump(umi_sequences, open('test/data/umi_sequences.p', 'wb'))
+        consensus_sequences, consensus = self.find_consensus_sequences(umi_sequences)
+        return consensus
