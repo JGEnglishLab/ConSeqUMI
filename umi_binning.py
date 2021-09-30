@@ -86,11 +86,6 @@ class UMIBinner():
 
         if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
         if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
-        #print(self.forward_adapter_start_index)
-        #print(self.forward_adapter_stop_index)
-        #print(self.reverse_adapter_start_index)
-        #print(self.reverse_adapter_stop_index)
-
 
     def make_hamming_distance_matrix(self, seqs):
         d = {'A':0, 'T':1, 'C':2, 'G':3}
@@ -135,7 +130,5 @@ class UMIBinner():
     def identify_consensus_umi_sequences_from_files(self, files, min_clusters=5):
         self.identify_adapter_start_end_indices(files)
         umi_sequences = self.identify_umi_sequences(files)
-        import pickle
-        pickle.dump(umi_sequences, open('test/data/umi_sequences.p', 'wb'))
         consensus_assignment = self.find_consensus_sequences(umi_sequences, min_clusters)
         return consensus_assignment
