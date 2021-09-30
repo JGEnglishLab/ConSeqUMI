@@ -5,11 +5,16 @@ import re
 import numpy as np
 from sklearn.cluster import AffinityPropagation
 import distance
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster
+from Bio.Align import MultipleSeqAlignment, AlignInfo
+
+
 
 class UMIBinner():
 
     def __init__(self):
-        self.umi_pattern = re.compile('[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}')
+        self.umi_pattern = re.compile('^[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}$')
         self.umi_length = 18
         self.is_umi_patterned = True
 
@@ -72,6 +77,7 @@ class UMIBinner():
         else: return baseEndNumber - match2.front_match.rstop - match2.back_match.rstop, match1.front_match.rstart
 
     def set_adapter_indices(self, indices, indel = 10):
+        if len(indices) < 5: raise Exception('Adapter matched to fewer than 5 given sequences')
         forward_start_index, reverse_start_index = np.median(indices, axis=0)
         self.forward_adapter_start_index = int(forward_start_index - indel)
         self.reverse_adapter_start_index = int(reverse_start_index - indel)
@@ -80,22 +86,29 @@ class UMIBinner():
 
         if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
         if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
-        print(self.forward_adapter_start_index)
-        print(self.forward_adapter_stop_index)
-        print(self.reverse_adapter_start_index)
-        print(self.reverse_adapter_stop_index)
 
+    def make_hamming_distance_matrix(self, seqs):
+        d = {'A':0, 'T':1, 'C':2, 'G':3}
+        array = [[d[c] for c in s] for s in seqs]
+        return pdist(np.array(array), 'hamming')
 
-    def find_consensus_sequences(self, umiSeqs):
-        # TODO: currently setting as 'exemplar' sequence, in future do consensus sequence
-        consensusSeqs = []
-        lev_similarity = -1*np.array([[distance.levenshtein(w1,w2) for w1 in umiSeqs] for w2 in umiSeqs])
-        affprop = AffinityPropagation(affinity="precomputed", damping=0.5, random_state=None)
-        affprop.fit(lev_similarity)
-        for cluster_id in np.unique(affprop.labels_):
-            exemplar = umiSeqs[affprop.cluster_centers_indices_[cluster_id]]
-            consensusSeqs.append(exemplar)
-        return consensusSeqs, affprop
+    def find_consensus_sequences(self, umiSeqs, min_clusters, threshold = 10/36):
+        if len(umiSeqs) < 5: raise Exception('Fewer than 5 UMI sequences match UMI pattern')
+        dist_matrix = self.make_hamming_distance_matrix(umiSeqs)
+        link_matrix = linkage(dist_matrix, method = 'centroid')
+        labels = fcluster(link_matrix,threshold, criterion='distance')
+        consensus_sequences = []
+        umiSeqs = np.array(umiSeqs)
+        for cluster_id in np.unique(labels):
+            cluster = umiSeqs[labels==cluster_id]
+            if len(cluster) < 4: consensus_sequences.append(''); continue
+            alignment = MultipleSeqAlignment([])
+            for i in range(len(cluster)): alignment.add_sequence(str(i), cluster[i])
+            info = AlignInfo.SummaryInfo(alignment)
+            consensus = info.dumb_consensus()
+            consensus_sequences.append(str(consensus))
+        if len([x for x in consensus_sequences if len(x)!=0]) < min_clusters: raise Exception('Fewer than %s clusters contain at least 5 UMI sequences' % (min_clusters))
+        return consensus_sequences, labels
 
     def identify_adapter_start_end_indices(self, files):
         allIndices = []
@@ -114,14 +127,8 @@ class UMIBinner():
         umi_sequences = list(filter(None, umi_sequences))
         return umi_sequences
 
-
-    def identify_consensus_umi_sequences_from_files(self, files):
+    def identify_consensus_umi_sequences_from_files(self, files, min_clusters=5):
         self.identify_adapter_start_end_indices(files)
         umi_sequences = self.identify_umi_sequences(files)
-        print('seq1: ' + str(len(umi_sequences)))
-        umi_sequences = [x for x in umi_sequences if len(x)==36]
-        print('seq2: ' + str(len(umi_sequences)))
-        import pickle
-        pickle.dump(umi_sequences, open('test/data/umi_sequences.p', 'wb'))
-        consensus_sequences, consensus = self.find_consensus_sequences(umi_sequences)
-        return consensus
+        consensus_assignment = self.find_consensus_sequences(umi_sequences, min_clusters)
+        return consensus_assignment
