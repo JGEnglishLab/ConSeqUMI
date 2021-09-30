@@ -133,6 +133,17 @@ class MyTest(unittest.TestCase):
         self.assertEqual(self.UMIBins.reverse_adapter_start_index, 0)
         self.assertEqual(self.UMIBins.reverse_adapter_stop_index, 66)
 
+    def test_adapter_not_found_assertion(self):
+
+        indices_array = np.array([
+            [20, 40],
+            [20, 40],
+            [20, 40],
+            [20, 40],
+        ])
+        with self.assertRaises(Exception) as context:
+            ub.UMIBinner().set_adapter_indices(indices_array, indel = 5)
+        self.assertEqual('Adapter matched to fewer than 5 given sequences', str(context.exception))
 
     def test_sequence_adapter_matching(self):
         #forward read
@@ -199,42 +210,24 @@ class MyTest(unittest.TestCase):
         self.assertEqual(umiForwardPair2, umi1 + umi2)
         self.assertEqual(umiReversePair2, umi1 + umi2)
 
-
-    def test_umi_consensus_sequences(self): #consensus sequence currently must be represented - see TODO in umi_binning
-        consensus_sequences = ['TAAAGGCACTAGTGCCCT','AAGATGCATCGACTCGTC','CGAGTACCTTATACGGCA']
-        # num errors per consensus sequence: [2, 1, 2, 1, 1, 1, 0]
-        umi_sequences1 = [
+    def test_too_few_umis_identified(self):
+        umi_sequences = [
             'AAAAGGCACTAGTGCCCA',
             'TTAAGGCACTAGTGCCCT',
-            'TACAGGCACTAGTGCCCA',
-            'TAAGGGCACTAGTGCCCT',
-            'TAAAAGCACTAGTGCCCT',
-            'TAAAGTCACTAGTGCCCT',
-            'TAAAGGCACTAGTGCCCT',
+            'AAAAGGCACTAGTGCCCA',
+            'TTAAGGCACTAGTGCCCT',
         ]
-        umi_sequences2 = [
-            'ATGATGCATCGACTCGTA',
-            'AACATGCATCGACTCGTC',
-            'AAGGTGCATCGACTCGTA',
-            'AAGAAGCATCGACTCGTC',
-            'AAGATTCATCGACTCGTC',
-            'AAGATGGATCGACTCGTC',
-            'AAGATGCATCGACTCGTC',
-        ]
-        umi_sequences3 = [
-            'AGAGTACCTTATACGGCT',
-            'CTAGTACCTTATACGGCA',
-            'CGGGTACCTTATACGGCT',
-            'CGACTACCTTATACGGCA',
-            'CGAGAACCTTATACGGCA',
-            'CGAGTTCCTTATACGGCA',
-            'CGAGTACCTTATACGGCA',
-        ]
-        umi_sequences = umi_sequences1 + umi_sequences2 + umi_sequences3
-        sequences, consensus_rank = ub.UMIBinner().find_consensus_sequences(umi_sequences)
-        self.assertSetEqual(set(sequences), set(consensus_sequences))
+        with self.assertRaises(Exception) as context:
+            ub.UMIBinner().find_consensus_sequences(umi_sequences, 5)
+        self.assertEqual('Fewer than 5 UMI sequences match UMI pattern', str(context.exception))
 
-    def test_consensus_from_file(self):
+    def test_hamming_distance_matrix(self):
+        seqs = ['ATCG','AACG','TCGC', 'TTCC']
+        distanceMatrix1 = np.array([0.25, 1, 0.5, 1, 0.25, 0.5]) #0,1; 0,2; 0,3; 1,2; 1,3; 2,3
+        distanceMatrix2 = ub.UMIBinner().make_hamming_distance_matrix(seqs)
+        self.assertEqual(distanceMatrix2.all(), distanceMatrix1.all())
+
+    def test_consensus_assignment(self):
         forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
         forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
         reverseAdapter1 = 'AATGATACGGCGACCACCGAGATC'
@@ -243,11 +236,43 @@ class MyTest(unittest.TestCase):
         self.UMIBins.is_umi_patterned = False
         self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
 
-        consensus1 = [0,1,0,1,0,1,0,1,0,1,0,1,0,1]
+        consensus_sequences1 = ['TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG','AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA']
+        #consensus_labels1 = [1,2,1,2,1,2,1,2,1,2,1,2,1,2]
+        #consensus_labels1 = [0,1,0,1,0,1,0,1,0,1,0,1,0,1]
+        consensus_labels1 = [2,1,2,1,2,1,2,1,2,1,2,1,2,1]
 
-        consensus2 = self.UMIBins.identify_consensus_umi_sequences_from_files(['test/tdd_example.fq'])
+        consensus_sequences2, consensus_labels2 = self.UMIBins.identify_consensus_umi_sequences_from_files(['test/tdd_example.fq'], min_clusters=2)
 
-        self.assertListEqual(list(consensus2.labels_), consensus1)
+        self.assertSetEqual(set(consensus_sequences2), set(consensus_sequences1))
+        self.assertListEqual(list(consensus_labels2), consensus_labels1)
+
+    def test_too_few_clusters_identified(self):
+        umi_sequences = [ #4 clusters of 4 each - none should succeed because clusters have < 5
+            'AGATCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
+            'CTATCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
+            'CGCTCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
+            'CGAGCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
+
+            'AATATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
+            'CTTATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
+            'CACATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
+            'CATGTTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
+
+            'AGGTGGGTGCGTACAATCTCTCGAACCATATAACGT',
+            'CTGTGGGTGCGTACAATCTCTCGAACCATATAACGT',
+            'CGCTGGGTGCGTACAATCTCTCGAACCATATAACGT',
+            'CGGGGGGTGCGTACAATCTCTCGAACCATATAACGT',
+
+            'ATCGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
+            'TGCGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
+            'TTTGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
+            'TTCCGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
+        ]
+
+        with self.assertRaises(Exception) as context:
+            ub.UMIBinner().find_consensus_sequences(umi_sequences, min_clusters=5)
+        self.assertEqual('Fewer than 5 clusters contain at least 5 UMI sequences', str(context.exception))
+
 
 def create_test_file():
     u = ub.UMIBinner()
@@ -260,7 +285,7 @@ def create_test_file():
     rc_reverseAdapter1 = u.reverse_complement('AATGATACGGCGACCACCGAGATC')
     rc_reverseAdapter2 = u.reverse_complement('CGACATCGAGGTGCCAAAC')
 
-    consensus_sequences = ['TAAAGGCACTAGTGCCCTCGAGTACCTTATACGGCA','AAGATGCATCGACTCGTCTGCACGTTCACAATAGCG']
+    consensus_sequences = ['TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG','AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA']
     # num errors per consensus sequence: [2, 1, 2, 1, 1, 1, 0]
     umi_sequences1 = [
         'AAAAGGCACTAGTGCCCA',
@@ -331,11 +356,6 @@ def create_test_file():
     sequences.append(errorRec)
     with open("test/tdd_example.fq", "w") as output_handle:
         SeqIO.write(sequences, output_handle, "fastq")
-
-
-
-
-
 
 if __name__ == '__main__':
     #create_test_file()
