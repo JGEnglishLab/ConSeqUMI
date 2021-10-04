@@ -107,7 +107,8 @@ class UMIBinner():
             info = AlignInfo.SummaryInfo(alignment)
             consensus = info.dumb_consensus()
             consensus_sequences.append(str(consensus))
-        if len([x for x in consensus_sequences if len(x)!=0]) < min_clusters: raise Exception('Fewer than %s clusters contain at least 5 UMI sequences' % (min_clusters))
+        consensus_sequences = [x for x in consensus_sequences if len(x)!=0]
+        if len(consensus_sequences) < min_clusters: raise Exception('Fewer than %s clusters contain at least 5 UMI sequences' % (min_clusters))
         return consensus_sequences, labels
 
     def identify_adapter_start_end_indices(self, files):
