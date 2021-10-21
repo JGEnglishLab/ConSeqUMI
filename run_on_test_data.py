@@ -12,6 +12,7 @@ reverseAdapter2 = 'CGACATCGAGGTGCCAAAC'
 #file_name = 'test/data/ont_r10_zymo_rrna.fq'
 #file_name = 'test/data/pb_ccs_zymo_rrna.fq'
 #'''
+
 #'''
 forwardAdapter1 = 'GAGTGTGGCTCTTCGGAT'
 forwardAdapter2 = 'ATCTCTACGGTGGTCCTAAATAGT'
