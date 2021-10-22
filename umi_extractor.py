@@ -28,41 +28,14 @@ class UMIExtractor():
         self.reverse = self.make_linked_adapter(reverseAdapterSeq1, reverseAdapterSeq2, 'reverse')
         self.reverse_pair = self.make_linked_adapter(self.reverse_complement(forwardAdapterSeq2), self.reverse_complement(forwardAdapterSeq1), 'reverse_pair')
 
-    def extract_umi_and_sequence_from_linked_adapters(self, seq):
-
-        read1 = seq[self.forward_adapter_start_index:self.forward_adapter_stop_index]
-        read2 = seq[-self.reverse_adapter_stop_index:-self.reverse_adapter_start_index]
-        if self.reverse_adapter_start_index==0: read2 = seq[-self.reverse_adapter_stop_index:]
-        reverse = False
-
-        match1 = self.forward.match_to(read1)
-        match2 = self.forward_pair.match_to(read2)
-
-        if match1 is None or match2 is None:
-            reverse = True
-
-            read1 = seq[self.reverse_adapter_start_index:self.reverse_adapter_stop_index]
-            read2 = seq[-self.forward_adapter_stop_index:-self.forward_adapter_start_index]
-            if self.forward_adapter_start_index==0: read2 = seq[-self.forward_adapter_stop_index:]
-
-            match1 = self.reverse.match_to(read1)
-            match2 = self.reverse_pair.match_to(read2)
-            if match1 is None or match2 is None: return None
-
-        umi = match1.trimmed(read1) + match2.trimmed(read2)
-
-        if not reverse:
-            startIndex = self.forward_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
-            endIndex = self.reverse_adapter_stop_index - match2.front_match.rstart
-            centerSeq = seq[startIndex:-endIndex]
-        else:
-            umi = self.reverse_complement(umi)
-            startIndex = self.reverse_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
-            endIndex = self.forward_adapter_stop_index - match2.front_match.rstart
-            centerSeq = seq[startIndex:-endIndex]
-            centerSeq = self.reverse_complement(centerSeq)
-
-        return umi, centerSeq
+    def identify_and_set_front_and_reverse_adapter_start_indices_from_file(self, files):
+        allIndices = []
+        for file in files:
+            with open(file) as handle:
+                for record in SeqIO.parse(handle, "fastq"):
+                    indices = self.get_front_and_reverse_adapter_start_indices(str(record.seq))
+                    if indices != (-1,-1): allIndices.append(indices)
+        self.set_universal_forward_reverse_adapter_indices(allIndices)
 
     def get_front_and_reverse_adapter_start_indices(self, seq):
         baseEndNumber = 200
@@ -93,14 +66,42 @@ class UMIExtractor():
         if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
         if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
 
-    def identify_and_set_front_and_reverse_adapter_start_indices_from_file(self, files):
-        allIndices = []
-        for file in files:
-            with open(file) as handle:
-                for record in SeqIO.parse(handle, "fastq"):
-                    indices = self.get_front_and_reverse_adapter_start_indices(str(record.seq))
-                    if indices != (-1,-1): allIndices.append(indices)
-        self.set_universal_forward_reverse_adapter_indices(allIndices)
+    def extract_umi_and_sequence_from_linked_adapters(self, seq):
+
+        read1 = seq[self.forward_adapter_start_index:self.forward_adapter_stop_index]
+        read2 = seq[-self.reverse_adapter_stop_index:-self.reverse_adapter_start_index]
+        if self.reverse_adapter_start_index==0: read2 = seq[-self.reverse_adapter_stop_index:]
+        reverse = False
+
+        match1 = self.forward.match_to(read1)
+        match2 = self.forward_pair.match_to(read2)
+
+        if match1 is None or match2 is None:
+            reverse = True
+
+            read1 = seq[self.reverse_adapter_start_index:self.reverse_adapter_stop_index]
+            read2 = seq[-self.forward_adapter_stop_index:-self.forward_adapter_start_index]
+            if self.forward_adapter_start_index==0: read2 = seq[-self.forward_adapter_stop_index:]
+
+            match1 = self.reverse.match_to(read1)
+            match2 = self.reverse_pair.match_to(read2)
+            if match1 is None or match2 is None: return None
+
+        umi = match1.trimmed(read1) + match2.trimmed(read2)
+        if (len(umi) > self.umi_length*2 + 2) or (len(umi) < self.umi_length*2 - 2): return None
+
+        if not reverse:
+            startIndex = self.forward_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
+            endIndex = self.reverse_adapter_stop_index - match2.front_match.rstart
+            centerSeq = seq[startIndex:-endIndex]
+        else:
+            umi = self.reverse_complement(umi)
+            startIndex = self.reverse_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
+            endIndex = self.forward_adapter_stop_index - match2.front_match.rstart
+            centerSeq = seq[startIndex:-endIndex]
+            centerSeq = self.reverse_complement(centerSeq)
+
+        return umi, centerSeq
 
     def extract_umi_and_sequences_from_files(self, files, outputHeader):
         sequences = []

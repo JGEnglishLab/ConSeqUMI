@@ -182,14 +182,12 @@ class MyTest(unittest.TestCase):
                         forwardAdapter2_reverseComplement, umi1r, forwardAdapter1_reverseComplement +
                         fillerSeq1])
 
-        '''
         exampleErrorSeq = "".join([
                         fillerSeq1,
-                        reverseAdapter1, umi2r, 'CGCGCGCGCGCGCGCGCGCG', reverseAdapter2,
-                        fillerSeq2,
+                        reverseAdapter1, umi2r, 'CGC', reverseAdapter2,
+                        consensusSequence,
                         forwardAdapter2_reverseComplement, umi1r, forwardAdapter1_reverseComplement +
                         fillerSeq3])
-        '''
 
         self.UMIBins = ue.UMIExtractor()
         self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
@@ -199,11 +197,12 @@ class MyTest(unittest.TestCase):
         self.UMIBins.reverse_adapter_stop_index = 176
         umiForwardPair = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleForwardSeq)
         umiReversePair = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleReverseSeq)
+        umiError = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleErrorSeq)
         self.assertEqual(umiForwardPair[0], umi1 + umi2)
         self.assertEqual(umiForwardPair[1], consensusSequence)
         self.assertEqual(umiReversePair[0], umi1 + umi2)
         self.assertEqual(umiReversePair[1], consensusSequence)
-
+        self.assertIsNone(umiError)
 
         self.UMIBins.forward_adapter_start_index = 0
         self.UMIBins.forward_adapter_stop_index = 90
@@ -272,7 +271,6 @@ def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
     for i in range(len(str1)-1,-1,-1):
         if str1[i] not in ['A', 'T', 'G', 'C']:
-            print(str1[i])
             str1 = str1[:i] + str1[i+1:]
             str2 = str2[:i] + str2[i+1:]
     return str1, str2
