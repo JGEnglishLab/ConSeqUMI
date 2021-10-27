@@ -28,7 +28,7 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
 
     print('\nStarcode Binning')
-    print('---> ' + str(round(timer()-startTime, 2)) + ' begin process')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' begin process')
     process = subprocess.Popen(['../starcode/starcode',
      '-i', args['output']+ 'umi.txt',
      '-o', args['output']+ 'starcode.txt',
