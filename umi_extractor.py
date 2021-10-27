@@ -13,6 +13,7 @@ class UMIExtractor():
         self.umi_pattern = re.compile('^[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}$')
         self.umi_length = 18
         self.is_umi_patterned = True
+        self.set_universal_front_and_reverse_linked_adapters('GAGTGTGGCTCTTCGGAT', 'ATCTCTACGGTGGTCCTAAATAGT', 'AATGATACGGCGACCACCGAGATC', 'CGACATCGAGGTGCCAAAC')
 
     def reverse_complement(self, seq): return str(Seq(seq).reverse_complement())
 
@@ -32,6 +33,7 @@ class UMIExtractor():
         allIndices = []
         for file in files:
             with open(file) as handle:
+
                 for record in SeqIO.parse(handle, "fastq"):
                     indices = self.get_front_and_reverse_adapter_start_indices(str(record.seq))
                     if indices != (-1,-1): allIndices.append(indices)
@@ -103,14 +105,14 @@ class UMIExtractor():
 
         return umi, centerSeq
 
-    def extract_umi_and_sequences_from_files(self, files, outputHeader):
+    def extract_umi_and_sequences_from_files(self, files, outputDir):
         sequences = []
         for file in files:
             with open(file) as handle:
                 sequences.extend([self.extract_umi_and_sequence_from_linked_adapters(str(record.seq)) for record in SeqIO.parse(handle, "fastq")])
         count = len(sequences)
         sequences = list(filter(None, sequences))
-        with open(outputHeader + "_umi.txt", "w") as umiFile, open(outputHeader + "_seq.txt", "w") as centerFile:
+        with open(outputDir + "/umi.txt", "w") as umiFile, open(outputDir + "/seq.txt", "w") as centerFile:
             for umi_center in sequences:
                 umi = umi_center[0]
                 center = umi_center[1]

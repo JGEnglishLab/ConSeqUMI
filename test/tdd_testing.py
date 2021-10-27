@@ -230,12 +230,12 @@ class MyTest(unittest.TestCase):
 
         files = ['test/tdd/tdd_example.fq']
         self.UMIBins.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
-        error = self.UMIBins.extract_umi_and_sequences_from_files(files, 'test/tdd/tdd_example')
+        error = self.UMIBins.extract_umi_and_sequences_from_files(files, 'test/tdd/output')
 
 
-        self.assertTrue(filecmp.cmp('test/tdd/tdd_example_umi.txt', 'test/tdd/tdd_example_umi_expected.txt', shallow=False))
+        self.assertTrue(filecmp.cmp('test/tdd/output/umi.txt', 'test/tdd/output/tdd_example_umi_expected.txt', shallow=False))
         filecmp.clear_cache()
-        self.assertTrue(filecmp.cmp('test/tdd/tdd_example_seq.txt', 'test/tdd/tdd_example_seq_expected.txt', shallow=False))
+        self.assertTrue(filecmp.cmp('test/tdd/output/seq.txt', 'test/tdd/output/tdd_example_seq_expected.txt', shallow=False))
         filecmp.clear_cache()
         self.assertEqual(error, 1)
 
@@ -251,8 +251,8 @@ class MyTest(unittest.TestCase):
         consSeq1 = 'CCTTGTCTTGCGTCGTCCCCTGCGTATGCCTCTCGAGTCGATCATCAGACCTATGCAGGGCGCGGTGTGTAAGGTACCCCCCGTGTCCCGCGTGCCCAGTGCAGAACTCAAGAGCGGAGGGTTCAACAAACCATATAGTAGAACATGCCAGCAGCTTGTATTGGTTCTGAGTATACTTTCGGGTTGAATAGTCGTTGTGA'
         umi2 = 'AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA'
         consSeq2 = 'TTAGTGCCTTTCCCACGAGCTGTAGACGAAGCTCACTATTCCAGGTCTAAGGCCCAGGGGCGTGAGAATCGTGAACTTGTTAAAGATTTACTCCTTGTTGCCGTCGAAGAATGTTGGTTCTCTTACGCTGATAACAAATGACCATGCTCTTTGAGATCCCAATCCGGCAACAAAACTAAGCGCGGGCCCGCAGGCTCTGC'
-        umiBinPath = 'test/tdd/tdd_starcode_output_C_seq-id.txt'
-        seqPath = 'test/tdd/tdd_example_seq.txt'
+        umiBinPath = 'test/tdd/output/tdd_starcode_output_C_seq-id.txt'
+        seqPath = 'test/tdd/output/seq.txt'
 
         consensusSequences = cm.find_consensus_sequences_from_umi_bins(umiBinPath, seqPath)
 

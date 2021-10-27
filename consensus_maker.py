@@ -1,12 +1,14 @@
 from Bio.Align import MultipleSeqAlignment, AlignInfo
 import pandas as pd
 import numpy as np
+from collections import Counter
+import unittest
 
 def find_consensus_seq_from_list(seqs):
     alignment = MultipleSeqAlignment([])
     for i in range(len(seqs)): alignment.add_sequence(str(i), seqs[i])
     info = AlignInfo.SummaryInfo(alignment)
-    return info.dumb_consensus()
+    return info.dumb_consensus(threshold=-0.1)
 
 def find_consensus_sequences_from_umi_bins(umiBinPath, seqPath):
     umiBins = pd.read_csv(umiBinPath, sep='\t')
@@ -22,7 +24,5 @@ def find_consensus_sequences_from_umi_bins(umiBinPath, seqPath):
         cluster = sequences[indices]
         consensusSequence = find_consensus_seq_from_list(cluster)
         finalSeqs.append([row['umi'],str(consensusSequence).strip('\n')])
-    data = [['TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG','CCTTGTCTTGCGTCGTCCCCTGCGTATGCCTCTCGAGTCGATCATCAGACCTATGCAGGGCGCGGTGTGTAAGGTACCCCCCGTGTCCCGCGTGCCCAGTGCAGAACTCAAGAGCGGAGGGTTCAACAAACCATATAGTAGAACATGCCAGCAGCTTGTATTGGTTCTGAGTATACTTTCGGGTTGAATAGTCGTTGTGA'],
-            ['AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA','TTAGTGCCTTTCCCACGAGCTGTAGACGAAGCTCACTATTCCAGGTCTAAGGCCCAGGGGCGTGAGAATCGTGAACTTGTTAAAGATTTACTCCTTGTTGCCGTCGAAGAATGTTGGTTCTCTTACGCTGATAACAAATGACCATGCTCTTTGAGATCCCAATCCGGCAACAAAACTAAGCGCGGGCCCGCAGGCTCTGC']]
 
     return pd.DataFrame(finalSeqs, columns=['UMIBin','ConsensusSequence'])
