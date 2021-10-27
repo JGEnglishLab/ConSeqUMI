@@ -5,11 +5,15 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 import numpy as np
-import umi_binning as ub
+import umi_extractor as ue
+import consensus_maker as cm
+import random
+import filecmp
+import pandas as pd
 
 class MyTest(unittest.TestCase):
 
-    def test_cutadapter_adapter_initialization(self):
+    def test_ue_cutadapter_adapter_initialization(self):
         forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
         forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
         reverseAdapter1 = 'AATGATACGGCGACCACCGAGATC'
@@ -19,8 +23,8 @@ class MyTest(unittest.TestCase):
         reverseAdapter1_reverseComplement = 'GATCTCGGTGGTCGCCGTATCATT'
         reverseAdapter2_reverseComplement = 'GTTTGGCACCTCGATGTCG'
 
-        self.UMIBins = ub.UMIBinner()
-        self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
+        self.UMIBins = ue.UMIExtractor()
+        self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
         self.assertEqual(self.UMIBins.forward.front_adapter.sequence, forwardAdapter1)
         self.assertEqual(self.UMIBins.forward.back_adapter.sequence, forwardAdapter2)
         self.assertEqual(self.UMIBins.forward_pair.front_adapter.sequence, reverseAdapter2_reverseComplement)
@@ -30,8 +34,8 @@ class MyTest(unittest.TestCase):
         self.assertEqual(self.UMIBins.reverse_pair.front_adapter.sequence, forwardAdapter2_reverseComplement)
         self.assertEqual(self.UMIBins.reverse_pair.back_adapter.sequence, forwardAdapter1_reverseComplement)
 
-    def test_adapter_indexer_locator(self):
-        self.UMIBins = ub.UMIBinner()
+    def test_ue_adapter_index_locator(self):
+        self.UMIBins = ue.UMIExtractor()
         fillerSeq1 = 'A'*110
         fillerSeq2 = 'C'*400
         fillerSeq3 = 'T'*100
@@ -65,16 +69,16 @@ class MyTest(unittest.TestCase):
         exampleForwardSeq2 = exampleForwardSeq[110:]
         exampleReverseSeq2 = exampleForwardSeq[:-100]
 
-        self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
+        self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
 
-        indices1 = self.UMIBins.get_adapter_indices(exampleForwardSeq)
+        indices1 = self.UMIBins.get_front_and_reverse_adapter_start_indices(exampleForwardSeq)
         self.assertEqual(indices1, (110,100))
-        indices2 = self.UMIBins.get_adapter_indices(exampleReverseSeq)
+        indices2 = self.UMIBins.get_front_and_reverse_adapter_start_indices(exampleReverseSeq)
         self.assertEqual(indices2, (110,100))
-        indices3 = self.UMIBins.get_adapter_indices(fillerSeq2)
+        indices3 = self.UMIBins.get_front_and_reverse_adapter_start_indices(fillerSeq2)
         self.assertEqual(indices3, (-1,-1))
 
-    def test_set_forward_reverse_index(self):
+    def test_ue_set_universal_forward_reverse_adapter_indices(self):
         forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
         forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
         reverseAdapter1 = 'AATGATACGGCGACCACCGAGATC'
@@ -99,10 +103,10 @@ class MyTest(unittest.TestCase):
             [22, 40],
             [1000, 40],
         ])
-        self.UMIBins = ub.UMIBinner()
-        self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
+        self.UMIBins = ue.UMIExtractor()
+        self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
 
-        self.UMIBins.set_adapter_indices(indices_array, indel = 5)
+        self.UMIBins.set_universal_forward_reverse_adapter_indices(indices_array, indel = 5)
         self.assertEqual(self.UMIBins.forward_adapter_start_index, 15)
         self.assertEqual(self.UMIBins.forward_adapter_stop_index, 87)
         self.assertEqual(self.UMIBins.reverse_adapter_start_index, 35)
@@ -127,13 +131,13 @@ class MyTest(unittest.TestCase):
             [22, 0],
             [1000, 0],
         ])
-        self.UMIBins.set_adapter_indices(indices_array2, indel = 5)
+        self.UMIBins.set_universal_forward_reverse_adapter_indices(indices_array2, indel = 5)
         self.assertEqual(self.UMIBins.forward_adapter_start_index, 0)
         self.assertEqual(self.UMIBins.forward_adapter_stop_index, 67)
         self.assertEqual(self.UMIBins.reverse_adapter_start_index, 0)
         self.assertEqual(self.UMIBins.reverse_adapter_stop_index, 66)
 
-    def test_adapter_not_found_assertion(self):
+    def test_ue_adapter_not_found_assertion(self):
 
         indices_array = np.array([
             [20, 40],
@@ -142,13 +146,14 @@ class MyTest(unittest.TestCase):
             [20, 40],
         ])
         with self.assertRaises(Exception) as context:
-            ub.UMIBinner().set_adapter_indices(indices_array, indel = 5)
+            ue.UMIExtractor().set_universal_forward_reverse_adapter_indices(indices_array, indel = 5)
         self.assertEqual('Adapter matched to fewer than 5 given sequences', str(context.exception))
 
-    def test_sequence_adapter_matching(self):
+    def test_ue_umi_sequence_extracted_from_adapters_and_matched(self):
         #forward read
         fillerSeq1 = 'A'*110
-        fillerSeq2 = 'C'*200
+        random.seed(0)
+        consensusSequence = ''.join(random.choices('ATGC', k=200))
         fillerSeq3 = 'T'*100
         forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
         forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
@@ -166,35 +171,37 @@ class MyTest(unittest.TestCase):
         exampleForwardSeq = "".join([
                         fillerSeq1,
                         forwardAdapter1, umi1, forwardAdapter2,
-                        fillerSeq2,
+                        consensusSequence,
                         reverseAdapter2_reverseComplement, umi2, reverseAdapter1_reverseComplement +
                         fillerSeq3])
 
         exampleReverseSeq = "".join([
                         fillerSeq3,
                         reverseAdapter1, umi2r, reverseAdapter2,
-                        fillerSeq2,
+                        ue.UMIExtractor().reverse_complement(consensusSequence),
                         forwardAdapter2_reverseComplement, umi1r, forwardAdapter1_reverseComplement +
                         fillerSeq1])
 
         exampleErrorSeq = "".join([
                         fillerSeq1,
-                        reverseAdapter1, umi2r, 'CGCG', reverseAdapter2,
-                        fillerSeq2,
+                        reverseAdapter1, umi2r, 'CGC', reverseAdapter2,
+                        consensusSequence,
                         forwardAdapter2_reverseComplement, umi1r, forwardAdapter1_reverseComplement +
                         fillerSeq3])
 
-        self.UMIBins = ub.UMIBinner()
-        self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
+        self.UMIBins = ue.UMIExtractor()
+        self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
         self.UMIBins.forward_adapter_start_index = 100
         self.UMIBins.forward_adapter_stop_index = 187
         self.UMIBins.reverse_adapter_start_index = 90
         self.UMIBins.reverse_adapter_stop_index = 176
-        umiForwardPair = self.UMIBins.extract_umi_from_linked_adapters(exampleForwardSeq)
-        umiReversePair = self.UMIBins.extract_umi_from_linked_adapters(exampleReverseSeq)
-        umiError = self.UMIBins.extract_umi_from_linked_adapters(exampleErrorSeq)
-        self.assertEqual(umiForwardPair, umi1 + umi2)
-        self.assertEqual(umiReversePair, umi1 + umi2)
+        umiForwardPair = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleForwardSeq)
+        umiReversePair = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleReverseSeq)
+        umiError = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleErrorSeq)
+        self.assertEqual(umiForwardPair[0], umi1 + umi2)
+        self.assertEqual(umiForwardPair[1], consensusSequence)
+        self.assertEqual(umiReversePair[0], umi1 + umi2)
+        self.assertEqual(umiReversePair[1], consensusSequence)
         self.assertIsNone(umiError)
 
         self.UMIBins.forward_adapter_start_index = 0
@@ -205,80 +212,88 @@ class MyTest(unittest.TestCase):
         exampleForwardSeq2 = exampleForwardSeq[110:-100]
         exampleReverseSeq2 = exampleReverseSeq[100:-110]
 
-        umiForwardPair2 = self.UMIBins.extract_umi_from_linked_adapters(exampleForwardSeq2)
-        umiReversePair2 = self.UMIBins.extract_umi_from_linked_adapters(exampleReverseSeq2)
-        self.assertEqual(umiForwardPair2, umi1 + umi2)
-        self.assertEqual(umiReversePair2, umi1 + umi2)
+        umiForwardPairAtZeroIndex = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleForwardSeq2)
+        umiReversePairAtZeroIndex = self.UMIBins.extract_umi_and_sequence_from_linked_adapters(exampleReverseSeq2)
+        self.assertEqual(umiForwardPairAtZeroIndex[0], umi1 + umi2)
+        self.assertEqual(umiForwardPairAtZeroIndex[1], consensusSequence)
+        self.assertEqual(umiReversePairAtZeroIndex[0], umi1 + umi2)
+        self.assertEqual(umiReversePairAtZeroIndex[1], consensusSequence)
 
-    def test_too_few_umis_identified(self):
-        umi_sequences = [
-            'AAAAGGCACTAGTGCCCA',
-            'TTAAGGCACTAGTGCCCT',
-            'AAAAGGCACTAGTGCCCA',
-            'TTAAGGCACTAGTGCCCT',
-        ]
-        with self.assertRaises(Exception) as context:
-            ub.UMIBinner().find_consensus_sequences(umi_sequences, 5)
-        self.assertEqual('Fewer than 5 UMI sequences match UMI pattern', str(context.exception))
-
-    def test_hamming_distance_matrix(self):
-        seqs = ['ATCG','AACG','TCGC', 'TTCC']
-        distanceMatrix1 = np.array([0.25, 1, 0.5, 1, 0.25, 0.5]) #0,1; 0,2; 0,3; 1,2; 1,3; 2,3
-        distanceMatrix2 = ub.UMIBinner().make_hamming_distance_matrix(seqs)
-        self.assertEqual(distanceMatrix2.all(), distanceMatrix1.all())
-
-    def test_consensus_assignment(self):
+    def test_ue_umi_and_sequence_extraction_from_files(self):
         forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
         forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
         reverseAdapter1 = 'AATGATACGGCGACCACCGAGATC'
         reverseAdapter2 = 'CGACATCGAGGTGCCAAAC'
-        self.UMIBins = ub.UMIBinner()
-        self.UMIBins.is_umi_patterned = False
-        self.UMIBins.set_adapters_for_future_matching(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
-
-        consensus_sequences1 = ['TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG','AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA']
-        #consensus_labels1 = [1,2,1,2,1,2,1,2,1,2,1,2,1,2]
-        #consensus_labels1 = [0,1,0,1,0,1,0,1,0,1,0,1,0,1]
-        consensus_labels1 = [2,1,2,1,2,1,2,1,2,1,2,1,2,1]
-
-        consensus_sequences2, consensus_labels2 = self.UMIBins.identify_consensus_umi_sequences_from_files(['test/tdd_example.fq'], min_clusters=2)
-
-        self.assertSetEqual(set(consensus_sequences2), set(consensus_sequences1))
-        self.assertListEqual(list(consensus_labels2), consensus_labels1)
-
-    def test_too_few_clusters_identified(self):
-        umi_sequences = [ #4 clusters of 4 each - none should succeed because clusters have < 5
-            'AGATCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
-            'CTATCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
-            'CGCTCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
-            'CGAGCAAGCTTTAGCCGCTGACTGTACGAGTGACTA',
-
-            'AATATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
-            'CTTATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
-            'CACATTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
-            'CATGTTAAGGTCAGCTGAACCGCTTAGAGCCGGCTT',
-
-            'AGGTGGGTGCGTACAATCTCTCGAACCATATAACGT',
-            'CTGTGGGTGCGTACAATCTCTCGAACCATATAACGT',
-            'CGCTGGGTGCGTACAATCTCTCGAACCATATAACGT',
-            'CGGGGGGTGCGTACAATCTCTCGAACCATATAACGT',
-
-            'ATCGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
-            'TGCGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
-            'TTTGGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
-            'TTCCGTAGGGTGCCTACAAGTCCAACTCGTTAGACA',
-        ]
-
-        with self.assertRaises(Exception) as context:
-            ub.UMIBinner().find_consensus_sequences(umi_sequences, min_clusters=5)
-        self.assertEqual('Fewer than 5 clusters contain at least 5 UMI sequences', str(context.exception))
+        self.UMIBins = ue.UMIExtractor()
+        self.UMIBins.set_universal_front_and_reverse_linked_adapters(forwardAdapter1, forwardAdapter2, reverseAdapter1, reverseAdapter2)
 
 
-def create_test_file():
-    u = ub.UMIBinner()
+        files = ['test/tdd/tdd_example.fq']
+        self.UMIBins.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
+        error = self.UMIBins.extract_umi_and_sequences_from_files(files, 'test/tdd/output')
 
+
+        self.assertTrue(filecmp.cmp('test/tdd/output/umi.txt', 'test/tdd/output/tdd_example_umi_expected.txt', shallow=False))
+        filecmp.clear_cache()
+        self.assertTrue(filecmp.cmp('test/tdd/output/seq.txt', 'test/tdd/output/tdd_example_seq_expected.txt', shallow=False))
+        filecmp.clear_cache()
+        self.assertEqual(error, 1)
+
+    def test_cm_make_consensus_sequence(self):
+        random.seed(0)
+        origConsensusSequence = ''.join(random.choices('ATGC', k=200))
+        testSeqs = create_imperfect_seq_list(origConsensusSequence, 50, 30)
+        consensus = cm.find_consensus_seq_from_list(testSeqs)
+        self.assertEqual(consensus, origConsensusSequence)
+
+    def test_cm_find_consensus_sequences_from_bins(self):
+        umi1 = 'TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG'
+        consSeq1 = 'CCTTGTCTTGCGTCGTCCCCTGCGTATGCCTCTCGAGTCGATCATCAGACCTATGCAGGGCGCGGTGTGTAAGGTACCCCCCGTGTCCCGCGTGCCCAGTGCAGAACTCAAGAGCGGAGGGTTCAACAAACCATATAGTAGAACATGCCAGCAGCTTGTATTGGTTCTGAGTATACTTTCGGGTTGAATAGTCGTTGTGA'
+        umi2 = 'AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA'
+        consSeq2 = 'TTAGTGCCTTTCCCACGAGCTGTAGACGAAGCTCACTATTCCAGGTCTAAGGCCCAGGGGCGTGAGAATCGTGAACTTGTTAAAGATTTACTCCTTGTTGCCGTCGAAGAATGTTGGTTCTCTTACGCTGATAACAAATGACCATGCTCTTTGAGATCCCAATCCGGCAACAAAACTAAGCGCGGGCCCGCAGGCTCTGC'
+        umiBinPath = 'test/tdd/output/tdd_starcode_output_C_seq-id.txt'
+        seqPath = 'test/tdd/output/seq.txt'
+
+        consensusSequences = cm.find_consensus_sequences_from_umi_bins(umiBinPath, seqPath)
+
+        for index, row in consensusSequences.iterrows():
+            if index==0:
+                self.assertEqual(umi1, row['UMIBin'])
+                seq1, seq2 = strip_non_standard_nucleotide_values(row['ConsensusSequence'], consSeq1)
+                self.assertEqual(seq1, seq2)
+            else:
+                self.assertEqual(umi2, row['UMIBin'])
+                seq1, seq2 = strip_non_standard_nucleotide_values(row['ConsensusSequence'], consSeq2)
+                self.assertEqual(seq1, seq2)
+
+
+def strip_non_standard_nucleotide_values(str1, str2):
+    if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
+    for i in range(len(str1)-1,-1,-1):
+        if str1[i] not in ['A', 'T', 'G', 'C']:
+            str1 = str1[:i] + str1[i+1:]
+            str2 = str2[:i] + str2[i+1:]
+    return str1, str2
+
+
+def create_imperfect_seq_list(seq, numSeqs, numErrors):
+    seqs = [seq for i in range(numSeqs)]
+    for i in range(len(seqs)):
+        diffIndices = list(set([random.randint(0,len(seq)-1) for j in range(numErrors)]))
+        diffNucs = ''.join(random.choices('ATGC', k=len(diffIndices)))
+        for j in range(len(diffIndices)):
+            k = diffIndices[j]
+            seqs[i] = seqs[i][:k]+diffNucs[j]+seqs[i][k+1:]
+    return seqs
+
+
+
+def create_test_fastq_and_txt_files():
+    u = ue.UMIExtractor()
     fillerSeq1 = 'A'*30
-    fillerSeq2 = 'C'*200
+    random.seed(0)
+    origConsensusSequence1 = ''.join(random.choices('ATGC', k=200))
+    origConsensusSequence2 = ''.join(random.choices('ATGC', k=200))
     fillerSeq3 = 'T'*110
     forwardAdapter1 = 'CAAGCAGAAGACGGCATACGAGAT'
     forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
@@ -295,6 +310,13 @@ def create_test_file():
         'TAAAAGCACTAGTGCCCT',
         'TAAAGTCACTAGTGCCCT',
         'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
+        'TAAAGGCACTAGTGCCCT',
     ]
     umi_sequences2 = [
         'ATGATGCATCGACTCGTA',
@@ -303,6 +325,13 @@ def create_test_file():
         'AAGAAGCATCGACTCGTC',
         'AAGATTCATCGACTCGTC',
         'AAGATGGATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
+        'AAGATGCATCGACTCGTC',
         'AAGATGCATCGACTCGTC',
     ]
     umi_sequences3 = [
@@ -313,6 +342,13 @@ def create_test_file():
         'CGAGAACCTTATACGGCA',
         'CGAGTTCCTTATACGGCA',
         'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
+        'CGAGTACCTTATACGGCA',
     ]
     umi_sequences4 = [
         'AGCACGTTCACAATAGCA',
@@ -322,21 +358,31 @@ def create_test_file():
         'TGCAAGTTCACAATAGCG',
         'TGCACTTTCACAATAGCG',
         'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
+        'TGCACGTTCACAATAGCG',
     ]
 
+    consensusSequence1List = create_imperfect_seq_list(origConsensusSequence1, 14, 20)
+    consensusSequence2List = create_imperfect_seq_list(origConsensusSequence2, 14, 20)
+
     sequences = []
-    for i in range(7):
+    for i in range(len(umi_sequences1)):
         seq1 = ''.join([
             fillerSeq1,
             forwardAdapter1, umi_sequences1[i], forwardAdapter2,
-            fillerSeq2,
+            consensusSequence1List[i],
             rc_reverseAdapter2, u.reverse_complement(umi_sequences3[i]), rc_reverseAdapter1,
             fillerSeq3
         ])
         seq2 = ''.join([
             fillerSeq1,
             forwardAdapter1, umi_sequences2[i], forwardAdapter2,
-            fillerSeq2,
+            consensusSequence2List[i],
             rc_reverseAdapter2, u.reverse_complement(umi_sequences4[i]), rc_reverseAdapter1,
             fillerSeq3
         ])
@@ -344,8 +390,8 @@ def create_test_file():
             seq1 = u.reverse_complement(seq1)
             seq2 = u.reverse_complement(seq2)
 
-        rec1 = SeqRecord(Seq(seq1),id=str(i))
-        rec2 = SeqRecord(Seq(seq2),id=str(i+8))
+        rec1 = SeqRecord(Seq(seq1),id=str(i) + origConsensusSequence1, description='testConsensusSequence1')
+        rec2 = SeqRecord(Seq(seq2),id=str(i) + origConsensusSequence2, description='testConsensusSequence2')
         rec1.letter_annotations["phred_quality"] = [1 for x in seq1]
         rec2.letter_annotations["phred_quality"] = [1 for x in seq2]
 
@@ -354,9 +400,28 @@ def create_test_file():
     errorRec = SeqRecord(Seq('AAAAAAAAAAAAATTTTTTT'), id='error')
     errorRec.letter_annotations["phred_quality"] = [1 for x in 'AAAAAAAAAAAAATTTTTTT']
     sequences.append(errorRec)
-    with open("test/tdd_example.fq", "w") as output_handle:
+    with open("test/tdd/tdd_example.fq", "w") as output_handle:
         SeqIO.write(sequences, output_handle, "fastq")
 
+    expectedOutputUMI = []
+    expectedOutputSeq = []
+    expectedOutputError = []
+    for i in range(len(umi_sequences1)):
+        expectedOutputUMI.append(umi_sequences1[i] + u.reverse_complement(umi_sequences3[i]))
+        expectedOutputUMI.append(umi_sequences2[i] + u.reverse_complement(umi_sequences4[i]))
+
+        expectedOutputSeq.append(consensusSequence1List[i])
+        expectedOutputSeq.append(consensusSequence2List[i])
+
+    expectedOutputError.append('AAAAAAAAAAAAATTTTTTT')
+    with open("test/tdd/tdd_example_umi_expected.txt", "w") as output:
+        for seq in expectedOutputUMI: output.write(seq + '\n')
+    with open("test/tdd/tdd_example_seq_expected.txt", "w") as output:
+        for seq in expectedOutputSeq: output.write(seq + '\n')
+    with open("test/tdd/tdd_example_error_expected.txt", "w") as output:
+        for seq in expectedOutputError: output.write(seq)
+
+
 if __name__ == '__main__':
-    #create_test_file()
+    #create_test_fastq_and_txt_files()
     unittest.main()
