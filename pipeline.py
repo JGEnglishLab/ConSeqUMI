@@ -14,23 +14,30 @@ def main():
     args = vars(parser.parse_args())
     check_for_invalid_input(parser, args)
 
-
+    print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
+    print('----> setting adapter objects')
     if args['adapters']:
         with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
         UMIExtractor.set_universal_front_and_reverse_linked_adapters(adapters[0], adapters[1], adapters[2], adapters[3])
     files = [args['input']+file for file in listdir(args['input'])]
+    print('----> identifying adapter start indices')
     UMIExtractor.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
+    print('----> extracting UMI sequences')
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
-    print('lines excluded: ' + str(excludedCount))
+    print('----> lines excluded: ' + str(excludedCount))
 
+    print('\nStarcode Binning')
     process = subprocess.Popen(['../starcode/starcode',
      '-i', args['output']+ 'umi.txt',
      '-o', args['output']+ 'starcode.txt',
      '--seq-id', '-s'])
     stdout, stderr = process.communicate()
 
+    print('\nConsensus Sequence Generation')
+    print('----> obtaining consensus sequences')
     consensusSequences = cm.find_consensus_sequences_from_umi_bins(args['output']+ 'starcode.txt', args['output']+ 'seq.txt')
+    print('----> writing output')
     consensusSequences.to_csv(args['output']+ 'consensus.csv', index=False)
 
 
