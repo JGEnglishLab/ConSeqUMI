@@ -13,7 +13,6 @@ class UMIExtractor():
         self.umi_pattern = re.compile('^[ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{6}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}[CT][AG][ATCG]{3}$')
         self.umi_length = 18
         self.is_umi_patterned = True
-        self.set_universal_front_and_reverse_linked_adapters('GAGTGTGGCTCTTCGGAT', 'ATCTCTACGGTGGTCCTAAATAGT', 'AATGATACGGCGACCACCGAGATC', 'CGACATCGAGGTGCCAAAC')
 
     def reverse_complement(self, seq): return str(Seq(seq).reverse_complement())
 
