@@ -243,7 +243,7 @@ class MyTest(unittest.TestCase):
         random.seed(0)
         origConsensusSequence = ''.join(random.choices('ATGC', k=200))
         testSeqs = create_imperfect_seq_list(origConsensusSequence, 50, 30)
-        consensus = cm.find_consensus_seq_from_list(testSeqs)
+        consensus = cm.find_consensus_seq_from_list(testSeqs, 0, 'test/data/test_cm_make_consensus_sequence_input.txt')
         self.assertEqual(consensus, origConsensusSequence)
 
     def test_cm_find_consensus_sequences_from_bins(self):
