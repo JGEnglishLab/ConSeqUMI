@@ -6,17 +6,24 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 import unittest
+from Bio import AlignIO
+import subprocess
 
 def find_consensus_seq_from_list(seqs, index, umiBinPath):
     records = (SeqRecord(Seq(seq.strip()), str(index)) for index,seq in enumerate(seqs))
-    outfile = umiBinPath.split('.')[0] + str(index) + '.fa'
-    SeqIO.write(records, outfile, 'fasta')
+    infile = umiBinPath.split('.')[0] + str(index) + 'unaligned.fa'
+    outfile = umiBinPath.split('.')[0] + str(index) + 'aligned.fa'
+    SeqIO.write(records, infile, 'fasta')
 
-    records = [SeqRecord(seqs[i], id=str(i)) for i in range(len(seqs))]
-    alignment = MultipleSeqAlignment(records)
+    process = subprocess.Popen(['/usr/local/anaconda3/envs/longread/bin/muscle',
+     '-in', infile,
+     '-out', outfile])
+    stdout, stderr = process.communicate()
+
+    alignment = AlignIO.read(outfile, format='fasta')
     #for i in range(len(seqs)): alignment.add_sequence(str(i), seqs[i])
     info = AlignInfo.SummaryInfo(alignment)
-    return info.dumb_consensus(threshold=0.4)
+    return info.dumb_consensus(threshold=0.7)
 
 def find_consensus_sequences_from_umi_bins(umiBinPath, seqPath):
     umiBins = pd.read_csv(umiBinPath, sep='\t')
