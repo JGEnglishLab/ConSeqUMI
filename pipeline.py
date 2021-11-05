@@ -28,16 +28,19 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
 
     print('\nStarcode Binning')
-    print('----> ' + str(round(timer()-startTime, 2)) + ' begin process')
-    process = subprocess.Popen(['../starcode/starcode',
-     '-i', args['output']+ 'umi.txt',
-     '-o', args['output']+ 'starcode.txt',
-     '--seq-id', '-s'])
-    stdout, stderr = process.communicate()
+    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
+    run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
+
+    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi2 process')
+    run_starcode(args['output']+ 'umi2.txt', args['output']+ 'starcode2.txt')
+
+    print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras')
+    cm.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode1.txt', args['output']+ 'starcode_without_chimeras.txt')
+
 
     print('\nConsensus Sequence Generation')
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
-    consensusSequences = cm.find_consensus_sequences_from_umi_bins(args['output']+ 'starcode.txt', args['output']+ 'seq.txt')
+    consensusSequences = cm.find_consensus_sequences_from_umi_bins(args['output']+ 'starcode_without_chimeras.txt', args['output']+ 'seq.txt')
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
     consensusSequences.to_csv(args['output']+ 'consensus.csv', index=False)
 
@@ -72,6 +75,13 @@ def restricted_file(x, permittedTypes=[]):
         else: return True
     if x.split('.')[-1].lower() not in permittedTypes and not path.isfile(x): return False
     return True
+
+def run_starcode(input, output):
+    process = subprocess.Popen(['../starcode/starcode',
+     '-i', input,
+     '-o', output,
+     '--seq-id'])
+    stdout, stderr = process.communicate()
 
 
 if __name__ == "__main__":

@@ -88,21 +88,24 @@ class UMIExtractor():
             match2 = self.reverse_pair.match_to(read2)
             if match1 is None or match2 is None: return None
 
-        umi = match1.trimmed(read1) + match2.trimmed(read2)
-        if (len(umi) > self.umi_length*2 + 2) or (len(umi) < self.umi_length*2 - 2): return None
+        umi1 = match1.trimmed(read1)
+        umi2 = match2.trimmed(read2)
+        if (len(umi1) > self.umi_length + 2) or (len(umi1) < self.umi_length - 2) or (len(umi2) > self.umi_length + 2) or (len(umi2) < self.umi_length - 2): return None
 
         if not reverse:
             startIndex = self.forward_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
             endIndex = self.reverse_adapter_stop_index - match2.front_match.rstart
             centerSeq = seq[startIndex:-endIndex]
         else:
-            umi = self.reverse_complement(umi)
+            umi1_temp = self.reverse_complement(umi2)
+            umi2 = self.reverse_complement(umi1)
+            umi1 = umi1_temp
             startIndex = self.reverse_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
             endIndex = self.forward_adapter_stop_index - match2.front_match.rstart
             centerSeq = seq[startIndex:-endIndex]
             centerSeq = self.reverse_complement(centerSeq)
 
-        return umi, centerSeq
+        return umi1, umi2, centerSeq
 
     def extract_umi_and_sequences_from_files(self, files, outputDir):
         sequences = []
@@ -111,11 +114,13 @@ class UMIExtractor():
                 sequences.extend([self.extract_umi_and_sequence_from_linked_adapters(str(record.seq)) for record in SeqIO.parse(handle, "fastq")])
         count = len(sequences)
         sequences = list(filter(None, sequences))
-        with open(outputDir + "/umi.txt", "w") as umiFile, open(outputDir + "/seq.txt", "w") as centerFile:
+        with open(outputDir + "/umi1.txt", "w") as umiFile1, open(outputDir + "/umi2.txt", "w") as umiFile2, open(outputDir + "/seq.txt", "w") as centerFile:
             for umi_center in sequences:
-                umi = umi_center[0]
-                center = umi_center[1]
-                umiFile.write(umi + '\n')
+                umi1 = umi_center[0]
+                umi2 = umi_center[1]
+                center = umi_center[2]
+                umiFile1.write(umi1 + '\n')
+                umiFile2.write(umi2 + '\n')
                 centerFile.write(center + '\n')
 
         return count - len(sequences)
