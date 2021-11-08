@@ -37,12 +37,12 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras')
     cm.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
 
+    print('----> ' + str(round(timer()-startTime, 2)) + ' bin sequences by UMI pair')
+    cm.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
 
     print('\nConsensus Sequence Generation')
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
-    consensusSequences = cm.find_consensus_sequences_from_umi_bins(args['output']+ 'starcode_without_chimeras.txt', args['output']+ 'seq.txt')
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
-    consensusSequences.to_csv(args['output']+ 'consensus.csv', index=False)
 
 
 def set_command_line_settings():
