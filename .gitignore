@@ -5,6 +5,7 @@ __pycache__/
 test/data/
 .DS_Store
 test/.DS_Store
+scratchpaper_code.py
 
 # C extensions
 *.so
