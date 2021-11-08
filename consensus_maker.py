@@ -61,35 +61,20 @@ def remove_duplicate_umis_from_pairs(umi1List, umi2List, indicesList):
 
     return umi1List, umi2List, indicesList
 
-def find_consensus_seq_from_list(seqs, index, umiBinPath):
-    records = (SeqRecord(Seq(seq.strip()), str(index)) for index,seq in enumerate(seqs))
-    infile = umiBinPath.split('.')[0] + str(index) + 'unaligned.fa'
-    outfile = umiBinPath.split('.')[0] + str(index) + 'aligned.fa'
-    SeqIO.write(records, infile, 'fasta')
+def bin_sequences_by_umi_pair(seqPath, starcodePath):
+    index_recordID = {}
+    with open(seqPath) as handle:
+        count = 1
+        for record in SeqIO.parse(handle, "fastq"): index_recordID[count] = record.id; count += 1
 
-    process = subprocess.Popen(['/usr/local/anaconda3/envs/longread/bin/muscle',
-     '-in', infile,
-     '-out', outfile])
-    stdout, stderr = process.communicate()
+    starcode = pd.read_csv(starcodePath, sep='\t', header=None)
+    starcode = list(starcode.iloc[:,2])
+    fq = SeqIO.index(seqPath, "fastq")
 
-    alignment = AlignIO.read(outfile, format='fasta')
-    #for i in range(len(seqs)): alignment.add_sequence(str(i), seqs[i])
-    info = AlignInfo.SummaryInfo(alignment)
-    return info.dumb_consensus(threshold=0.7)
-
-def find_consensus_sequences_from_umi_bins(umiBinPath, seqPath):
-    umiBins = pd.read_csv(umiBinPath, sep='\t')
-    umiBins.columns = ['umi','count','indices']
-    trimmedBins = umiBins[umiBins['count'] > 10]
-
-    with open(seqPath, 'r') as file: sequences = np.array(file.readlines())
-
-    finalSeqs = []
-    for index, row in trimmedBins.iterrows():
-        indices = row['indices'].split(',')
-        indices = [int(i)-1 for i in indices]
-        cluster = sequences[indices]
-        consensusSequence = find_consensus_seq_from_list(cluster, index, umiBinPath)
-        finalSeqs.append([row['umi'],str(consensusSequence).strip('\n')])
-
-    return pd.DataFrame(finalSeqs, columns=['UMIBin','ConsensusSequence'])
+    for i in range(len(starcode)):
+        indices = [int(y) for y in starcode[i].split(',')]
+        records = [fq[index_recordID[j]] for j in indices]
+        outputPath = seqPath.split('.')[0] + '_bin' + str(i) + '.fq'
+        with open(outputPath, "w") as output_handle:
+            SeqIO.write(records, output_handle, "fastq")
+    fq.close()

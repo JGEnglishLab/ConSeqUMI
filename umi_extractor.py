@@ -67,8 +67,8 @@ class UMIExtractor():
         if self.forward_adapter_start_index < 0: self.forward_adapter_start_index = 0
         if self.reverse_adapter_start_index < 0: self.reverse_adapter_start_index = 0
 
-    def extract_umi_and_sequence_from_linked_adapters(self, seq):
-
+    def extract_umi_and_sequence_from_linked_adapters(self, record):
+        seq = str(record.seq)
         read1 = seq[self.forward_adapter_start_index:self.forward_adapter_stop_index]
         read2 = seq[-self.reverse_adapter_stop_index:-self.reverse_adapter_start_index]
         if self.reverse_adapter_start_index==0: read2 = seq[-self.reverse_adapter_stop_index:]
@@ -95,15 +95,16 @@ class UMIExtractor():
         if not reverse:
             startIndex = self.forward_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
             endIndex = self.reverse_adapter_stop_index - match2.front_match.rstart
-            centerSeq = seq[startIndex:-endIndex]
+            centerSeq = record[startIndex:-endIndex]
+
         else:
             umi1_temp = self.reverse_complement(umi2)
             umi2 = self.reverse_complement(umi1)
             umi1 = umi1_temp
             startIndex = self.reverse_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop
             endIndex = self.forward_adapter_stop_index - match2.front_match.rstart
-            centerSeq = seq[startIndex:-endIndex]
-            centerSeq = self.reverse_complement(centerSeq)
+            centerSeq = record[startIndex:-endIndex]
+            centerSeq = centerSeq.reverse_complement(id=True, name=True, description=True)
 
         return umi1, umi2, centerSeq
 
@@ -111,16 +112,21 @@ class UMIExtractor():
         sequences = []
         for file in files:
             with open(file) as handle:
-                sequences.extend([self.extract_umi_and_sequence_from_linked_adapters(str(record.seq)) for record in SeqIO.parse(handle, "fastq")])
+                sequences.extend([self.extract_umi_and_sequence_from_linked_adapters(record) for record in SeqIO.parse(handle, "fastq")])
         count = len(sequences)
         sequences = list(filter(None, sequences))
-        with open(outputDir + "/umi1.txt", "w") as umiFile1, open(outputDir + "/umi2.txt", "w") as umiFile2, open(outputDir + "/seq.txt", "w") as centerFile:
+        centers = []
+        with open(outputDir + "/umi1.txt", "w") as umiFile1, open(outputDir + "/umi2.txt", "w") as umiFile2:
             for umi_center in sequences:
                 umi1 = umi_center[0]
                 umi2 = umi_center[1]
                 center = umi_center[2]
                 umiFile1.write(umi1 + '\n')
                 umiFile2.write(umi2 + '\n')
-                centerFile.write(center + '\n')
+
+                centers.append(center)
+
+        with open(outputDir + "/seq.fq", "w") as centerFile:
+                SeqIO.write(centers, centerFile, "fastq")
 
         return count - len(sequences)
