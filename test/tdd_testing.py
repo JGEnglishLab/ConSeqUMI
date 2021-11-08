@@ -281,7 +281,6 @@ class MyTest(unittest.TestCase):
                 seq1, seq2 = strip_non_standard_nucleotide_values(row['ConsensusSequence'], consSeq2)
                 self.assertEqual(seq1, seq2)
 
-
 def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
     for i in range(len(str1)-1,-1,-1):

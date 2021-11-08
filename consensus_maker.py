@@ -10,13 +10,25 @@ from Bio import AlignIO
 import subprocess
 
 def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
-    s1 = pd.read_csv(starcode1Path, sep='\t', header=None)
+
+    s1UMI, s1Indices = gather_umis_and_corresponding_indices_from_starcode(starcode1Path)
+    s2UMI, s2Indices = gather_umis_and_corresponding_indices_from_starcode(starcode2Path)
+
+    umiMatch1, umiMatch2, sharedIndices = sort_umi_pairs_by_number_of_matching_indices(s1UMI, s1Indices, s2UMI, s2Indices)
+    umiMatch1, umiMatch2, sharedIndices = remove_duplicate_umis_from_pairs(umiMatch1, umiMatch2, sharedIndices)
+
+    data = []
+    for i in range(len(sharedIndices)): data.append([umiMatch1[i] + umiMatch2[i], len(sharedIndices[i]), ','.join([str(x) for x in sorted(sharedIndices[i])])])
+    df = pd.DataFrame(data)
+    df.to_csv(output, sep='\t', index=False, header=False)
+
+def gather_umis_and_corresponding_indices_from_starcode(starcodePath):
+    s1 = pd.read_csv(starcodePath, sep='\t', header=None)
     s1UMI = s1.iloc[:,0]
     s1Indices = [set([int(y) for y in x.split(',')]) for x in list(s1.iloc[:,2])]
-    s2 = pd.read_csv(starcode2Path, sep='\t', header=None)
-    s2UMI = s2.iloc[:,0]
-    s2Indices = [set([int(y) for y in x.split(',')]) for x in list(s2.iloc[:,2])]
+    return s1UMI, s1Indices
 
+def sort_umi_pairs_by_number_of_matching_indices(s1UMI, s1Indices, s2UMI, s2Indices):
     umi1List = []
     umi2List = []
     indicesList = []
@@ -34,6 +46,9 @@ def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
 
     lengths = [len(i) for i in indicesList]
     lengths, indicesList, umi1List, umi2List = zip(*sorted(zip(lengths, indicesList, umi1List, umi2List), reverse=True))
+    return umi1List, umi2List, indicesList
+
+def remove_duplicate_umis_from_pairs(umi1List, umi2List, indicesList):
     umi1Set = set()
     umi2Set = set()
     remove = []
@@ -43,10 +58,8 @@ def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
         if umi1 in umi1Set or umi2 in umi2Set: remove.append(i)
         else: umi1Set.add(umi1); umi2Set.add(umi2)
     indicesList, umi1List, umi2List = [np.delete(np.array(x),(remove)) for x in [indicesList, umi1List, umi2List]]
-    data = []
-    for i in range(len(indicesList)): data.append([umi1List[i] + umi2List[i], len(indicesList[i]), ','.join([str(x) for x in sorted(indicesList[i])])])
-    df = pd.DataFrame(data)
-    df.to_csv(output, sep='\t', index=False, header=False)
+
+    return umi1List, umi2List, indicesList
 
 def find_consensus_seq_from_list(seqs, index, umiBinPath):
     records = (SeqRecord(Seq(seq.strip()), str(index)) for index,seq in enumerate(seqs))

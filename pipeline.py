@@ -35,7 +35,7 @@ def main():
     run_starcode(args['output']+ 'umi2.txt', args['output']+ 'starcode2.txt')
 
     print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras')
-    cm.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode1.txt', args['output']+ 'starcode_without_chimeras.txt')
+    cm.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
 
 
     print('\nConsensus Sequence Generation')
