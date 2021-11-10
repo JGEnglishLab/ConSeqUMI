@@ -2,11 +2,13 @@
 
 import sys
 import argparse
-from os import path, listdir, mkdir
+import os
 import umi_extractor as ue
 import consensus_maker as cm
 import subprocess
 from timeit import default_timer as timer
+import re
+from Bio import SeqIO
 
 
 def main():
@@ -20,7 +22,7 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' setting adapter objects')
     with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
     UMIExtractor.set_universal_front_and_reverse_linked_adapters(adapters[0], adapters[1], adapters[2], adapters[3])
-    files = [args['input']+file for file in listdir(args['input'])]
+    files = [args['input']+file for file in os.listdir(args['input'])]
     print('----> ' + str(round(timer()-startTime, 2)) + ' identifying adapter start indices')
     UMIExtractor.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
     print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
@@ -42,7 +44,49 @@ def main():
 
     print('\nConsensus Sequence Generation')
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
+    run_medaka(args['output'])
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
+
+
+def make_draft_file(binFilePath, draftFilePath):
+    top_record = None
+    for record in SeqIO.parse(binFilePath, "fastq"):
+        if not top_record: top_record = record; continue
+        if len(record.seq) > len(top_record.seq): top_record = record
+    records = [top_record]
+    with open(draftFilePath, "w") as output_handle:
+        SeqIO.write(records, output_handle, "fastq")
+
+def run_medaka(outputDir):
+    binFiles = [outputDir+x for x in os.listdir(outputDir) if 'bin' in x]
+    p = re.compile("seq_bin(\d+\.fq)")
+    for binFile in binFiles:
+        draftFile = binFile.split('.')[0]+'_draft.fq'
+        make_draft_file(binFile, draftFile)
+
+        print('*'*30)
+        print('*'*30)
+        print(binFile + ', ' + draftFile)
+        print('*'*30)
+        print('*'*30)
+
+        process = subprocess.Popen(['medaka_consensus',
+         '-i', binFile,
+         '-d', draftFile,
+         '-o', outputDir])
+        stdout, stderr = process.communicate()
+        os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + p.search(binFile).group(1))
+        os.remove(outputDir + 'calls_to_draft.bam')
+        os.remove(outputDir + 'calls_to_draft.bam.bai')
+        os.remove(outputDir + 'consensus_probs.hdf')
+
+    consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus\d+\.fq',x)]
+    records = []
+    for file in consensusFiles:
+        for record in SeqIO.parse(file, "fasta"): records.append(record)
+    with open(outputDir + 'consensus.fasta', "w") as output_handle:
+        SeqIO.write(records, output_handle, "fasta")
+
 
 
 def set_command_line_settings():
@@ -55,7 +99,7 @@ def set_command_line_settings():
 def check_for_invalid_input(parser, args):
 
     if not restricted_file(args['input']): parser.error('The -i or --input argument must be an existing directory')
-    files = listdir(args['input'])
+    files = os.listdir(args['input'])
     for file in files:
         if not restricted_file(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
     if not restricted_file(args['output']): os.mkdir(args['output'])
@@ -71,9 +115,9 @@ def check_for_invalid_input(parser, args):
 
 def restricted_file(x, permittedTypes=[]):
     if not len(permittedTypes):
-        if not path.isdir(x): return False
+        if not os.path.isdir(x): return False
         else: return True
-    if x.split('.')[-1].lower() not in permittedTypes and not path.isfile(x): return False
+    if x.split('.')[-1].lower() not in permittedTypes and not os.path.isfile(x): return False
     return True
 
 def run_starcode(input, output):
