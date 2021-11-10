@@ -63,13 +63,6 @@ def run_medaka(outputDir):
     for binFile in binFiles:
         draftFile = binFile.split('.')[0]+'_draft.fq'
         make_draft_file(binFile, draftFile)
-
-        print('*'*30)
-        print('*'*30)
-        print(binFile + ', ' + draftFile)
-        print('*'*30)
-        print('*'*30)
-
         process = subprocess.Popen(['medaka_consensus',
          '-i', binFile,
          '-d', draftFile,
