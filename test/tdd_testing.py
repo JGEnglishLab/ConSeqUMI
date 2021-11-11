@@ -277,9 +277,12 @@ class MyTest(unittest.TestCase):
                 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
                 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATA',
                 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTATTTTT']
-        expected = np.array([1,2,1,2])
-        result = cm.cluster_longread_consensus_sequences(seqs)
-        self.assertEqual(result.all(),expected.all())
+        expectedResults = np.array([1,2,1,2])
+        expectedGroups = np.array([[0,2],[1,3]])
+        groups = np.array([group for group in cm.cluster_longread_consensus_sequences(seqs)])
+        self.assertEqual(groups.all(),expectedGroups.all())
+
+
 
 def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')

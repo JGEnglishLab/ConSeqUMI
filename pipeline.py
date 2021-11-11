@@ -9,7 +9,7 @@ import subprocess
 from timeit import default_timer as timer
 import re
 from Bio import SeqIO
-
+import numpy as np
 
 def main():
 
@@ -44,9 +44,18 @@ def main():
 
     print('\nConsensus Sequence Generation')
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
-    binFiles = [args['output']+x for x in os.listdir(args['output']) if 'bin' in x]
+
+    binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
-    run_medaka(args['output'], binFiles, pattern)
+    records = run_medaka(args['output'], binFiles, pattern)
+    with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
+        SeqIO.write(records, output_handle, "fasta")
+    print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+    superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
+    superPattern = '(_super[_\d]+)'
+    finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
+    with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
+        SeqIO.write(finalRecords, output_handle, "fasta")
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
 
 
@@ -61,8 +70,6 @@ def make_draft_file(binFilePath, draftFilePath):
 
 def run_medaka(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
-    print("*"*30)
-    print(binPattern)
     binPattern = re.compile(binPattern)
     for binFile in binFiles:
         draftFile = binFile.split('.')[0]+'_draft.fq'
@@ -72,8 +79,6 @@ def run_medaka(outputDir, binFiles, pattern):
          '-d', draftFile,
          '-o', outputDir])
         stdout, stderr = process.communicate()
-        print("*"*30)
-        print(binFile)
         os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + binPattern.search(binFile).group(1) + '.fq')
         os.remove(outputDir + 'calls_to_draft.bam')
         os.remove(outputDir + 'calls_to_draft.bam.bai')
@@ -85,8 +90,30 @@ def run_medaka(outputDir, binFiles, pattern):
     records = []
     for file in consensusFiles:
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
-    with open(outputDir + 'consensus.fasta', "w") as output_handle:
-        SeqIO.write(records, output_handle, "fasta")
+    return records
+
+def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
+    binPattern = "seq_bin(\d+)\.fq"
+    binPattern = re.compile(binPattern)
+    idBinFileDict = {int(binPattern.search(binFile).group(1)):binFile for binFile in binFiles}
+    binConsDict = {}
+    for record in SeqIO.parse(consensusFile, "fasta"): binConsDict[int(record.id)] = record
+    seqs = [str(binConsDict[id].seq) for id in sorted(binConsDict)]
+    seqArray = np.array(seqs)
+    finalBinFiles = []
+    for group in cm.cluster_longread_consensus_sequences(seqs):
+        groupIndices = [i for i,x in enumerate(group) if x]
+        records = []
+        for i in groupIndices:
+            records.extend([record for record in SeqIO.parse(idBinFileDict[i], "fastq")])
+        superBinFile = outputDir + 'seq_bin_super_' + '_'.join([str(i) for i in groupIndices]) + '.fq'
+        with open(superBinFile, "w") as output_handle:
+            SeqIO.write(records, output_handle, "fastq")
+        finalBinFiles.append(superBinFile)
+    return finalBinFiles
+
+
+
 
 
 

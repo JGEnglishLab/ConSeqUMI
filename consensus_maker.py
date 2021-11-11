@@ -6,6 +6,7 @@ import numpy as np
 import subprocess
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster
+from Levenshtein import ratio, distance
 
 
 def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
@@ -79,12 +80,15 @@ def bin_sequences_by_umi_pair(seqPath, starcodePath):
             SeqIO.write(records, output_handle, "fastq")
     fq.close()
 
-def make_hamming_distance_matrix(seqs):
-    d = {'A':0, 'T':1, 'C':2, 'G':3}
-    array = [[d[c] for c in s] for s in seqs]
-    return pdist(np.array(array), 'hamming')
 
-def cluster_longread_consensus_sequences(seqs, threshold = 1/4):
-    dist_matrix = make_hamming_distance_matrix(seqs)
+def make_hamming_distance_matrix(seqs):
+    array = np.array(seqs).reshape(-1,1)
+    return pdist(np.array(array), lambda x,y: 1-ratio(x[0],y[0]))
+
+def cluster_longread_consensus_sequences(seqs, threshold = 1/20):
+    dist_matrix = make_hamming_distance_matrix(np.array(seqs))
     link_matrix = linkage(dist_matrix, method = 'centroid')
-    return fcluster(link_matrix, threshold, criterion='distance')
+    labels = fcluster(link_matrix, threshold, criterion='distance')
+    seqs = np.array(seqs)
+    for cluster_id in np.unique(labels):
+        yield labels==cluster_id
