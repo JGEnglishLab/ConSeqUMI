@@ -48,16 +48,18 @@ def main():
     binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
     records = run_medaka(args['output'], binFiles, pattern)
+    print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
     with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
         SeqIO.write(records, output_handle, "fasta")
-    print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
-    superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
-    superPattern = '(_super[_\d]+)'
-    finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
-    with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
-        SeqIO.write(finalRecords, output_handle, "fasta")
-    print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
 
+    if args['variants']:
+        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+        superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
+        superPattern = '(_super[_\d]+)'
+        finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
+        with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
+            SeqIO.write(finalRecords, output_handle, "fasta")
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
 
 def make_draft_file(binFilePath, draftFilePath):
     top_record = None
@@ -122,6 +124,7 @@ def set_command_line_settings():
     parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder only containing input Nanopore read fastq files.')
     parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
     parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
+    parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
     return parser
 
 def check_for_invalid_input(parser, args):
