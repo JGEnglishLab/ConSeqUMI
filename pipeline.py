@@ -48,6 +48,9 @@ def main():
     binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
     records = run_medaka(args['output'], binFiles, pattern)
+    print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
+    '''
+    # Code for variant generation. Currently on the backburner, but code may be added back if the project calls for it.
     with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
         SeqIO.write(records, output_handle, "fasta")
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
@@ -57,7 +60,7 @@ def main():
     with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
         SeqIO.write(finalRecords, output_handle, "fasta")
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
-
+    '''
 
 def make_draft_file(binFilePath, draftFilePath):
     top_record = None
