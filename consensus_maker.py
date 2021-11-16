@@ -1,13 +1,13 @@
 from Bio.Align import MultipleSeqAlignment, AlignInfo
 from Bio.SeqRecord import SeqRecord
-from Bio.Seq import Seq
 from Bio import SeqIO
 import pandas as pd
 import numpy as np
-from collections import Counter
-import unittest
-from Bio import AlignIO
 import subprocess
+from scipy.spatial.distance import pdist
+from scipy.cluster.hierarchy import linkage, fcluster
+from Levenshtein import ratio, distance
+
 
 def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
 
@@ -79,3 +79,16 @@ def bin_sequences_by_umi_pair(seqPath, starcodePath):
         with open(outputPath, "w") as output_handle:
             SeqIO.write(records, output_handle, "fastq")
     fq.close()
+
+
+def make_hamming_distance_matrix(seqs):
+    array = np.array(seqs).reshape(-1,1)
+    return pdist(np.array(array), lambda x,y: 1-ratio(x[0],y[0]))
+
+def cluster_longread_consensus_sequences(seqs, threshold = 1/20):
+    dist_matrix = make_hamming_distance_matrix(np.array(seqs))
+    link_matrix = linkage(dist_matrix, method = 'centroid')
+    labels = fcluster(link_matrix, threshold, criterion='distance')
+    seqs = np.array(seqs)
+    for cluster_id in np.unique(labels):
+        yield labels==cluster_id

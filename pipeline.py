@@ -9,7 +9,7 @@ import subprocess
 from timeit import default_timer as timer
 import re
 from Bio import SeqIO
-
+import numpy as np
 
 def main():
 
@@ -44,9 +44,22 @@ def main():
 
     print('\nConsensus Sequence Generation')
     print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
-    run_medaka(args['output'])
-    print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
 
+    binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
+    pattern = '(\d+)'
+    records = run_medaka(args['output'], binFiles, pattern)
+    print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
+    with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
+        SeqIO.write(records, output_handle, "fasta")
+
+    if args['variants']:
+        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+        superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
+        superPattern = '(_super[_\d]+)'
+        finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
+        with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
+            SeqIO.write(finalRecords, output_handle, "fasta")
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
 
 def make_draft_file(binFilePath, draftFilePath):
     top_record = None
@@ -57,9 +70,9 @@ def make_draft_file(binFilePath, draftFilePath):
     with open(draftFilePath, "w") as output_handle:
         SeqIO.write(records, output_handle, "fastq")
 
-def run_medaka(outputDir):
-    binFiles = [outputDir+x for x in os.listdir(outputDir) if 'bin' in x]
-    p = re.compile("seq_bin(\d+\.fq)")
+def run_medaka(outputDir, binFiles, pattern):
+    binPattern = "seq_bin" + pattern + "\.fq"
+    binPattern = re.compile(binPattern)
     for binFile in binFiles:
         draftFile = binFile.split('.')[0]+'_draft.fq'
         make_draft_file(binFile, draftFile)
@@ -68,35 +81,60 @@ def run_medaka(outputDir):
          '-d', draftFile,
          '-o', outputDir])
         stdout, stderr = process.communicate()
-        os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + p.search(binFile).group(1))
+        os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + binPattern.search(binFile).group(1) + '.fq')
         os.remove(outputDir + 'calls_to_draft.bam')
         os.remove(outputDir + 'calls_to_draft.bam.bai')
         os.remove(outputDir + 'consensus_probs.hdf')
 
-    consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus\d+\.fq',x)]
+    consPattern = re.compile("consensus" + pattern + "\.fq")
+
+    consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus' + pattern + '.fq',x)]
     records = []
     for file in consensusFiles:
-        for record in SeqIO.parse(file, "fasta"): records.append(record)
-    with open(outputDir + 'consensus.fasta', "w") as output_handle:
-        SeqIO.write(records, output_handle, "fasta")
+        for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
+    return records
+
+def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
+    binPattern = "seq_bin(\d+)\.fq"
+    binPattern = re.compile(binPattern)
+    idBinFileDict = {int(binPattern.search(binFile).group(1)):binFile for binFile in binFiles}
+    binConsDict = {}
+    for record in SeqIO.parse(consensusFile, "fasta"): binConsDict[int(record.id)] = record
+    seqs = [str(binConsDict[id].seq) for id in sorted(binConsDict)]
+    seqArray = np.array(seqs)
+    finalBinFiles = []
+    for group in cm.cluster_longread_consensus_sequences(seqs):
+        groupIndices = [i for i,x in enumerate(group) if x]
+        records = []
+        for i in groupIndices:
+            records.extend([record for record in SeqIO.parse(idBinFileDict[i], "fastq")])
+        superBinFile = outputDir + 'seq_bin_super_' + '_'.join([str(i) for i in groupIndices]) + '.fq'
+        with open(superBinFile, "w") as output_handle:
+            SeqIO.write(records, output_handle, "fastq")
+        finalBinFiles.append(superBinFile)
+    return finalBinFiles
+
+
+
 
 
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description='Identifying Consensus Sequences from UMI-binnable nanopore reads.')
     parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder only containing input Nanopore read fastq files.')
-    parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output.')
+    parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
     parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
+    parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
     return parser
 
 def check_for_invalid_input(parser, args):
 
-    if not restricted_file(args['input']): parser.error('The -i or --input argument must be an existing directory')
+    if not restricted_file_or_directory(args['input']): parser.error('The -i or --input argument must be an existing directory')
     files = os.listdir(args['input'])
     for file in files:
-        if not restricted_file(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
-    if not restricted_file(args['output']): os.mkdir(args['output'])
-    if not restricted_file(args['adapters'], permittedTypes=['txt']): parser.error('The -a or --adapters argument must be an existing file of type text (.txt) format')
+        if not restricted_file_or_directory(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
+    if restricted_file_or_directory(args['output']): parser.error('The -o or --output argument must indicate a directory that does not exist yet')
+    if not restricted_file_or_directory(args['adapters'], permittedTypes=['txt']): parser.error('The -a or --adapters argument must be an existing file of type text (.txt) format')
     with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
     if len(adapters) != 4: parser.error('The -a or --adapters argument file must contain 4 adapters.')
     nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
@@ -104,9 +142,14 @@ def check_for_invalid_input(parser, args):
 
     if args['input'][-1] != '/': args['input'] += '/'
     if args['output'][-1] != '/': args['output'] += '/'
+    newOutput = args['output'] + 'delete/'
+    args['oldOutput'] = args['output']
+    args['output'] = newOutput
+    os.mkdir(args['oldOutput'])
+    os.mkdir(args['output'])
 
 
-def restricted_file(x, permittedTypes=[]):
+def restricted_file_or_directory(x, permittedTypes=[]):
     if not len(permittedTypes):
         if not os.path.isdir(x): return False
         else: return True

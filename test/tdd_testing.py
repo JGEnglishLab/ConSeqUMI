@@ -266,6 +266,24 @@ class MyTest(unittest.TestCase):
         self.assertTrue(filecmp.cmp('test/tdd/output/seq_bin1.fq', 'test/tdd/output/tdd_example_seq_expected_bin1.fq', shallow=False))
         filecmp.clear_cache()
 
+    def test_cm_hamming_distance_matrix(self):
+        seqs = ['ATCG','AACG','TCGC', 'TTCC']
+        distanceMatrix1 = np.array([0.25, 1, 0.5, 1, 0.25, 0.5]) #0,1; 0,2; 0,3; 1,2; 1,3; 2,3
+        distanceMatrix2 = cm.make_hamming_distance_matrix(seqs)
+        self.assertEqual(distanceMatrix2.all(), distanceMatrix1.all())
+
+    def test_cm_cluster_longread_consensus_sequences(self):
+        seqs = ['AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATA',
+                'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTATTTTT']
+        expectedResults = np.array([1,2,1,2])
+        expectedGroups = np.array([[0,2],[1,3]])
+        groups = np.array([group for group in cm.cluster_longread_consensus_sequences(seqs)])
+        self.assertEqual(groups.all(),expectedGroups.all())
+
+
+
 def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
     for i in range(len(str1)-1,-1,-1):
