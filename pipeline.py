@@ -48,6 +48,7 @@ def main():
     binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
     records = run_medaka(args['output'], binFiles, pattern)
+<<<<<<< HEAD
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
     with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
         SeqIO.write(records, output_handle, "fasta")
@@ -60,6 +61,21 @@ def main():
         with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
             SeqIO.write(finalRecords, output_handle, "fasta")
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
+=======
+    print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
+    '''
+    # Code for variant generation. Currently on the backburner, but code may be added back if the project calls for it.
+    with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
+        SeqIO.write(records, output_handle, "fasta")
+    print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+    superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
+    superPattern = '(_super[_\d]+)'
+    finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
+    with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
+        SeqIO.write(finalRecords, output_handle, "fasta")
+    print('----> ' + str(round(timer()-startTime, 2)) + ' writing output')
+    '''
+>>>>>>> 2f94b584da980210a1ac2d4bd87c897820b67422
 
 def make_draft_file(binFilePath, draftFilePath):
     top_record = None
