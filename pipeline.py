@@ -130,7 +130,7 @@ def benchmark_binned_sequences(outDir, binPath):
     if len(records) < 100: clusterSizes = len(records)-1
     else: clusterSizes = 100
     if clusterSizes < 2: print("not enough sequences in highest cluster"); return pd.DataFrame()
-    for i in range(1,clusterSizes):#,101):
+    for i in range(1,clusterSizes):
         levenshteinDistances = []
         for j in range(10):
             tempRecords = random.choices(records, k=i)

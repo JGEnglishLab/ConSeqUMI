@@ -5,9 +5,9 @@ import pandas as pd
 import numpy as np
 import subprocess
 from scipy.spatial.distance import pdist
-from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Levenshtein import ratio, distance
-
+import matplotlib.pyplot as plt
 
 def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
 
@@ -85,10 +85,16 @@ def make_hamming_distance_matrix(seqs):
     array = np.array(seqs).reshape(-1,1)
     return pdist(np.array(array), lambda x,y: 1-ratio(x[0],y[0]))
 
-def cluster_longread_consensus_sequences(seqs, threshold = 1/20):
+def cluster_longread_consensus_sequences(seqs, threshold = 1/20, dendrogramFile=None):
     dist_matrix = make_hamming_distance_matrix(np.array(seqs))
+    print(dist_matrix)
     link_matrix = linkage(dist_matrix, method = 'centroid')
+    print(link_matrix)
     labels = fcluster(link_matrix, threshold, criterion='distance')
+    if dendrogramFile:
+        plt.figure()
+        dn = dendrogram(link_matrix)
+        plt.savefig(dendrogramFile)
     seqs = np.array(seqs)
     for cluster_id in np.unique(labels):
         yield labels==cluster_id
