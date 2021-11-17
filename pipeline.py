@@ -10,6 +10,9 @@ from timeit import default_timer as timer
 import re
 from Bio import SeqIO
 import numpy as np
+import random
+from Levenshtein import distance
+import pandas as pd
 
 def main():
 
@@ -28,7 +31,7 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
     print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
-
+    #'''
     print('\nStarcode Binning')
     print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
     run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
@@ -47,19 +50,25 @@ def main():
 
     binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
-    records = run_medaka(args['output'], binFiles, pattern)
+    records = run_medaka_on_pattern(args['output'], binFiles, pattern)
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
     with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
         SeqIO.write(records, output_handle, "fasta")
-
+    #'''
     if args['variants']:
         print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
         superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
         superPattern = '(_super[_\d]+)'
-        finalRecords = run_medaka(args['output'], superBinFiles, superPattern)
+        finalRecords = run_medaka_on_pattern(args['output'], superBinFiles, superPattern)
         with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
             SeqIO.write(finalRecords, output_handle, "fasta")
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
+
+    if args['benchmarkClusters']:
+        print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
+        df = benchmark_binned_sequences(args['output'], args['output'] + 'seq_bin0.fq')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
+        df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
 
 def make_draft_file(binFilePath, draftFilePath):
     top_record = None
@@ -70,7 +79,7 @@ def make_draft_file(binFilePath, draftFilePath):
     with open(draftFilePath, "w") as output_handle:
         SeqIO.write(records, output_handle, "fastq")
 
-def run_medaka(outputDir, binFiles, pattern):
+def run_medaka_on_pattern(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
     for binFile in binFiles:
@@ -81,18 +90,61 @@ def run_medaka(outputDir, binFiles, pattern):
          '-d', draftFile,
          '-o', outputDir])
         stdout, stderr = process.communicate()
-        os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + binPattern.search(binFile).group(1) + '.fq')
+        os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + binPattern.search(binFile).group(1) + '.fasta')
         os.remove(outputDir + 'calls_to_draft.bam')
         os.remove(outputDir + 'calls_to_draft.bam.bai')
         os.remove(outputDir + 'consensus_probs.hdf')
 
-    consPattern = re.compile("consensus" + pattern + "\.fq")
+    consPattern = re.compile("consensus" + pattern + "\.fasta")
 
-    consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus' + pattern + '.fq',x)]
+    consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus' + pattern + '.fasta',x)]
     records = []
     for file in consensusFiles:
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
+
+def run_medaka_on_file(outputDir, binFile):
+    draftFile = binFile.split('.')[0]+'_draft.fq'
+    make_draft_file(binFile, draftFile)
+    process = subprocess.Popen(['medaka_consensus',
+     '-i', binFile,
+     '-d', draftFile,
+     '-o', outputDir])
+    stdout, stderr = process.communicate()
+    os.remove(outputDir + 'calls_to_draft.bam')
+    os.remove(outputDir + 'calls_to_draft.bam.bai')
+    os.remove(outputDir + 'consensus_probs.hdf')
+    records = []
+    for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta"):
+        records.append(record)
+    consensusSequence = str(records[0].seq)
+    os.remove(outputDir + 'consensus.fasta')
+    return consensusSequence
+
+def benchmark_binned_sequences(outDir, binPath):
+
+    records = [record for record in SeqIO.parse(binPath, "fastq")]
+    tempBinPath = outDir + 'temp_bin.fq'
+    referenceSequence = run_medaka_on_file(outDir, binPath)
+    data = []
+    if len(records) < 100: clusterSizes = len(records)-1
+    else: clusterSizes = 100
+    if clusterSizes < 2: print("not enough sequences in highest cluster"); return pd.DataFrame()
+    for i in range(1,clusterSizes):#,101):
+        levenshteinDistances = []
+        for j in range(10):
+            tempRecords = random.choices(records, k=i)
+            if i == 1: tempSequence = str(tempRecords[0].seq)
+            else:
+                with open(tempBinPath, "w") as output_handle:
+                    SeqIO.write(tempRecords, output_handle, "fastq")
+                tempSequence = run_medaka_on_file(outDir, tempBinPath)
+            levenshteinDistances.append(distance(referenceSequence, tempSequence))
+        data.append([i,sum(levenshteinDistances)/len(levenshteinDistances)])
+    return pd.DataFrame(data, columns = ['Cluster Size', 'Average Levenshtein Distance'])
+
+
+
 
 def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
     binPattern = "seq_bin(\d+)\.fq"
@@ -125,6 +177,7 @@ def set_command_line_settings():
     parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
     parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
     parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
+    parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
     return parser
 
 def check_for_invalid_input(parser, args):
