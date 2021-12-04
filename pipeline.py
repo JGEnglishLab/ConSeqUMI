@@ -31,7 +31,7 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
     print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
-    #'''
+    '''
     print('\nStarcode Binning')
     print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
     run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
@@ -66,7 +66,7 @@ def main():
 
     if args['benchmarkClusters']:
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
-        df = benchmark_binned_sequences(args['output'], args['output'] + 'seq_bin0.fq')
+        df, df2 = benchmark_binned_sequences(args['output'], args['output'] + 'seq_bin0.fq')
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
 
@@ -114,6 +114,8 @@ def run_medaka_on_file(outputDir, binFile):
     os.remove(outputDir + 'calls_to_draft.bam')
     os.remove(outputDir + 'calls_to_draft.bam.bai')
     os.remove(outputDir + 'consensus_probs.hdf')
+    os.remove(draftFile)
+    os.remove(draftFile + '.mmi')
     records = []
     for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta"):
         records.append(record)
@@ -121,27 +123,39 @@ def run_medaka_on_file(outputDir, binFile):
     os.remove(outputDir + 'consensus.fasta')
     return consensusSequence
 
-def benchmark_binned_sequences(outDir, binPath):
+def benchmark_binned_sequences(outDir, binPath, iteration = 100):
 
     records = [record for record in SeqIO.parse(binPath, "fastq")]
     tempBinPath = outDir + 'temp_bin.fq'
     referenceSequence = run_medaka_on_file(outDir, binPath)
+    #referenceSequence = 'CAGCATAGTACATTTCATCTGACTAATACCACAACACCACCAGCGGCCGCATGGTGAGCAAGGGCGAGGAGCTGTTCACCGGGGTGGTGCCCATCCTGGTCGAGCTGGACGGCGACGTAAACGGCCACAAGTTCAGCGTGTCCGGCGAGGGCGAGGGCGATGCCACCTACGGCAAGCTGACCCTGAAGTTCATTTGCACCACCGGCAAGCTGCCCGTGCCCTGGCCCACCCTCGTGACCACCCTGACCTACGGCGTGCAGTGCTTCAGCCGCTACCCCGACCACATGAAGCAGCACGACTTCTTCAAGTCCGCCATGCCCGAAGGCTACGTCCAGGAGCGCACCATCTTCTTCAAGGACGACGGCAACTACAAGACCCGCGCCGAGGTGAAGTTCGAGGGCGACACCCTGGTGAACCGCATCGAGCTGAAGGGCATCGACTTCAAGGAGGACGGCAACATCCTGGGGCACAAGCTGGAGTACAACTACAACCGCCACAACGTCTATATCATGGCCGACAAGCAGAAGAACGGCATCAAGGTGAACTTCAAGATCCGCCACAACATCGAGGACGGCAGCGTGCAGCTCGCCGACCACTACCAGCAGAACACCCCCCATCGGCGACGGCCCCGTGCTGCTGCCCGACAACCACTACCTGAGCACCCAGTCCGCCCTGAGCAAAGACCCCAACGAGAAGCGCGATCACATGGTCCTGCTGGAGTTCGTGACCGCCGCCGGGATCACTCTCGGCATGGACGAGCTGTACAAGTAAGAATTCGATATCAAGCTTATCGATAGTACGCCCCAATGACCCGACCAGCAAAACTCGATGTACTTCCGAGGAACTGATGTGCATAATGCATCAGGCTGGTATATTAGATCCCCGCTTACCGCGGGCAATATAGCAACACCCAAAACTCGACGTATTTCCGAGGAGGCGCAGTGCATAATGCTGCGCAGTGTTGCCAAATAATCACTATATTAACCATTTATTCAGCGGACGCCAAAACTCAATGTATTTCTGAGGAAGCATGGTGCATAATGCCATGCAGCGTCTGCATAACTTTTTATTATTTCTTTTATTAATCAACAAAATTTTGTTTTTAACATTT'
     data = []
-    if len(records) < 100: clusterSizes = len(records)-1
-    else: clusterSizes = 100
-    if clusterSizes < 2: print("not enough sequences in highest cluster"); return pd.DataFrame()
-    for i in range(1,clusterSizes):
+    sequenceData = []
+    clusterSizes = [1]
+    for i in range(1, len(records)//iteration+1): clusterSizes.append(i*iteration)
+    if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
+    #clusterSizes = clusterSizes[len(clusterSizes)-2:]
+    #print('*'*20)
+    #print(clusterSizes)
+    #print('*'*20)
+    for i in clusterSizes:
         levenshteinDistances = []
+        sequences = []
         for j in range(10):
-            tempRecords = random.choices(records, k=i)
+            tempRecords = random.sample(records, k=i)
+            #tempRecords = records.copy()
             if i == 1: tempSequence = str(tempRecords[0].seq)
             else:
                 with open(tempBinPath, "w") as output_handle:
                     SeqIO.write(tempRecords, output_handle, "fastq")
                 tempSequence = run_medaka_on_file(outDir, tempBinPath)
             levenshteinDistances.append(distance(referenceSequence, tempSequence))
-        data.append([i,sum(levenshteinDistances)/len(levenshteinDistances)])
-    return pd.DataFrame(data, columns = ['Cluster Size', 'Average Levenshtein Distance'])
+            sequences.append(tempSequence)
+
+        data.append([i] + levenshteinDistances)
+        sequenceData.append([i] + sequences)
+        #data.append([i,sum(levenshteinDistances)/len(levenshteinDistances)])
+    return pd.DataFrame(data), pd.DataFrame(sequenceData)
 
 
 
