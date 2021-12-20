@@ -130,11 +130,11 @@ class UMIExtractor():
                 center = umi_center[2]
                 umiFile1.write(umi1 + '\n')
                 umiFile2.write(umi2 + '\n')
-
                 centers.append(center)
                 umi1Records.append(SeqRecord(Seq(umi1),id=str(idCount)+'_1'))
                 umi2Records.append(SeqRecord(Seq(umi2),id=str(idCount)+'_2'))
                 umiPairRecords.append(SeqRecord(Seq(umi1 + umi2),id=str(idCount)+'_both'))
+                idCount += 1
 
         with open(outputDir + "/seq.fq", "w") as centerFile:
                 SeqIO.write(centers, centerFile, "fastq")
