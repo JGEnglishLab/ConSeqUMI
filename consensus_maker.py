@@ -9,10 +9,10 @@ from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Levenshtein import ratio, distance
 import matplotlib.pyplot as plt
 
-def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
+def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output, tdd = False):
 
-    s1UMI, s1Indices = gather_umis_and_corresponding_indices_from_starcode(starcode1Path)
-    s2UMI, s2Indices = gather_umis_and_corresponding_indices_from_starcode(starcode2Path)
+    s1UMI, s1Indices = gather_umis_and_corresponding_indices_from_starcode(starcode1Path, tdd = tdd)
+    s2UMI, s2Indices = gather_umis_and_corresponding_indices_from_starcode(starcode2Path, tdd = tdd)
 
     umiMatch1, umiMatch2, sharedIndices = sort_umi_pairs_by_number_of_matching_indices(s1UMI, s1Indices, s2UMI, s2Indices)
     umiMatch1, umiMatch2, sharedIndices = remove_duplicate_umis_from_pairs(umiMatch1, umiMatch2, sharedIndices)
@@ -22,19 +22,18 @@ def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
     df = pd.DataFrame(data)
     df.to_csv(output, sep='\t', index=False, header=False)
 
-def gather_umis_and_corresponding_indices_from_starcode(starcodePath):
+def gather_umis_and_corresponding_indices_from_starcode(starcodePath, tdd = False):
     s1 = pd.read_csv(starcodePath, sep='\t', header=None)
     if isinstance(list(s1.iloc[:,2])[0],int): raise Exception('Fewer that 5 UMI clusters found with more than a single sequence')
     s1UMI = s1.iloc[:,0]
     s1Indices = [set([int(y) for y in x.split(',')]) for x in list(s1.iloc[:,2])]
-
     remove = []
     for i in range(len(s1Indices)):
      if len(s1Indices) < 10: remove.append(i)
 
-    s1UMI, s1Indices = [np.delete(np.array(x),(remove)) for x in [s1UMI, s1Indices]]
-
-    if len(s1Indices) < 5: raise Exception('Fewer that 5 UMI clusters found with more than a single sequence')
+    if not tdd:
+        s1UMI, s1Indices = [np.delete(np.array(x),(remove)) for x in [s1UMI, s1Indices]]
+        if len(s1Indices) < 5: raise Exception('Fewer that 5 UMI clusters found with more than a single sequence')
 
     return s1UMI, s1Indices
 
@@ -97,9 +96,7 @@ def make_hamming_distance_matrix(seqs):
 
 def cluster_longread_consensus_sequences(seqs, threshold = 1/20, dendrogramFile=None):
     dist_matrix = make_hamming_distance_matrix(np.array(seqs))
-    print(dist_matrix)
     link_matrix = linkage(dist_matrix, method = 'centroid')
-    print(link_matrix)
     labels = fcluster(link_matrix, threshold, criterion='distance')
     if dendrogramFile:
         plt.figure()

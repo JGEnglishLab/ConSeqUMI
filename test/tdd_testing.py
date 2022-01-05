@@ -254,7 +254,7 @@ class MyTest(unittest.TestCase):
         starcode2Path = 'test/tdd/output/tdd_example_starcode2_default_expected_w_chimera.txt'
         output = 'test/tdd/output/starcode_without_chimera.txt'
 
-        cm.remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output)
+        cm.remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output, tdd = True)
         self.assertTrue(filecmp.cmp('test/tdd/output/starcode_without_chimera.txt', 'test/tdd/output/tdd_example_starcode_default_expected_without_chimera.txt', shallow=False))
         filecmp.clear_cache()
 
