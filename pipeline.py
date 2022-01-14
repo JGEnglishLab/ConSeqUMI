@@ -13,6 +13,9 @@ import numpy as np
 import random
 from Levenshtein import distance
 import pandas as pd
+from collections import defaultdict
+from os.path import exists
+
 
 def main():
 
@@ -103,24 +106,66 @@ def run_medaka_on_pattern(outputDir, binFiles, pattern):
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
 
+def make_draft_file_binned_sequences(binFile, draftFilePath):
+    top_record = None
+    for record in SeqIO.parse(binFilePath, "fastq"):
+        if not top_record: top_record = record; continue
+        if len(record.seq) > len(top_record.seq): top_record = record
+    records = [top_record]
+    with open(draftFilePath, "w") as output_handle:
+        SeqIO.write(records, output_handle, "fastq")
+
+def find_records_with_most_common_length(records):
+    if len(records) == 0: return []
+    finalRecords = []
+    tempRecords = []
+    for i in range(len(records)):
+        if len(records[i]) != len(tempRecords[0]) and len(tempRecords) != 0:
+            if len(tempRecords) > len(finalRecords): finalRecords = tempRecords.copy()
+            else: tempRecords = [records[i]]
+        else: tempRecords.append(records[i])
+    if len(finalRecords) == 0: finalRecords = tempRecords.copy()
+    return finalRecords
+
+
 def run_medaka_on_file(outputDir, binFile):
+    records = [record for record in SeqIO.parse(binFile, "fastq")]
+    #records.sort(key=len)
+    #tenPercent = len(records)//10
+    #records = records[tenPercent:-tenPercent]
+    #random.shuffle(records)
+    ##mostFrequentRecords = find_records_with_most_frequent_length(records)
     draftFile = binFile.split('.')[0]+'_draft.fq'
-    make_draft_file(binFile, draftFile)
-    process = subprocess.Popen(['medaka_consensus',
-     '-i', binFile,
-     '-d', draftFile,
-     '-o', outputDir])
-    stdout, stderr = process.communicate()
-    os.remove(outputDir + 'calls_to_draft.bam')
-    os.remove(outputDir + 'calls_to_draft.bam.bai')
-    os.remove(outputDir + 'consensus_probs.hdf')
-    os.remove(draftFile)
-    os.remove(draftFile + '.mmi')
-    records = []
-    for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta"):
-        records.append(record)
-    consensusSequence = str(records[0].seq)
-    os.remove(outputDir + 'consensus.fasta')
+    consSequence_count = defaultdict(int)
+    returnSequence = 'XXXXX'
+    for i in range(len(records)):
+
+        with open(draftFile, "w") as output_handle: SeqIO.write([records[i]], output_handle, "fastq")
+        print('*'*20)
+        print(i)
+        print(records[i].seq)
+        print('*'*20)
+
+        process = subprocess.Popen(['medaka_consensus',
+         '-i', binFile,
+         '-d', draftFile,
+         '-o', outputDir])
+        stdout, stderr = process.communicate()
+        print(draftFile)
+        print(binFile)
+        consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+        consensusSequence = str(consensusRecords[0].seq)
+        os.remove(outputDir + 'calls_to_draft.bam')
+        os.remove(outputDir + 'calls_to_draft.bam.bai')
+        os.remove(outputDir + 'consensus_probs.hdf')
+        os.remove(draftFile)
+        os.remove(draftFile + '.mmi')
+
+
+        os.remove(outputDir + 'consensus.fasta')
+        consSequence_count[consensusSequence] += 1
+        if consSequence_count[consensusSequence] >= 3: break
+
     return consensusSequence
 
 def benchmark_binned_sequences(outDir, binPath, iteration = 100):
@@ -128,11 +173,14 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
     records = [record for record in SeqIO.parse(binPath, "fastq")]
     tempBinPath = outDir + 'temp_bin.fq'
     referenceSequence = run_medaka_on_file(outDir, binPath)
+    if referenceSequence == 'XXXXX': return referenceSequence
     data = []
     sequenceData = []
     clusterSizes = [1]
     for i in range(1, len(records)//iteration+1): clusterSizes.append(i*iteration)
     if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
+    #clusterSizes = [25,30,35,40,45,50]
+    #clusterSizes = [i for i in range(10,31)]
     #clusterSizes = clusterSizes[len(clusterSizes)-2:]
     #print('*'*20)
     #print(clusterSizes)
@@ -143,6 +191,8 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
         for j in range(10):
             tempRecords = random.sample(records, k=i)
             #tempRecords = records.copy()
+            for x in tempRecords:
+                print(x.seq)
             if i == 1: tempSequence = str(tempRecords[0].seq)
             else:
                 with open(tempBinPath, "w") as output_handle:
