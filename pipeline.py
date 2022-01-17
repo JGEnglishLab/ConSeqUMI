@@ -48,30 +48,32 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' bin sequences by UMI pair')
     cm.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
 
-    print('\nConsensus Sequence Generation')
-    print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
-
-    binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
-    pattern = '(\d+)'
-    records = medaka_pipeline(args['output'], binFiles, pattern)
-    print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
-    with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
-        SeqIO.write(records, output_handle, "fasta")
-    #'''
-    if args['variants']:
-        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
-        superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
-        superPattern = '(_super[_\d]+)'
-        finalRecords = medaka_pipeline(args['output'], superBinFiles, superPattern)
-        with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
-            SeqIO.write(finalRecords, output_handle, "fasta")
-        print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
-
     if args['benchmarkClusters']:
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
         df, df2 = benchmark_binned_sequences(args['output'], args['output'] + 'seq_bin0.fq')
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
+    else:
+
+        print('\nConsensus Sequence Generation')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
+
+        binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
+        pattern = '(\d+)'
+        records = medaka_pipeline(args['output'], binFiles, pattern)
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
+        with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
+            SeqIO.write(records, output_handle, "fasta")
+        #'''
+        if args['variants']:
+            print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+            superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
+            superPattern = '(_super[_\d]+)'
+            finalRecords = medaka_pipeline(args['output'], superBinFiles, superPattern)
+            with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
+                SeqIO.write(finalRecords, output_handle, "fasta")
+            print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
+
 
 def medaka_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
