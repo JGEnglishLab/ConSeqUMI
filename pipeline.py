@@ -53,7 +53,7 @@ def main():
 
     binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
     pattern = '(\d+)'
-    records = run_medaka_on_pattern(args['output'], binFiles, pattern)
+    records = medaka_pipeline(args['output'], binFiles, pattern)
     print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
     with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
         SeqIO.write(records, output_handle, "fasta")
@@ -62,7 +62,7 @@ def main():
         print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
         superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
         superPattern = '(_super[_\d]+)'
-        finalRecords = run_medaka_on_pattern(args['output'], superBinFiles, superPattern)
+        finalRecords = medaka_pipeline(args['output'], superBinFiles, superPattern)
         with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
             SeqIO.write(finalRecords, output_handle, "fasta")
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
@@ -73,30 +73,12 @@ def main():
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
 
-def make_draft_file(binFilePath, draftFilePath):
-    top_record = None
-    for record in SeqIO.parse(binFilePath, "fastq"):
-        if not top_record: top_record = record; continue
-        if len(record.seq) > len(top_record.seq): top_record = record
-    records = [top_record]
-    with open(draftFilePath, "w") as output_handle:
-        SeqIO.write(records, output_handle, "fastq")
-
-def run_medaka_on_pattern(outputDir, binFiles, pattern):
+def medaka_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
     for binFile in binFiles:
-        draftFile = binFile.split('.')[0]+'_draft.fq'
-        make_draft_file(binFile, draftFile)
-        process = subprocess.Popen(['medaka_consensus',
-         '-i', binFile,
-         '-d', draftFile,
-         '-o', outputDir])
-        stdout, stderr = process.communicate()
+        run_medaka_on_file(outputDir, binFile)
         os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + binPattern.search(binFile).group(1) + '.fasta')
-        os.remove(outputDir + 'calls_to_draft.bam')
-        os.remove(outputDir + 'calls_to_draft.bam.bai')
-        os.remove(outputDir + 'consensus_probs.hdf')
 
     consPattern = re.compile("consensus" + pattern + "\.fasta")
 
@@ -105,15 +87,6 @@ def run_medaka_on_pattern(outputDir, binFiles, pattern):
     for file in consensusFiles:
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
-
-def make_draft_file_binned_sequences(binFile, draftFilePath):
-    top_record = None
-    for record in SeqIO.parse(binFilePath, "fastq"):
-        if not top_record: top_record = record; continue
-        if len(record.seq) > len(top_record.seq): top_record = record
-    records = [top_record]
-    with open(draftFilePath, "w") as output_handle:
-        SeqIO.write(records, output_handle, "fastq")
 
 def find_records_with_most_common_length(records):
     if len(records) == 0: return []
@@ -127,8 +100,7 @@ def find_records_with_most_common_length(records):
     if len(finalRecords) == 0: finalRecords = tempRecords.copy()
     return finalRecords
 
-
-def run_medaka_on_file(outputDir, binFile):
+def run_medaka_on_file(outputDir, binFile, bc = False):
     records = [record for record in SeqIO.parse(binFile, "fastq")]
     #records.sort(key=len)
     #tenPercent = len(records)//10
@@ -153,7 +125,8 @@ def run_medaka_on_file(outputDir, binFile):
         stdout, stderr = process.communicate()
         print(draftFile)
         print(binFile)
-        consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+        if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+        else: print('\n' * 100); continue
         consensusSequence = str(consensusRecords[0].seq)
         os.remove(outputDir + 'calls_to_draft.bam')
         os.remove(outputDir + 'calls_to_draft.bam.bai')
@@ -162,48 +135,39 @@ def run_medaka_on_file(outputDir, binFile):
         os.remove(draftFile + '.mmi')
 
 
-        os.remove(outputDir + 'consensus.fasta')
+        if bc: os.remove(outputDir + 'consensus.fasta')
         consSequence_count[consensusSequence] += 1
         if consSequence_count[consensusSequence] >= 3: break
 
     return consensusSequence
 
 def benchmark_binned_sequences(outDir, binPath, iteration = 100):
-
     records = [record for record in SeqIO.parse(binPath, "fastq")]
     tempBinPath = outDir + 'temp_bin.fq'
-    referenceSequence = run_medaka_on_file(outDir, binPath)
+    referenceSequence = run_medaka_on_file(outDir, binPath, bc = True)
     if referenceSequence == 'XXXXX': return referenceSequence
     data = []
     sequenceData = []
     clusterSizes = [1]
     for i in range(1, len(records)//iteration+1): clusterSizes.append(i*iteration)
     if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
-    #clusterSizes = [25,30,35,40,45,50]
-    #clusterSizes = [i for i in range(10,31)]
-    #clusterSizes = clusterSizes[len(clusterSizes)-2:]
-    #print('*'*20)
-    #print(clusterSizes)
-    #print('*'*20)
     for i in clusterSizes:
         levenshteinDistances = []
         sequences = []
         for j in range(10):
             tempRecords = random.sample(records, k=i)
-            #tempRecords = records.copy()
             for x in tempRecords:
                 print(x.seq)
             if i == 1: tempSequence = str(tempRecords[0].seq)
             else:
                 with open(tempBinPath, "w") as output_handle:
                     SeqIO.write(tempRecords, output_handle, "fastq")
-                tempSequence = run_medaka_on_file(outDir, tempBinPath)
+                tempSequence = run_medaka_on_file(outDir, tempBinPath, bc = True)
             levenshteinDistances.append(distance(referenceSequence, tempSequence))
             sequences.append(tempSequence)
 
         data.append([i] + levenshteinDistances)
         sequenceData.append([i] + sequences)
-        #data.append([i,sum(levenshteinDistances)/len(levenshteinDistances)])
     return pd.DataFrame(data), pd.DataFrame(sequenceData)
 
 
