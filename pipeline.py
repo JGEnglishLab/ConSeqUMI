@@ -15,6 +15,9 @@ from Levenshtein import distance
 import pandas as pd
 from collections import defaultdict
 from os.path import exists
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from statistics import mean
 
 
 def main():
@@ -102,6 +105,89 @@ def find_records_with_most_common_length(records):
     if len(finalRecords) == 0: finalRecords = tempRecords.copy()
     return finalRecords
 
+def find_consensus(strs):
+    excerpt_length = 5
+    buffer_length = 10
+    max_length = len(max(strs, key = len))
+    strs = [x.ljust(max_length+buffer_length) for x in strs]
+    tempList = [x[:excerpt_length] for x in strs]
+    final = max(set(tempList), key = tempList.count)
+    for i in range(max_length-buffer_length):
+        tempPattern = final[-excerpt_length:]
+        #print(i)
+        #print(tempPattern)
+        subStrings = [x[i:i+buffer_length] for x in strs]
+        if i == 1104:
+            #for x in subStrings: print(x)
+            t = defaultdict(int)
+            for x in [getattr(re.search(tempPattern + '(.)', x[i:i+buffer_length]), 'groups', lambda:[u""])()[0] for x in strs]: t[x] += 1
+            #print(t)
+        next_characters = [getattr(re.search(tempPattern + '(.)', x[i:i+buffer_length]), 'groups', lambda:[u""])()[0] for x in strs]
+        next_characters = [x for x in next_characters if len(x) != 0]
+        #print(i)
+        #print(next_characters)
+
+        #nex = mode(next_characters)[0]
+
+        pattern = re.compile(tempPattern + '.')
+        tempDict = defaultdict(list)
+        for x in strs:
+
+            #print(x[i:i+buffer_length])
+
+            r = pattern.search(x[i:i+buffer_length])
+            if r: tempDict[r.group(0)[-1]].append(r.start(0))
+        #print(tempPattern)
+        #for x in tempDict:
+            #print(x)
+            #print(tempDict[x])
+            #print()
+        bestKeys = []
+        mostFreqFind = -1
+        for key, val in tempDict.items():
+            if len(val) > mostFreqFind:
+                bestKeys = [key]
+                mostFreqFind = len(val)
+            if len(val) == mostFreqFind:
+                bestKeys.append(key)
+        bestKey = bestKeys[0]
+        if len(bestKeys) > 1:
+            bestVal = np.inf
+            for key in bestKeys:
+                #print(key)
+                #print(tempDict[key])
+                if mean(tempDict[key]) < bestVal:
+                    bestKey = key
+                    mean(tempDict[key])
+        nex = bestKey
+
+
+        #print(i)
+        #print(next_characters)
+        #nex = mode(next_characters)[0]
+        '''
+        tenPercent = len(next_characters)
+        next_characters = sorted([(next_characters.count(x), x ) for x in set(next_characters)], reverse=True)
+        print(next_characters)
+        if len(next_characters) > 1 and next_characters[1][0] > next_characters[0][0] - tenPercent:
+            t = defaultdict(list)
+            for x in strs:
+                for m in re.finditer(temp + '(.)', x[i:i+buffer_length]):
+                    t[m.group(0)[0]].append(m.start())
+                nex = 'A'
+                bestVal = np.inf
+                for key,val in t.items():
+                    if mean(val) < bestVal:
+                        bestKey = key
+                        bestVal = mean(val)
+
+        else:
+            nex = next_characters[0][1]
+        '''
+        final += nex
+    return final.strip(' ')
+
+
 def run_medaka_on_file(outputDir, binFile, bc = False):
     records = [record for record in SeqIO.parse(binFile, "fastq")]
     #records.sort(key=len)
@@ -114,11 +200,14 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
     returnSequence = 'XXXXX'
     for i in range(len(records)):
 
-        with open(draftFile, "w") as output_handle: SeqIO.write([records[i]], output_handle, "fastq")
-        print('*'*20)
-        print(i)
-        print(records[i].seq)
-        print('*'*20)
+        #with open(draftFile, "w") as output_handle: SeqIO.write([records[i]], output_handle, "fastq")
+        seqStrs = [str(record.seq) for record in records]
+        for i in range(len(seqStrs)):
+            while seqStrs[i][-1] == 'A': seqStrs[i] = seqStrs[i][:-1]
+        draftSeq = find_consensus(seqStrs)
+        draftSeq = SeqRecord(Seq(draftSeq),id='draft seq')
+        with open(draftFile, "w") as output_handle: SeqIO.write([draftSeq], output_handle, "fasta")
+
 
         process = subprocess.Popen(['medaka_consensus',
          '-i', binFile,
@@ -138,6 +227,7 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
 
 
         if bc: os.remove(outputDir + 'consensus.fasta')
+        return consensusSequence
         consSequence_count[consensusSequence] += 1
         if consSequence_count[consensusSequence] >= 3: break
 
