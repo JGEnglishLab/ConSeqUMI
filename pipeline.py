@@ -248,13 +248,18 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
         sequences = []
         for j in range(10):
             tempRecords = random.sample(records, k=i)
-            for x in tempRecords:
-                print(x.seq)
             if i == 1: tempSequence = str(tempRecords[0].seq)
             else:
                 with open(tempBinPath, "w") as output_handle:
                     SeqIO.write(tempRecords, output_handle, "fastq")
                 tempSequence = run_medaka_on_file(outDir, tempBinPath, bc = True)
+            print('*'*20)
+            print('clusterSize: ' + str(i))
+            print('iteration: ' + str(j))
+            print('distance: ' + str(distance(referenceSequence, tempSequence)))
+            print('refSeq: ' + referenceSequence)
+            print('temSeq: ' + tempSequence)
+            print('*'*20)
             levenshteinDistances.append(distance(referenceSequence, tempSequence))
             sequences.append(tempSequence)
 
