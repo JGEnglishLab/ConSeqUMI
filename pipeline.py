@@ -53,7 +53,13 @@ def main():
 
     if args['benchmarkClusters']:
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
-        df, df2 = benchmark_binned_sequences(args['output'], args['output'] + 'seq_bin0.fq')
+        dfs = []
+        binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
+        for binFile in sorted(binFiles):
+            tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 10)
+            tempDf.to_csv(binFile.split('.')[0] + '_benchmark.csv', index = False)
+            dfs.append(tempDf)
+        df = pd.concat(dfs)
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
     else:
@@ -104,6 +110,56 @@ def find_records_with_most_common_length(records):
         else: tempRecords.append(records[i])
     if len(finalRecords) == 0: finalRecords = tempRecords.copy()
     return finalRecords
+
+def generate_score_dict(len_pattern, len_string, weight):
+    scale = len_string - len_pattern
+    scores = [i for i in range(scale)]
+    score_reduction = scale/len_pattern
+    scores = [weight - i*score_reduction for i in scores]
+    scoreDict = {i:scores[i] for i in range(scale)}
+    return scoreDict
+
+def score_character(lst_of_search_indices, scoreDict): return sum([scoreDict[x] for x in lst_of_search_indices])
+
+def find_next_character(subStrings, tempPattern, weight):
+
+    scoreDict = generate_score_dict(len(tempPattern), len(subStrings[0]), weight)
+    pattern = re.compile(tempPattern + '.')
+    tempDict = defaultdict(list)
+
+    all_characters = []
+    for x in subStrings:
+        r = pattern.search(x)
+        if r: tempDict[r.group(0)[-1]].append(r.start(0)); all_characters.append(r.group(0)[-1])
+    scores = sorted([(score_character(tempDict[x], scoreDict), x) for x in tempDict], reverse=True)
+    if len(scores) == 1 or scores[0][0] != scores[1][0]: return scores[0][1]
+    c = Counter(all_characters)
+    return c.most_common()[0][0]
+
+def adjust_all_string_lengths(strs, buffer_length):
+    max_length = len(max(strs, key = len))
+    strs = [x.ljust(max_length+buffer_length) for x in strs]
+    return strs
+
+def initialize_consensus_output_string(strs, excerpt_length):
+    tempList = [x[:excerpt_length] for x in strs]
+    final = max(set(tempList), key = tempList.count)
+    return final
+
+
+def find_consensus2(strs, weight = 3):
+    excerpt_length = 5
+    buffer_length = 10
+    max_length = len(max(strs, key = len))
+    strs = adjust_all_string_lengths(strs, buffer_length)
+    final = initialize_consensus_output_string(strs, excerpt_length)
+    for i in range(max_length-buffer_length):
+        tempPattern = final[-excerpt_length:]
+        subStrings = [x[i:i+buffer_length] for x in strs]
+        nex = find_next_character(subStrings, tempPattern, weight)
+        final += nex
+    return final.strip(' ')
+
 
 def find_consensus(strs):
     excerpt_length = 5
@@ -158,7 +214,7 @@ def find_consensus(strs):
                 #print(tempDict[key])
                 if mean(tempDict[key]) < bestVal:
                     bestKey = key
-                    mean(tempDict[key])
+                    bestVal = mean(tempDict[key])
         nex = bestKey
 
 
@@ -235,37 +291,47 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
 
 def benchmark_binned_sequences(outDir, binPath, iteration = 100):
     records = [record for record in SeqIO.parse(binPath, "fastq")]
-    tempBinPath = outDir + 'temp_bin.fq'
-    referenceSequence = run_medaka_on_file(outDir, binPath, bc = True)
-    if referenceSequence == 'XXXXX': return referenceSequence
-    data = []
-    sequenceData = []
-    clusterSizes = [1]
-    for i in range(1, len(records)//iteration+1): clusterSizes.append(i*iteration)
-    if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
-    for i in clusterSizes:
-        levenshteinDistances = []
-        sequences = []
-        for j in range(10):
-            tempRecords = random.sample(records, k=i)
-            if i == 1: tempSequence = str(tempRecords[0].seq)
-            else:
-                with open(tempBinPath, "w") as output_handle:
-                    SeqIO.write(tempRecords, output_handle, "fastq")
-                tempSequence = run_medaka_on_file(outDir, tempBinPath, bc = True)
-            print('*'*20)
-            print('clusterSize: ' + str(i))
-            print('iteration: ' + str(j))
-            print('distance: ' + str(distance(referenceSequence, tempSequence)))
-            print('refSeq: ' + referenceSequence)
-            print('temSeq: ' + tempSequence)
-            print('*'*20)
-            levenshteinDistances.append(distance(referenceSequence, tempSequence))
-            sequences.append(tempSequence)
+    fullData = []
+    if len(records) > 30:
+        tempBinPath = outDir + 'temp_bin.fq'
+        referenceSequence = run_medaka_on_file(outDir, binPath, bc = True)
+        if referenceSequence == 'XXXXX': return referenceSequence
+        data = []
+        sequenceData = []
+        clusterSizes = [1]
+        for i in range(1, len(records)//iteration+1):
+            if i*iteration > 300 and i*iteration <= 500: clusterSizes.append(i*iteration)
+        if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
+        for i in clusterSizes:
+            levenshteinDistances = []
+            sequences = []
+            for j in range(10):
+                tempRecords = random.sample(records, k=i)
+                if i == 1: tempSequence = str(tempRecords[0].seq)
+                else:
+                    with open(tempBinPath, "w") as output_handle:
+                        SeqIO.write(tempRecords, output_handle, "fastq")
+                    tempSequence = run_medaka_on_file(outDir, tempBinPath, bc = True)
+                print('*'*20)
+                print('binFile: ' + binPath)
+                print('clusterSize: ' + str(i))
+                print('iteration: ' + str(j))
+                print('distance: ' + str(distance(referenceSequence, tempSequence)))
+                print('refSeq: ' + referenceSequence)
+                print('temSeq: ' + tempSequence)
+                print('*'*20)
+                levDist = distance(referenceSequence, tempSequence)
+                clusterNum = int(re.search(r'seq_bin(\d+).fq', binPath).group(1))
+                originalClusterSize = pd.read_csv(outputDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
 
-        data.append([i] + levenshteinDistances)
-        sequenceData.append([i] + sequences)
-    return pd.DataFrame(data), pd.DataFrame(sequenceData)
+                fullData.append([binPath, i, j, referenceSequence, tempSequence, levDist, clusterNum, originalClusterSize])
+                levenshteinDistances.append(distance(referenceSequence, tempSequence))
+                sequences.append(tempSequence)
+
+            data.append([i] + levenshteinDistances)
+            sequenceData.append([i] + sequences)
+    fullDf = pd.DataFrame(fullData, columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize'])
+    return fullDf
 
 
 
