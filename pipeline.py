@@ -13,11 +13,11 @@ import numpy as np
 import random
 from Levenshtein import distance
 import pandas as pd
-from collections import defaultdict
+from collections import defaultdict, Counter
 from os.path import exists
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from statistics import mean
+from statistics import mean, median
 
 
 def main():
@@ -55,7 +55,7 @@ def main():
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
         dfs = []
         binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
-        for binFile in sorted(binFiles):
+        for binFile in sorted(binFiles)[30:]:
             tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 10)
             tempDf.to_csv(binFile.split('.')[0] + '_benchmark.csv', index = False)
             dfs.append(tempDf)
@@ -121,7 +121,7 @@ def generate_score_dict(len_pattern, len_string, weight):
 
 def score_character(lst_of_search_indices, scoreDict): return sum([scoreDict[x] for x in lst_of_search_indices])
 
-def find_next_character(subStrings, tempPattern, weight):
+def find_next_character2(subStrings, tempPattern, weight):
 
     scoreDict = generate_score_dict(len(tempPattern), len(subStrings[0]), weight)
     pattern = re.compile(tempPattern + '.')
@@ -156,48 +156,57 @@ def find_consensus2(strs, weight = 3):
     for i in range(max_length-buffer_length):
         tempPattern = final[-excerpt_length:]
         subStrings = [x[i:i+buffer_length] for x in strs]
-        nex = find_next_character(subStrings, tempPattern, weight)
+        nex = find_next_character2(subStrings, tempPattern, weight)
         final += nex
     return final.strip(' ')
+
+def find_next_character3(subStrings, tempPattern):
+    pattern = re.compile(tempPattern + '.')
+    baseCountDict = defaultdict(list)
+    all_characters = []
+    for x in subStrings:
+        r = pattern.search(x)
+        if r: baseCountDict[r.group(0)[-1]].append(r.start(0)); all_characters.append(r.group(0)[-1])
+    c = Counter(all_characters)
+    percent_benchmark = .2
+    benchmark = int(len(subStrings)*percent_benchmark)
+    common = c.most_common()
+    if len(common) > 1 and common[1][1] > benchmark:
+        min_val = min([median(baseCountDict[x[0]]) for x in common[:2]])
+        res = [x[0] for x in common[:2] if median(baseCountDict[x[0]]) == min_val]
+        return res[0]
+    return c.most_common()[0][0]
+
+def find_consensus3(strs):
+    excerpt_length = 10
+    buffer_length = 20
+    strs = adjust_all_string_lengths(strs, buffer_length)
+    final = initialize_consensus_output_string(strs, excerpt_length)
+    for i in range(len(strs[0])-buffer_length):
+        subStrings = [x[i:i+buffer_length] for x in strs]
+        tempPattern = final[-excerpt_length:]
+        print(tempPattern)
+        nex = find_next_character3(subStrings, tempPattern)
+        final += nex
+    return final.strip(' ')
+
 
 
 def find_consensus(strs):
     excerpt_length = 5
     buffer_length = 10
-    max_length = len(max(strs, key = len))
-    strs = [x.ljust(max_length+buffer_length) for x in strs]
-    tempList = [x[:excerpt_length] for x in strs]
-    final = max(set(tempList), key = tempList.count)
+    strs = adjust_all_string_lengths(strs, buffer_length)
+    final = initialize_consensus_output_string(strs, excerpt_length)
     for i in range(max_length-buffer_length):
         tempPattern = final[-excerpt_length:]
-        #print(i)
-        #print(tempPattern)
         subStrings = [x[i:i+buffer_length] for x in strs]
-        if i == 1104:
-            #for x in subStrings: print(x)
-            t = defaultdict(int)
-            for x in [getattr(re.search(tempPattern + '(.)', x[i:i+buffer_length]), 'groups', lambda:[u""])()[0] for x in strs]: t[x] += 1
-            #print(t)
         next_characters = [getattr(re.search(tempPattern + '(.)', x[i:i+buffer_length]), 'groups', lambda:[u""])()[0] for x in strs]
         next_characters = [x for x in next_characters if len(x) != 0]
-        #print(i)
-        #print(next_characters)
-
-        #nex = mode(next_characters)[0]
-
         pattern = re.compile(tempPattern + '.')
         tempDict = defaultdict(list)
         for x in strs:
-
-            #print(x[i:i+buffer_length])
-
             r = pattern.search(x[i:i+buffer_length])
             if r: tempDict[r.group(0)[-1]].append(r.start(0))
-        #print(tempPattern)
-        #for x in tempDict:
-            #print(x)
-            #print(tempDict[x])
-            #print()
         bestKeys = []
         mostFreqFind = -1
         for key, val in tempDict.items():
@@ -210,8 +219,6 @@ def find_consensus(strs):
         if len(bestKeys) > 1:
             bestVal = np.inf
             for key in bestKeys:
-                #print(key)
-                #print(tempDict[key])
                 if mean(tempDict[key]) < bestVal:
                     bestKey = key
                     bestVal = mean(tempDict[key])
@@ -261,28 +268,32 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
         for i in range(len(seqStrs)):
             while seqStrs[i][-1] == 'A': seqStrs[i] = seqStrs[i][:-1]
         draftSeq = find_consensus(seqStrs)
-        draftSeq = SeqRecord(Seq(draftSeq),id='draft seq')
-        with open(draftFile, "w") as output_handle: SeqIO.write([draftSeq], output_handle, "fasta")
+        consSeqs = [draftSeq]
+        while len(consSeqs) < 5:
+            draftSeq = SeqRecord(Seq(consSeqs[-1]),id='draft seq')
+            with open(draftFile, "w") as output_handle: SeqIO.write([draftSeq], output_handle, "fasta")
 
 
-        process = subprocess.Popen(['medaka_consensus',
-         '-i', binFile,
-         '-d', draftFile,
-         '-o', outputDir])
-        stdout, stderr = process.communicate()
-        print(draftFile)
-        print(binFile)
-        if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
-        else: print('\n' * 100); continue
-        consensusSequence = str(consensusRecords[0].seq)
-        os.remove(outputDir + 'calls_to_draft.bam')
-        os.remove(outputDir + 'calls_to_draft.bam.bai')
-        os.remove(outputDir + 'consensus_probs.hdf')
-        os.remove(draftFile)
-        os.remove(draftFile + '.mmi')
+            process = subprocess.Popen(['medaka_consensus',
+             '-i', binFile,
+             '-d', draftFile,
+             '-o', outputDir])
+            stdout, stderr = process.communicate()
+            print(draftFile)
+            print(binFile)
+            if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+            else: print('\n' * 100); continue
+            consensusSequence = str(consensusRecords[0].seq)
+            os.remove(outputDir + 'calls_to_draft.bam')
+            os.remove(outputDir + 'calls_to_draft.bam.bai')
+            os.remove(outputDir + 'consensus_probs.hdf')
+            os.remove(draftFile)
+            os.remove(draftFile + '.mmi')
 
 
-        if bc: os.remove(outputDir + 'consensus.fasta')
+            if bc: os.remove(outputDir + 'consensus.fasta')
+            if consSeqs[-1] == consensusSequence: return consensusSequence
+            consSeqs.append(consensusSequence)
         return consensusSequence
         consSequence_count[consensusSequence] += 1
         if consSequence_count[consensusSequence] >= 3: break
@@ -300,7 +311,7 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
         sequenceData = []
         clusterSizes = [1]
         for i in range(1, len(records)//iteration+1):
-            if i*iteration > 300 and i*iteration <= 500: clusterSizes.append(i*iteration)
+            if i*iteration > 40 and i*iteration <= 100: clusterSizes.append(i*iteration)
         if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
         for i in clusterSizes:
             levenshteinDistances = []
@@ -322,7 +333,7 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
                 print('*'*20)
                 levDist = distance(referenceSequence, tempSequence)
                 clusterNum = int(re.search(r'seq_bin(\d+).fq', binPath).group(1))
-                originalClusterSize = pd.read_csv(outputDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
+                originalClusterSize = pd.read_csv(outDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
 
                 fullData.append([binPath, i, j, referenceSequence, tempSequence, levDist, clusterNum, originalClusterSize])
                 levenshteinDistances.append(distance(referenceSequence, tempSequence))
