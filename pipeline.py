@@ -193,7 +193,7 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
         for i in clusterSizes:
             levenshteinDistances = []
             sequences = []
-            for j in range(100):
+            for j in range(10):
                 tempRecords = random.sample(records, k=i)
                 if i == 1: tempSequence = str(tempRecords[0].seq)
                 else:
