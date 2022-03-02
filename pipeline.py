@@ -37,7 +37,6 @@ def main():
     print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
     print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
-    #'''
     print('\nStarcode Binning')
     print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
     run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
@@ -55,7 +54,7 @@ def main():
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
         dfs = []
         binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
-        for binFile in sorted(binFiles)[30:]:
+        for binFile in sorted(binFiles):
             tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 10)
             tempDf.to_csv(binFile.split('.')[0] + '_benchmark.csv', index = False)
             dfs.append(tempDf)
@@ -73,7 +72,6 @@ def main():
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
         with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
             SeqIO.write(records, output_handle, "fasta")
-        #'''
         if args['variants']:
             print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
             superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
@@ -99,43 +97,6 @@ def medaka_pipeline(outputDir, binFiles, pattern):
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
 
-def find_records_with_most_common_length(records):
-    if len(records) == 0: return []
-    finalRecords = []
-    tempRecords = []
-    for i in range(len(records)):
-        if len(records[i]) != len(tempRecords[0]) and len(tempRecords) != 0:
-            if len(tempRecords) > len(finalRecords): finalRecords = tempRecords.copy()
-            else: tempRecords = [records[i]]
-        else: tempRecords.append(records[i])
-    if len(finalRecords) == 0: finalRecords = tempRecords.copy()
-    return finalRecords
-
-def generate_score_dict(len_pattern, len_string, weight):
-    scale = len_string - len_pattern
-    scores = [i for i in range(scale)]
-    score_reduction = scale/len_pattern
-    scores = [weight - i*score_reduction for i in scores]
-    scoreDict = {i:scores[i] for i in range(scale)}
-    return scoreDict
-
-def score_character(lst_of_search_indices, scoreDict): return sum([scoreDict[x] for x in lst_of_search_indices])
-
-def find_next_character2(subStrings, tempPattern, weight):
-
-    scoreDict = generate_score_dict(len(tempPattern), len(subStrings[0]), weight)
-    pattern = re.compile(tempPattern + '.')
-    tempDict = defaultdict(list)
-
-    all_characters = []
-    for x in subStrings:
-        r = pattern.search(x)
-        if r: tempDict[r.group(0)[-1]].append(r.start(0)); all_characters.append(r.group(0)[-1])
-    scores = sorted([(score_character(tempDict[x], scoreDict), x) for x in tempDict], reverse=True)
-    if len(scores) == 1 or scores[0][0] != scores[1][0]: return scores[0][1]
-    c = Counter(all_characters)
-    return c.most_common()[0][0]
-
 def adjust_all_string_lengths(strs, buffer_length):
     max_length = len(max(strs, key = len))
     strs = [x.ljust(max_length+buffer_length) for x in strs]
@@ -146,21 +107,7 @@ def initialize_consensus_output_string(strs, excerpt_length):
     final = max(set(tempList), key = tempList.count)
     return final
 
-
-def find_consensus2(strs, weight = 3):
-    excerpt_length = 5
-    buffer_length = 10
-    max_length = len(max(strs, key = len))
-    strs = adjust_all_string_lengths(strs, buffer_length)
-    final = initialize_consensus_output_string(strs, excerpt_length)
-    for i in range(max_length-buffer_length):
-        tempPattern = final[-excerpt_length:]
-        subStrings = [x[i:i+buffer_length] for x in strs]
-        nex = find_next_character2(subStrings, tempPattern, weight)
-        final += nex
-    return final.strip(' ')
-
-def find_next_character3(subStrings, tempPattern):
+def find_next_character(subStrings, tempPattern):
     pattern = re.compile(tempPattern + '.')
     baseCountDict = defaultdict(list)
     all_characters = []
@@ -177,93 +124,22 @@ def find_next_character3(subStrings, tempPattern):
         return res[0]
     return c.most_common()[0][0]
 
-def find_consensus3(strs):
-    excerpt_length = 10
-    buffer_length = 20
+def find_consensus(strs, excerpt_length = 10, buffer_length = 20):
     strs = adjust_all_string_lengths(strs, buffer_length)
     final = initialize_consensus_output_string(strs, excerpt_length)
     for i in range(len(strs[0])-buffer_length):
         subStrings = [x[i:i+buffer_length] for x in strs]
         tempPattern = final[-excerpt_length:]
-        print(tempPattern)
-        nex = find_next_character3(subStrings, tempPattern)
+        nex = find_next_character(subStrings, tempPattern)
         final += nex
     return final.strip(' ')
-
-
-
-def find_consensus(strs):
-    excerpt_length = 5
-    buffer_length = 10
-    strs = adjust_all_string_lengths(strs, buffer_length)
-    final = initialize_consensus_output_string(strs, excerpt_length)
-    for i in range(max_length-buffer_length):
-        tempPattern = final[-excerpt_length:]
-        subStrings = [x[i:i+buffer_length] for x in strs]
-        next_characters = [getattr(re.search(tempPattern + '(.)', x[i:i+buffer_length]), 'groups', lambda:[u""])()[0] for x in strs]
-        next_characters = [x for x in next_characters if len(x) != 0]
-        pattern = re.compile(tempPattern + '.')
-        tempDict = defaultdict(list)
-        for x in strs:
-            r = pattern.search(x[i:i+buffer_length])
-            if r: tempDict[r.group(0)[-1]].append(r.start(0))
-        bestKeys = []
-        mostFreqFind = -1
-        for key, val in tempDict.items():
-            if len(val) > mostFreqFind:
-                bestKeys = [key]
-                mostFreqFind = len(val)
-            if len(val) == mostFreqFind:
-                bestKeys.append(key)
-        bestKey = bestKeys[0]
-        if len(bestKeys) > 1:
-            bestVal = np.inf
-            for key in bestKeys:
-                if mean(tempDict[key]) < bestVal:
-                    bestKey = key
-                    bestVal = mean(tempDict[key])
-        nex = bestKey
-
-
-        #print(i)
-        #print(next_characters)
-        #nex = mode(next_characters)[0]
-        '''
-        tenPercent = len(next_characters)
-        next_characters = sorted([(next_characters.count(x), x ) for x in set(next_characters)], reverse=True)
-        print(next_characters)
-        if len(next_characters) > 1 and next_characters[1][0] > next_characters[0][0] - tenPercent:
-            t = defaultdict(list)
-            for x in strs:
-                for m in re.finditer(temp + '(.)', x[i:i+buffer_length]):
-                    t[m.group(0)[0]].append(m.start())
-                nex = 'A'
-                bestVal = np.inf
-                for key,val in t.items():
-                    if mean(val) < bestVal:
-                        bestKey = key
-                        bestVal = mean(val)
-
-        else:
-            nex = next_characters[0][1]
-        '''
-        final += nex
-    return final.strip(' ')
-
 
 def run_medaka_on_file(outputDir, binFile, bc = False):
     records = [record for record in SeqIO.parse(binFile, "fastq")]
-    #records.sort(key=len)
-    #tenPercent = len(records)//10
-    #records = records[tenPercent:-tenPercent]
-    #random.shuffle(records)
-    ##mostFrequentRecords = find_records_with_most_frequent_length(records)
     draftFile = binFile.split('.')[0]+'_draft.fq'
     consSequence_count = defaultdict(int)
     returnSequence = 'XXXXX'
     for i in range(len(records)):
-
-        #with open(draftFile, "w") as output_handle: SeqIO.write([records[i]], output_handle, "fastq")
         seqStrs = [str(record.seq) for record in records]
         for i in range(len(seqStrs)):
             while seqStrs[i][-1] == 'A': seqStrs[i] = seqStrs[i][:-1]
@@ -311,12 +187,13 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
         sequenceData = []
         clusterSizes = [1]
         for i in range(1, len(records)//iteration+1):
-            if i*iteration > 40 and i*iteration <= 100: clusterSizes.append(i*iteration)
+            #if i*iteration == 150: clusterSizes.append(i*iteration)
+            clusterSizes.append(i*iteration)
         if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
         for i in clusterSizes:
             levenshteinDistances = []
             sequences = []
-            for j in range(10):
+            for j in range(100):
                 tempRecords = random.sample(records, k=i)
                 if i == 1: tempSequence = str(tempRecords[0].seq)
                 else:
@@ -382,7 +259,6 @@ def set_command_line_settings():
     return parser
 
 def check_for_invalid_input(parser, args):
-
     if not restricted_file_or_directory(args['input']): parser.error('The -i or --input argument must be an existing directory')
     files = os.listdir(args['input'])
     for file in files:
@@ -401,7 +277,6 @@ def check_for_invalid_input(parser, args):
     args['output'] = newOutput
     os.mkdir(args['oldOutput'])
     os.mkdir(args['output'])
-
 
 def restricted_file_or_directory(x, permittedTypes=[]):
     if not len(permittedTypes):
