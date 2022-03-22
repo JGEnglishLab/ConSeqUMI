@@ -7,10 +7,13 @@ from Bio.SeqRecord import SeqRecord
 import numpy as np
 import umi_extractor as ue
 import consensus_maker as cm
+import pipeline as pipe
 import random
 import filecmp
 import pandas as pd
+import subprocess
 
+# Still need to test pipeline input parameters
 class MyTest(unittest.TestCase):
 
     def test_ue_cutadapter_adapter_initialization(self):
@@ -281,14 +284,52 @@ class MyTest(unittest.TestCase):
         groups = np.array([group for group in cm.cluster_longread_consensus_sequences(seqs)])
         self.assertEqual(groups.all(),expectedGroups.all())
 
-    def test_cm_benchmark_binned_sequences(self):
-        expectedClusterSize = [i for i in range(1,101)]
-        expectedLevenshteinDistance = [1.0] + [0.0 for i in range(99)]
-        data = [[expectedClusterSize[i],expectedLevenshteinDistance[i]] for i in range(100)]
-        expectedDf = pd.DataFrame(data, columns = ['Cluster Size', 'Average Levenshtein Distance'])
-        #actualDf = cm.benchmark_binned_sequences('test/tdd/output/tdd_example_benchmark_sequences.fq')
-        #self.assertTrue(expectedDf.equals(actualDf))
+    def test_pipe_adjust_all_string_lengths(self):
+        lengths = [0, 1, 2, 3, 4, 5]
+        test_str_list = ['A'*length for length in lengths]
+        max_length = max(lengths)
+        buffer_length = 5
+        test_str_list_output = pipe.adjust_all_string_lengths(test_str_list, buffer_length)
+        for seq in test_str_list_output:
+            self.assertEqual(len(seq), max_length + buffer_length)
 
+    def test_pipe_initialize_consensus_output_string(self):
+        random.seed(0)
+        initial_output_string = 'ATCGA'
+        excerpt_length = len(initial_output_string)
+        available_nucleotides = ['A','T','C','G']
+        seqs = [initial_output_string + ''.join(random.choices(available_nucleotides, k=20)) for i in range(20)]
+        initial_output_string_output = pipe.initialize_consensus_output_string(seqs, excerpt_length)
+        self.assertEqual(initial_output_string, initial_output_string_output)
+
+    def test_pipe_find_next_character(self):
+        random.seed(0)
+        tempPattern = 'ATCGA'
+        nextNucleotide = 'T'
+        seqs = []
+        other_nuc_length = 20
+        for i in range(20):
+            random_divide = random.randint(0,other_nuc_length)
+            seqs.append('G'*random_divide + tempPattern + nextNucleotide + 'G'*(other_nuc_length-random_divide))
+        next_nucleotide_output = pipe.find_next_character(seqs, tempPattern)
+        self.assertEqual(nextNucleotide, next_nucleotide_output)
+
+    #add tests to account for repeats?
+    def test_pipe_find_consensus(self):
+        random.seed(0)
+        insert_num = 10
+        available_nucleotides = ['A','T','C','G']
+        consensus_sequence = ''.join(random.choices(available_nucleotides, k=1000))
+        seqs = [consensus_sequence for i in range(500)]
+        for i in range(len(seqs)):
+            insert_indices = [random.randint(1,len(seqs[i])-1) for j in range(insert_num)]
+            insert_nucleotides = [random.choice(available_nucleotides) for j in range(insert_num)]
+            for j in range(insert_num):
+                insert_index = insert_indices[j]
+                insert_nuc = insert_nucleotides[j]
+                seqs[i] = seqs[i][:insert_index] + insert_nuc + seqs[i][insert_index+1:]
+        consensus_sequence_output = pipe.find_consensus(seqs)
+        self.assertEqual(consensus_sequence, consensus_sequence_output)
 
 def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
