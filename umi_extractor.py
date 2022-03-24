@@ -3,6 +3,8 @@ from cutadapt.parser import FrontAdapter, BackAdapter, LinkedAdapter
 import re
 import numpy as np
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 
 
@@ -116,6 +118,11 @@ class UMIExtractor():
         count = len(sequences)
         sequences = list(filter(None, sequences))
         centers = []
+        umi1Records = []
+        umi2Records = []
+        umiPairRecords = []
+
+        idCount = 0
         with open(outputDir + "/umi1.txt", "w") as umiFile1, open(outputDir + "/umi2.txt", "w") as umiFile2:
             for umi_center in sequences:
                 umi1 = umi_center[0]
@@ -123,10 +130,20 @@ class UMIExtractor():
                 center = umi_center[2]
                 umiFile1.write(umi1 + '\n')
                 umiFile2.write(umi2 + '\n')
-
                 centers.append(center)
+                umi1Records.append(SeqRecord(Seq(umi1),id=str(idCount)+'_1'))
+                umi2Records.append(SeqRecord(Seq(umi2),id=str(idCount)+'_2'))
+                umiPairRecords.append(SeqRecord(Seq(umi1 + umi2),id=str(idCount)+'_both'))
+                idCount += 1
 
         with open(outputDir + "/seq.fq", "w") as centerFile:
                 SeqIO.write(centers, centerFile, "fastq")
+        with open(outputDir + "/umi1.fasta", "w") as umi1File:
+                SeqIO.write(umi1Records, umi1File, "fasta")
+        with open(outputDir + "/umi2.fasta", "w") as umi2File:
+                SeqIO.write(umi2Records, umi2File, "fasta")
+        with open(outputDir + "/umiPairs.fasta", "w") as umiPairFile:
+                SeqIO.write(umiPairRecords, umiPairFile, "fasta")
+
 
         return count - len(sequences)

@@ -5,14 +5,14 @@ import pandas as pd
 import numpy as np
 import subprocess
 from scipy.spatial.distance import pdist
-from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Levenshtein import ratio, distance
+import matplotlib.pyplot as plt
 
+def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output, tdd = False):
 
-def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
-
-    s1UMI, s1Indices = gather_umis_and_corresponding_indices_from_starcode(starcode1Path)
-    s2UMI, s2Indices = gather_umis_and_corresponding_indices_from_starcode(starcode2Path)
+    s1UMI, s1Indices = gather_umis_and_corresponding_indices_from_starcode(starcode1Path, tdd = tdd)
+    s2UMI, s2Indices = gather_umis_and_corresponding_indices_from_starcode(starcode2Path, tdd = tdd)
 
     umiMatch1, umiMatch2, sharedIndices = sort_umi_pairs_by_number_of_matching_indices(s1UMI, s1Indices, s2UMI, s2Indices)
     umiMatch1, umiMatch2, sharedIndices = remove_duplicate_umis_from_pairs(umiMatch1, umiMatch2, sharedIndices)
@@ -22,10 +22,19 @@ def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output):
     df = pd.DataFrame(data)
     df.to_csv(output, sep='\t', index=False, header=False)
 
-def gather_umis_and_corresponding_indices_from_starcode(starcodePath):
+def gather_umis_and_corresponding_indices_from_starcode(starcodePath, tdd = False):
     s1 = pd.read_csv(starcodePath, sep='\t', header=None)
+    if isinstance(list(s1.iloc[:,2])[0],int): raise Exception('Fewer that 5 UMI clusters found with more than a single sequence')
     s1UMI = s1.iloc[:,0]
     s1Indices = [set([int(y) for y in x.split(',')]) for x in list(s1.iloc[:,2])]
+    remove = []
+    for i in range(len(s1Indices)):
+     if len(s1Indices) < 10: remove.append(i)
+
+    if not tdd:
+        s1UMI, s1Indices = [np.delete(np.array(x),(remove)) for x in [s1UMI, s1Indices]]
+        if len(s1Indices) < 5: raise Exception('Fewer that 5 UMI clusters found with more than a single sequence')
+
     return s1UMI, s1Indices
 
 def sort_umi_pairs_by_number_of_matching_indices(s1UMI, s1Indices, s2UMI, s2Indices):
@@ -68,7 +77,7 @@ def bin_sequences_by_umi_pair(seqPath, starcodePath):
         for record in SeqIO.parse(handle, "fastq"): index_recordID[count] = record.id; count += 1
 
     starcode = pd.read_csv(starcodePath, sep='\t', header=None)
-    starcode = starcode[starcode.iloc[:,1] >= 10]
+    starcode = starcode[starcode.iloc[:,1] >= 100]
     starcode = list(starcode.iloc[:,2])
     fq = SeqIO.index(seqPath, "fastq")
 
@@ -85,10 +94,14 @@ def make_hamming_distance_matrix(seqs):
     array = np.array(seqs).reshape(-1,1)
     return pdist(np.array(array), lambda x,y: 1-ratio(x[0],y[0]))
 
-def cluster_longread_consensus_sequences(seqs, threshold = 1/20):
+def cluster_longread_consensus_sequences(seqs, threshold = 1/20, dendrogramFile=None):
     dist_matrix = make_hamming_distance_matrix(np.array(seqs))
     link_matrix = linkage(dist_matrix, method = 'centroid')
     labels = fcluster(link_matrix, threshold, criterion='distance')
+    if dendrogramFile:
+        plt.figure()
+        dn = dendrogram(link_matrix)
+        plt.savefig(dendrogramFile)
     seqs = np.array(seqs)
     for cluster_id in np.unique(labels):
         yield labels==cluster_id

@@ -7,10 +7,13 @@ from Bio.SeqRecord import SeqRecord
 import numpy as np
 import umi_extractor as ue
 import consensus_maker as cm
+import pipeline as pipe
 import random
 import filecmp
 import pandas as pd
+import subprocess
 
+# Still need to test pipeline input parameters
 class MyTest(unittest.TestCase):
 
     def test_ue_cutadapter_adapter_initialization(self):
@@ -254,13 +257,12 @@ class MyTest(unittest.TestCase):
         starcode2Path = 'test/tdd/output/tdd_example_starcode2_default_expected_w_chimera.txt'
         output = 'test/tdd/output/starcode_without_chimera.txt'
 
-        cm.remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output)
+        cm.remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output, tdd = True)
         self.assertTrue(filecmp.cmp('test/tdd/output/starcode_without_chimera.txt', 'test/tdd/output/tdd_example_starcode_default_expected_without_chimera.txt', shallow=False))
         filecmp.clear_cache()
 
     def test_cm_bin_sequences_by_umi_pair(self):
         cm.bin_sequences_by_umi_pair('test/tdd/output/seq.fq','test/tdd/output/starcode_without_chimera.txt')
-
         self.assertTrue(filecmp.cmp('test/tdd/output/seq_bin0.fq', 'test/tdd/output/tdd_example_seq_expected_bin0.fq', shallow=False))
         filecmp.clear_cache()
         self.assertTrue(filecmp.cmp('test/tdd/output/seq_bin1.fq', 'test/tdd/output/tdd_example_seq_expected_bin1.fq', shallow=False))
@@ -282,7 +284,52 @@ class MyTest(unittest.TestCase):
         groups = np.array([group for group in cm.cluster_longread_consensus_sequences(seqs)])
         self.assertEqual(groups.all(),expectedGroups.all())
 
+    def test_pipe_adjust_all_string_lengths(self):
+        lengths = [0, 1, 2, 3, 4, 5]
+        test_str_list = ['A'*length for length in lengths]
+        max_length = max(lengths)
+        buffer_length = 5
+        test_str_list_output = pipe.adjust_all_string_lengths(test_str_list, buffer_length)
+        for seq in test_str_list_output:
+            self.assertEqual(len(seq), max_length + buffer_length)
 
+    def test_pipe_initialize_consensus_output_string(self):
+        random.seed(0)
+        initial_output_string = 'ATCGA'
+        excerpt_length = len(initial_output_string)
+        available_nucleotides = ['A','T','C','G']
+        seqs = [initial_output_string + ''.join(random.choices(available_nucleotides, k=20)) for i in range(20)]
+        initial_output_string_output = pipe.initialize_consensus_output_string(seqs, excerpt_length)
+        self.assertEqual(initial_output_string, initial_output_string_output)
+
+    def test_pipe_find_next_character(self):
+        random.seed(0)
+        tempPattern = 'ATCGA'
+        nextNucleotide = 'T'
+        seqs = []
+        other_nuc_length = 20
+        for i in range(20):
+            random_divide = random.randint(0,other_nuc_length)
+            seqs.append('G'*random_divide + tempPattern + nextNucleotide + 'G'*(other_nuc_length-random_divide))
+        next_nucleotide_output = pipe.find_next_character(seqs, tempPattern)
+        self.assertEqual(nextNucleotide, next_nucleotide_output)
+
+    #add tests to account for repeats?
+    def test_pipe_find_consensus(self):
+        random.seed(0)
+        insert_num = 10
+        available_nucleotides = ['A','T','C','G']
+        consensus_sequence = ''.join(random.choices(available_nucleotides, k=1000))
+        seqs = [consensus_sequence for i in range(500)]
+        for i in range(len(seqs)):
+            insert_indices = [random.randint(1,len(seqs[i])-1) for j in range(insert_num)]
+            insert_nucleotides = [random.choice(available_nucleotides) for j in range(insert_num)]
+            for j in range(insert_num):
+                insert_index = insert_indices[j]
+                insert_nuc = insert_nucleotides[j]
+                seqs[i] = seqs[i][:insert_index] + insert_nuc + seqs[i][insert_index+1:]
+        consensus_sequence_output = pipe.find_consensus(seqs)
+        self.assertEqual(consensus_sequence, consensus_sequence_output)
 
 def strip_non_standard_nucleotide_values(str1, str2):
     if len(str1) != len(str2): raise Exception('consensus sequences have different lengths')
@@ -313,6 +360,7 @@ def create_test_fastq_and_txt_files():
     forwardAdapter2 = 'AGRGTTYGATYMTGGCTCAG'
     rc_reverseAdapter1 = u.reverse_complement('AATGATACGGCGACCACCGAGATC')
     rc_reverseAdapter2 = u.reverse_complement('CGACATCGAGGTGCCAAAC')
+    errorNum = 20
 
     consensus_sequences = ['TAAAGGCACTAGTGCCCTTGCCGTATAAGGTACTCG','AAGATGCATCGACTCGTCCGCTATTGTGAACGTGCA']
     # num errors per consensus sequence: [2, 1, 2, 1, 1, 1, 0]
@@ -381,8 +429,8 @@ def create_test_fastq_and_txt_files():
         'TGCACGTTCACAATAGCG',
     ]
 
-    consensusSequence1List = create_imperfect_seq_list(origConsensusSequence1, 14, 20)
-    consensusSequence2List = create_imperfect_seq_list(origConsensusSequence2, 14, 20)
+    consensusSequence1List = create_imperfect_seq_list(origConsensusSequence1, len(umi_sequences1), errorNum)
+    consensusSequence2List = create_imperfect_seq_list(origConsensusSequence2, len(umi_sequences1), errorNum)
 
     sequences = []
     for i in range(len(umi_sequences1)):
@@ -419,8 +467,8 @@ def create_test_fastq_and_txt_files():
 
     expectedOutputUMI1 = []
     expectedOutputUMI2 = []
-    expectedOutputSeq1 = []
-    expectedOutputSeq = []
+    expectedOutputSeqBin0 = []
+    expectedOutputSeqBin1 = []
     expectedOutputError = []
     for i in range(len(umi_sequences1)):
         expectedOutputUMI1.append(umi_sequences1[i])
@@ -428,29 +476,38 @@ def create_test_fastq_and_txt_files():
         expectedOutputUMI1.append(umi_sequences2[i])
         expectedOutputUMI2.append(u.reverse_complement(umi_sequences4[i]))
 
-        expectedOutputSeq1.append(consensusSequence1List[i])
-        expectedOutputSeq1.append(consensusSequence2List[i])
-
         seqRec1 = SeqRecord(Seq(consensusSequence1List[i]),id=str(i) + origConsensusSequence1, description='testConsensusSequence1')
         seqRec2 = SeqRecord(Seq(consensusSequence2List[i]),id=str(i) + origConsensusSequence2, description='testConsensusSequence2')
         seqRec1.letter_annotations["phred_quality"] = [1 for x in consensusSequence1List[i]]
         seqRec2.letter_annotations["phred_quality"] = [1 for x in consensusSequence2List[i]]
 
-        expectedOutputSeq.append(seqRec1)
-        expectedOutputSeq.append(seqRec2)
+        expectedOutputSeqBin0.append(seqRec2)
+        expectedOutputSeqBin1.append(seqRec1)
 
     expectedOutputError.append('AAAAAAAAAAAAATTTTTTT')
     with open("test/tdd/output/tdd_example_umi1_expected.txt", "w") as output:
         for seq in expectedOutputUMI1: output.write(seq + '\n')
     with open("test/tdd/output/tdd_example_umi2_expected.txt", "w") as output:
         for seq in expectedOutputUMI2: output.write(seq + '\n')
-    with open("test/tdd/output/tdd_example_seq_expected.txt", "w") as output:
-        for seq in expectedOutputSeq1: output.write(seq + '\n')
-    with open("test/tdd/output/tdd_example_error_expected.txt", "w") as output:
-        for seq in expectedOutputError: output.write(seq)
+    with open("test/tdd/output/tdd_example_seq_expected_bin0.fq", "w") as output_handle:
+        SeqIO.write(expectedOutputSeqBin0, output_handle, "fastq")
+    with open("test/tdd/output/tdd_example_seq_expected_bin1.fq", "w") as output_handle:
+        SeqIO.write(expectedOutputSeqBin1, output_handle, "fastq")
     with open("test/tdd/output/tdd_example_seq_expected.fq", "w") as output_handle:
+        expectedOutputSeq = []
+        for i in range(len(expectedOutputSeqBin0)): expectedOutputSeq.extend([expectedOutputSeqBin1[i], expectedOutputSeqBin0[i]])
         SeqIO.write(expectedOutputSeq, output_handle, "fastq")
 
+    benchmarkSequences = create_imperfect_seq_list(origConsensusSequence1,200,1)
+    benchmarkRecords = []
+    for i in range(len(benchmarkSequences)):
+        seqRec = SeqRecord(Seq(benchmarkSequences[i]),id=str(i) + origConsensusSequence1, description='testConsensusSequence1, error Num=='+str(errorNum))
+        seqRec.letter_annotations["phred_quality"] = [1 for x in benchmarkSequences[i]]
+        benchmarkRecords.append(seqRec)
+
+    with open("test/tdd/output/tdd_example_benchmark_sequences.fq", "w") as output_handle:
+        SeqIO.write(benchmarkRecords, output_handle, "fastq")
+
 if __name__ == '__main__':
-    #create_test_fastq_and_txt_files()
+    create_test_fastq_and_txt_files()
     unittest.main()
