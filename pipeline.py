@@ -81,7 +81,6 @@ def main():
                 SeqIO.write(finalRecords, output_handle, "fasta")
             print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
 
-# still needs to test
 def medaka_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
@@ -159,8 +158,8 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
              '-d', draftFile,
              '-o', outputDir])
             stdout, stderr = process.communicate()
-            print(draftFile)
-            print(binFile)
+            print(f'Draft File: {draftFile}')
+            print(f'Bin File: {binFile}')
             if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
             else: return returnSequence
             os.remove(outputDir + 'calls_to_draft.bam')
