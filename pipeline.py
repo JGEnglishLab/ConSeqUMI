@@ -66,7 +66,7 @@ def main():
         print('\nConsensus Sequence Generation')
         print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
 
-        binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
+        binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
         pattern = '(\d+)'
         records = medaka_pipeline(args['output'], binFiles, pattern)
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
@@ -98,19 +98,16 @@ def medaka_pipeline(outputDir, binFiles, pattern):
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
 
-#tested
 def adjust_all_string_lengths(strs, buffer_length):
     max_length = len(max(strs, key = len))
     strs = [x.ljust(max_length+buffer_length) for x in strs]
     return strs
 
-#tested
 def initialize_consensus_output_string(strs, excerpt_length):
     tempList = [x[:excerpt_length] for x in strs]
     final = max(set(tempList), key = tempList.count)
     return final
 
-#tested
 def find_next_character(subStrings, tempPattern):
     pattern = re.compile(tempPattern + '.')
     baseCountDict = defaultdict(list)
@@ -128,7 +125,6 @@ def find_next_character(subStrings, tempPattern):
         return res[0]
     return c.most_common()[0][0]
 
-#tested
 def find_consensus(strs, excerpt_length = 10, buffer_length = 20):
     strs = adjust_all_string_lengths(strs, buffer_length)
     final = initialize_consensus_output_string(strs, excerpt_length)
@@ -191,7 +187,7 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
 def benchmark_binned_sequences(outDir, binPath, iteration = 100):
     records = [record for record in SeqIO.parse(binPath, "fastq")]
     fullData = []
-    if len(records) >= 500 :
+    if len(records) >= 500:
         tempBinPath = outDir + 'temp_bin.fq'
         referenceSequence = run_medaka_on_file(outDir, binPath, bc = True)
 
