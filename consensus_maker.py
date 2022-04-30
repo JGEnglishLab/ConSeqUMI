@@ -84,7 +84,7 @@ def bin_sequences_by_umi_pair(seqPath, starcodePath):
     for i in range(len(starcode)):
         indices = [int(y) for y in starcode[i].split(',')]
         records = [fq[index_recordID[j]] for j in indices]
-        outputPath = seqPath.split('.')[0] + '_bin' + str(i) + '.fq'
+        outputPath = '.'.join(seqPath.split('.')[:-1]) + '_bin' + str(i) + '.fq'
         with open(outputPath, "w") as output_handle:
             SeqIO.write(records, output_handle, "fastq")
     fq.close()

@@ -56,7 +56,7 @@ def main():
         for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
         for binFile in sorted(binFiles):
             tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 10)
-            tempDf.to_csv(binFile.split('.')[0] + '_benchmark.csv', index = False)
+            tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
             dfs.append(tempDf)
         df = pd.concat(dfs)
         print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
@@ -136,7 +136,7 @@ def find_consensus(strs, excerpt_length = 10, buffer_length = 20):
 
 def run_medaka_on_file(outputDir, binFile, bc = False):
     records = [record for record in SeqIO.parse(binFile, "fastq")]
-    draftFile = binFile.split('.')[0]+'_draft.fq'
+    draftFile = '.'.join(binFile.split('.')[:-1])+'_draft.fq'
     consSequence_count = defaultdict(int)
     returnSequence = 'XXXXX'
     for i in range(len(records)):
