@@ -298,7 +298,10 @@ def run_starcode(input, output):
     process = subprocess.Popen(['../starcode/starcode',
      '-i', input,
      '-o', output,
-     '--seq-id'])
+     '--seq-id',
+     #'-s',
+     #'-d 5',
+     ])
     stdout, stderr = process.communicate()
 
 

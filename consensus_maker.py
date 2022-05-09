@@ -77,7 +77,7 @@ def bin_sequences_by_umi_pair(seqPath, starcodePath):
         for record in SeqIO.parse(handle, "fastq"): index_recordID[count] = record.id; count += 1
 
     starcode = pd.read_csv(starcodePath, sep='\t', header=None)
-    starcode = starcode[starcode.iloc[:,1] >= 100]
+    starcode = starcode[starcode.iloc[:,1] >= 50]
     starcode = list(starcode.iloc[:,2])
     fq = SeqIO.index(seqPath, "fastq")
 
