@@ -13,4 +13,4 @@ Some packages cannot be installed through pip. [This page](https://www.htslib.or
 2. `cd` into the repository. Enter `make`. Executables should be available in the repository now.
 3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. You will need the `bcftools` and `samtools` executables from their respective directories as well as `bgzip` and `tabix` from the `htslib` directory.
 
-You will also need to download minimap2 independently. See [here](https://github.com/lh3/minimap2#install) for instructions.
+You will also need to download minimap2 via conda. Enter `conda install minimap2`, and if that doesn't work see [here](https://github.com/lh3/minimap2#install) for instructions.
