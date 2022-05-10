@@ -295,7 +295,7 @@ def restricted_file_or_directory(x, permittedTypes=[]):
     return True
 
 def run_starcode(input, output):
-    process = subprocess.Popen(['../starcode/starcode',
+    process = subprocess.Popen(['starcode',
      '-i', input,
      '-o', output,
      '--seq-id',
