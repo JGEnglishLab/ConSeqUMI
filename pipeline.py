@@ -36,7 +36,7 @@ def main():
     UMIExtractor.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
     print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
-    print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded: ' + str(excludedCount))
+    print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded because adapters didn\'t match: ' + str(excludedCount))
     print('\nStarcode Binning')
     print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
     run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
