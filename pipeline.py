@@ -4,7 +4,7 @@ import sys
 import argparse
 import os
 import umi_extractor as ue
-import consensus_maker as cm
+import umi_binner as ub
 import subprocess
 from timeit import default_timer as timer
 import re
@@ -45,9 +45,9 @@ def main():
     run_starcode(args['output']+ 'umi2.txt', args['output']+ 'starcode2.txt')
 
     print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras')
-    cm.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
+    ub.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
     print('----> ' + str(round(timer()-startTime, 2)) + ' bin sequences by UMI pair')
-    cm.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
+    ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
 
     if args['benchmarkClusters']:
         print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
@@ -242,7 +242,7 @@ def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
     seqs = [str(binConsDict[id].seq) for id in sorted(binConsDict)]
     seqArray = np.array(seqs)
     finalBinFiles = []
-    for group in cm.cluster_longread_consensus_sequences(seqs):
+    for group in ub.cluster_longread_consensus_sequences(seqs):
         groupIndices = [i for i,x in enumerate(group) if x]
         records = []
         for i in groupIndices:
@@ -295,7 +295,7 @@ def restricted_file_or_directory(x, permittedTypes=[]):
     return True
 
 def run_starcode(input, output):
-    process = subprocess.Popen(['../starcode/starcode',
+    process = subprocess.Popen(['starcode',
      '-i', input,
      '-o', output,
      '--seq-id',

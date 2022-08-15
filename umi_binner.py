@@ -3,7 +3,6 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import pandas as pd
 import numpy as np
-import subprocess
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Levenshtein import ratio, distance
