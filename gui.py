@@ -8,7 +8,10 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QFileDialog,
     QPlainTextEdit,
+    QVBoxLayout,
 )
+
+from PyQt5.QtCore import QProcess
 
 class longreadWindow(QWidget):
     def __init__(self):
@@ -20,13 +23,17 @@ class longreadWindow(QWidget):
         self.INVALID_COLOR = 'rgb(255,99,71)'
 
         self.setWindowTitle('longread_umi_python')
+        dlgLayout = QVBoxLayout()
         formLayout = QFormLayout()
 
         self.inputLabel = QLabel('Input Directory Path')
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
+        self.inputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode01')
         self.inputBrowseButton = QPushButton('Browse')
         self.inputBrowseButton.clicked.connect(lambda:self.get_file(self.inputField))
+        #self.inputCopyButton = QPushButton('Copy to Clipboard')
+        #self.inputCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.inputField.text()))
 
         formLayout.addRow(self.inputLabel, self.inputBrowseButton)
         formLayout.addRow(self.inputField)
@@ -35,22 +42,30 @@ class longreadWindow(QWidget):
         self.outputLabel = QLabel('Output Directory Path')
         self.outputField = QLineEdit()
         self.outputField.setEnabled(False)
+        self.outputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data')
         self.outputBrowseButton = QPushButton('Browse')
         self.outputBrowseButton.clicked.connect(lambda:self.get_file(self.outputField))
+        #self.outputCopyButton = QPushButton('Copy to Clipboard')
+        #self.outputCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.outputField.text()))
+
 
         formLayout.addRow(self.outputLabel, self.outputBrowseButton)
         formLayout.addRow(self.outputField)
 
         self.outputNameLabel = QLabel('Output Directory Title')
         self.outputNameField = QLineEdit()
+        self.outputNameField.setText('delete')
         formLayout.addRow(self.outputNameLabel, self.outputNameField)
 
 
         self.adapterLabel = QLabel('Adapter File Path')
         self.adapterField = QLineEdit()
         self.adapterField.setEnabled(False)
+        self.adapterField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/adapters.txt')
         self.adapterBrowseButton = QPushButton('Browse')
         self.adapterBrowseButton.clicked.connect(lambda:self.get_file(self.adapterField, isFile=True))
+        #self.adapterCopyButton = QPushButton('Copy to Clipboard')
+        #self.adapterCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.adapterField.text()))
 
         formLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
         formLayout.addRow(self.adapterField)
@@ -59,18 +74,25 @@ class longreadWindow(QWidget):
         self.variantCheckBox = QCheckBox()
         formLayout.addRow(self.variantLabel, self.variantCheckBox)
 
+        dlgLayout.addLayout(formLayout)
+
         self.runBtn = QPushButton('Execute')
         self.killBtn = QPushButton('Kill Process')
         self.processText = QPlainTextEdit()
         self.processText.setReadOnly(True)
-        formLayout.addWidget(self.runBtn)
-        formLayout.addWidget(self.killBtn)
-        formLayout.addWidget(self.processText)
+        self.processCopyButton = QPushButton('Copy to Clipboard')
+        self.processCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.processText.toPlainText()))
+
+        dlgLayout.addWidget(self.runBtn)
+        dlgLayout.addWidget(self.killBtn)
+        dlgLayout.addWidget(self.processText)
+        dlgLayout.addWidget(self.processCopyButton)
         self.runBtn.setDefault(True)
         self.killBtn.setEnabled(False)
+        self.killBtn.clicked.connect(self.kill_process)
+        self.runBtn.clicked.connect(self.start_process)
 
-
-        self.setLayout(formLayout)
+        self.setLayout(dlgLayout)
 
     def get_file(self, text, isFile=False):
         dialog = QFileDialog()
@@ -85,36 +107,72 @@ class longreadWindow(QWidget):
         tempDict = {}
         tempDict['inputDir'] = self.return_file_path_value(self.inputField.text(), self.inputLabel)
         tempDict['outputDir'] = self.return_file_path_value(self.outputField.text(), self.outputLabel)
+        if len(self.outputNameField.text())==0: tempDict['outputName'] = False; self.set_text_color(self.outputNameLabel)
+        else: tempDict['outputName'] = self.outputNameField.text(); self.set_text_color(self.outputNameLabel, isValid = True)
         tempDict['adapterFile'] = self.return_file_path_value(self.adapterField.text(), self.adapterLabel, permittedTypes=['txt'])
-        if self.variantCheckBox.isChecked(): tempDict['isVariant'] = True; self.set_text_color(self.variantLabel, isValid=True)
-        else: tempDict['isVariant'] = False; self.set_text_color(self.variantLabel, isValid=False)
+        if self.variantCheckBox.isChecked(): tempDict['isVariant'] = 2; self.set_text_color(self.variantLabel, isValid=True)
+        else: tempDict['isVariant'] = 1; self.set_text_color(self.variantLabel, isValid=True)
         if False in list(tempDict.values()): return False
         args = []
+        args += ['pipeline.py']
         args += ['i', tempDict['inputDir']]
-        args += ['o', tempDict['outputDir']]
+        print(tempDict['outputDir'])
+        print(tempDict['outputName'])
+        args += ['o', tempDict['outputDir'] + '/' + tempDict['outputName']]
         args += ['a', tempDict['adapterFile']]
-        if tempDict['isVariant']: args += ['v']
+        if tempDict['isVariant']==2: args += ['v']
         return args
 
     def return_file_path_value(self, path, text, permittedTypes=[]):
-        if len(path)==0: return self.set_text_color(text)
-        if len(permittedTypes)!=0 and path.split('.')[-1].lower() not in permittedTypes: return self.set_text_color(text)
-        return self.set_text_color(text, path)
+        if len(path)==0: self.set_text_color(text); return False
+        if len(permittedTypes)!=0 and path.split('.')[-1].lower() not in permittedTypes: self.set_text_color(text); return False
+        self.set_text_color(text, isValid=True)
+        return path
+
+    def message(self, s):
+        self.processText.appendPlainText(s)
 
     def start_process(self):
         args = self.set_args()
+        print(args)
         if not args: return
         self.killBtn.setEnabled(True)
 
         if self.p is None:  # No process running.
-            args = []
 
             self.message("Executing process")
-            #self.p = QProcess()  # Keep a reference to the QProcess (e.g. on self) while it's running.
-            #self.p.readyReadStandardOutput.connect(self.handle_stdout)
-            #self.p.readyReadStandardError.connect(self.handle_stderr)
-            #self.p.finished.connect(self.process_finished)  # Clean up once complete.
-            #self.p.start('csodiaq', args)
+            self.message("Input Directory: " + self.inputField.text())
+            self.message("Output Directory: " + self.outputField.text() + '/' + self.outputNameField.text())
+            self.message("Adapter File: " + self.adapterField.text() + '\n\n')
+            self.p = QProcess()  # Keep a reference to the QProcess (e.g. on self) while it's running.
+            self.p.readyReadStandardOutput.connect(self.handle_stdout)
+            self.p.readyReadStandardError.connect(self.handle_stderr)
+            self.p.finished.connect(self.process_finished)  # Clean up once complete.
+            self.p.start('python', args)
+
+    def kill_process(self):
+        self.p.kill()
+
+    def handle_stderr(self):
+        data = self.p.readAllStandardError()
+        stderr = bytes(data).decode("utf8")
+        self.message(stderr)
+
+    def handle_stdout(self):
+        data = self.p.readAllStandardOutput()
+        stdout = bytes(data).decode("utf8")
+        self.message(stdout)
+
+    def process_finished(self):
+        self.message("Process finished.")
+        self.killBtn.setEnabled(False)
+        self.p = None
+
+    def copy_to_clipboard(self, text):
+        cb = QApplication.clipboard()
+        cb.clear(mode=cb.Clipboard)
+        cb.setText(text, mode=cb.Clipboard)
+        self.message("content is copied to clipboard")
 
 application = QApplication([])
 mainWindow = longreadWindow()
