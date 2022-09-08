@@ -74,6 +74,12 @@ class longreadWindow(QWidget):
         self.variantCheckBox = QCheckBox()
         formLayout.addRow(self.variantLabel, self.variantCheckBox)
 
+
+        self.benchmarkLabel = QLabel('Perform Benchmarking Run (note: runtime significantly longer)')
+        self.benchmarkCheckBox = QCheckBox()
+        formLayout.addRow(self.benchmarkLabel, self.benchmarkCheckBox)
+        self.benchmarkCheckBox.stateChanged.connect(lambda:self.disable_second_box(self.benchmarkCheckBox, self.variantCheckBox))
+
         dlgLayout.addLayout(formLayout)
 
         self.runBtn = QPushButton('Execute')
@@ -94,6 +100,13 @@ class longreadWindow(QWidget):
 
         self.setLayout(dlgLayout)
 
+    def disable_second_box(self, checkBox1, checkBox2):
+        if checkBox1.isChecked():
+            checkBox2.setCheckState(False)
+            checkBox2.setEnabled(False)
+        else:
+            checkBox2.setEnabled(True)
+
     def get_file(self, text, isFile=False):
         dialog = QFileDialog()
         if isFile: fname = QFileDialog.getOpenFileName(self, 'Open File', 'c:\\'); text.setText(fname[0])
@@ -112,15 +125,17 @@ class longreadWindow(QWidget):
         tempDict['adapterFile'] = self.return_file_path_value(self.adapterField.text(), self.adapterLabel, permittedTypes=['txt'])
         if self.variantCheckBox.isChecked(): tempDict['isVariant'] = 2; self.set_text_color(self.variantLabel, isValid=True)
         else: tempDict['isVariant'] = 1; self.set_text_color(self.variantLabel, isValid=True)
+        if self.benchmarkCheckBox.isChecked(): tempDict['isBenchmark'] = 2; self.set_text_color(self.benchmarkLabel, isValid=True)
+        else: tempDict['isBenchmark'] = 1; self.set_text_color(self.benchmarkLabel, isValid=True)
+
         if False in list(tempDict.values()): return False
         args = []
         args += ['pipeline.py']
         args += ['i', tempDict['inputDir']]
-        print(tempDict['outputDir'])
-        print(tempDict['outputName'])
         args += ['o', tempDict['outputDir'] + '/' + tempDict['outputName']]
         args += ['a', tempDict['adapterFile']]
         if tempDict['isVariant']==2: args += ['v']
+        if tempDict['isBenchmark']==2: args += ['bc']
         return args
 
     def return_file_path_value(self, path, text, permittedTypes=[]):
@@ -134,7 +149,6 @@ class longreadWindow(QWidget):
 
     def start_process(self):
         args = self.set_args()
-        print(args)
         if not args: return
         self.killBtn.setEnabled(True)
 
@@ -143,7 +157,10 @@ class longreadWindow(QWidget):
             self.message("Executing process")
             self.message("Input Directory: " + self.inputField.text())
             self.message("Output Directory: " + self.outputField.text() + '/' + self.outputNameField.text())
-            self.message("Adapter File: " + self.adapterField.text() + '\n\n')
+            self.message("Adapter File: " + self.adapterField.text())
+            if self.variantCheckBox.isChecked(): self.message('Variant setting enabled')
+            if self.benchmarkCheckBox.isChecked(): self.message('Benchmark setting enabled')
+            self.message("\n\n")
             self.p = QProcess()  # Keep a reference to the QProcess (e.g. on self) while it's running.
             self.p.readyReadStandardOutput.connect(self.handle_stdout)
             self.p.readyReadStandardError.connect(self.handle_stderr)
