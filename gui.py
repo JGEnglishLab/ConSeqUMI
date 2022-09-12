@@ -1,3 +1,4 @@
+import sys
 from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
@@ -29,7 +30,7 @@ class longreadWindow(QWidget):
         self.inputLabel = QLabel('Input Directory Path')
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
-        self.inputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode01')
+        self.inputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode07')
         self.inputBrowseButton = QPushButton('Browse')
         self.inputBrowseButton.clicked.connect(lambda:self.get_file(self.inputField))
         #self.inputCopyButton = QPushButton('Copy to Clipboard')
@@ -130,12 +131,12 @@ class longreadWindow(QWidget):
 
         if False in list(tempDict.values()): return False
         args = []
-        args += ['pipeline.py']
-        args += ['i', tempDict['inputDir']]
-        args += ['o', tempDict['outputDir'] + '/' + tempDict['outputName']]
-        args += ['a', tempDict['adapterFile']]
-        if tempDict['isVariant']==2: args += ['v']
-        if tempDict['isBenchmark']==2: args += ['bc']
+        args += ['pipeline.py', 'cons']
+        args += ['-i', tempDict['inputDir']]
+        args += ['-o', tempDict['outputDir'] + '/' + tempDict['outputName']]
+        args += ['-a', tempDict['adapterFile']]
+        if tempDict['isVariant']==2: args += ['-v']
+        if tempDict['isBenchmark']==2: args += ['-bc']
         return args
 
     def return_file_path_value(self, path, text, permittedTypes=[]):
@@ -150,6 +151,7 @@ class longreadWindow(QWidget):
     def start_process(self):
         args = self.set_args()
         if not args: return
+        print(args)
         self.killBtn.setEnabled(True)
 
         if self.p is None:  # No process running.
@@ -191,10 +193,11 @@ class longreadWindow(QWidget):
         cb.setText(text, mode=cb.Clipboard)
         self.message("content is copied to clipboard")
 
-application = QApplication([])
-mainWindow = longreadWindow()
+def main():
+    app = QApplication(sys.argv)
+    view = longreadWindow()
+    view.show()
+    sys.exit(app.exec_())
 
-
-mainWindow.show()
-
-application.exec()
+if __name__ == '__main__':
+    main()

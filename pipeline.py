@@ -5,6 +5,7 @@ import argparse
 import os
 import umi_extractor as ue
 import umi_binner as ub
+import gui
 import subprocess
 from timeit import default_timer as timer
 import re
@@ -25,6 +26,10 @@ def main():
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
     check_for_invalid_input(parser, args)
+    if args['command'] == 'gui' or args['command'] is None:  # Default to GUI
+        gui.main()
+        return
+
     startTime = timer()
     print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
@@ -259,33 +264,37 @@ def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
 
 
 def set_command_line_settings():
-    parser = argparse.ArgumentParser(description='Identifying Consensus Sequences from UMI-binnable nanopore reads.')
-    parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder only containing input Nanopore read fastq files.')
-    parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
-    parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
-    parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
-    parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
+    parser = argparse.ArgumentParser(description='')
+    subparsers = parser.add_subparsers(dest='command', help='CsoDIAq Functions')
+    subparsers.add_parser('gui', help='Launches the (optional) GUI application for using longread_umi_python.')
+    cons_parser = subparsers.add_parser('cons', help='Identifying Consensus Sequences from UMI-binnable nanopore reads.')
+    cons_parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder only containing input Nanopore read fastq files.')
+    cons_parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
+    cons_parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
+    cons_parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
+    cons_parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
     return parser
 
 def check_for_invalid_input(parser, args):
-    if not restricted_file_or_directory(args['input']): parser.error('The -i or --input argument must be an existing directory')
-    files = os.listdir(args['input'])
-    for file in files:
-        if not restricted_file_or_directory(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
-    if restricted_file_or_directory(args['output']): parser.error('The -o or --output argument must indicate a directory that does not exist yet')
-    if not restricted_file_or_directory(args['adapters'], permittedTypes=['txt']): parser.error('The -a or --adapters argument must be an existing file of type text (.txt) format')
-    with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
-    if len(adapters) != 4: parser.error('The -a or --adapters argument file must contain 4 adapters.')
-    nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
-    if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
+    if args['command'] == 'cons':
+        if not restricted_file_or_directory(args['input']): parser.error('The -i or --input argument must be an existing directory')
+        files = os.listdir(args['input'])
+        for file in files:
+            if not restricted_file_or_directory(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
+        if restricted_file_or_directory(args['output']): parser.error('The -o or --output argument must indicate a directory that does not exist yet')
+        if not restricted_file_or_directory(args['adapters'], permittedTypes=['txt']): parser.error('The -a or --adapters argument must be an existing file of type text (.txt) format')
+        with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
+        if len(adapters) != 4: parser.error('The -a or --adapters argument file must contain 4 adapters.')
+        nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
+        if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
 
-    if args['input'][-1] != '/': args['input'] += '/'
-    if args['output'][-1] != '/': args['output'] += '/'
-    newOutput = args['output'] + 'delete/'
-    args['oldOutput'] = args['output']
-    args['output'] = newOutput
-    os.mkdir(args['oldOutput'])
-    os.mkdir(args['output'])
+        if args['input'][-1] != '/': args['input'] += '/'
+        if args['output'][-1] != '/': args['output'] += '/'
+        newOutput = args['output'] + 'delete/'
+        args['oldOutput'] = args['output']
+        args['output'] = newOutput
+        os.mkdir(args['oldOutput'])
+        os.mkdir(args['output'])
 
 def restricted_file_or_directory(x, permittedTypes=[]):
     if not len(permittedTypes):
