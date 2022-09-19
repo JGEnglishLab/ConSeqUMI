@@ -20,7 +20,7 @@ class longreadWindow(QWidget):
         self.p = None
         self.dict = None
         self.INVALID = -1
-        self.VALID_COLOR = 'lightgreen'
+        self.VALID_COLOR = 'green'
         self.INVALID_COLOR = 'rgb(255,99,71)'
 
         self.setWindowTitle('longread_umi_python')
@@ -63,6 +63,10 @@ class longreadWindow(QWidget):
 
         formLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
         formLayout.addRow(self.adapterField)
+
+        self.strictVLooseLabel = QLabel('Loose Adapter Identification Settings?')
+        self.strictVLooseCheckBox = QCheckBox()
+        formLayout.addRow(self.strictVLooseLabel, self.strictVLooseCheckBox)
 
         self.variantLabel = QLabel('Consolidate Variants in Final Output?')
         self.variantCheckBox = QCheckBox()
@@ -117,6 +121,8 @@ class longreadWindow(QWidget):
         if len(self.outputNameField.text())==0: tempDict['outputName'] = False; self.set_text_color(self.outputNameLabel)
         else: tempDict['outputName'] = self.outputNameField.text(); self.set_text_color(self.outputNameLabel, isValid = True)
         tempDict['adapterFile'] = self.return_file_path_value(self.adapterField.text(), self.adapterLabel, permittedTypes=['txt'])
+        if self.strictVLooseCheckBox.isChecked(): tempDict['isLoose'] = 2; self.set_text_color(self.strictVLooseLabel, isValid=True)
+        else: tempDict['isLoose'] = 1; self.set_text_color(self.strictVLooseLabel, isValid=True)
         if self.variantCheckBox.isChecked(): tempDict['isVariant'] = 2; self.set_text_color(self.variantLabel, isValid=True)
         else: tempDict['isVariant'] = 1; self.set_text_color(self.variantLabel, isValid=True)
         if self.benchmarkCheckBox.isChecked(): tempDict['isBenchmark'] = 2; self.set_text_color(self.benchmarkLabel, isValid=True)
@@ -128,6 +134,7 @@ class longreadWindow(QWidget):
         args += ['-i', tempDict['inputDir']]
         args += ['-o', tempDict['outputDir'] + '/' + tempDict['outputName']]
         args += ['-a', tempDict['adapterFile']]
+        #if tempDict['isLoose']==2: args += ['-l']
         if tempDict['isVariant']==2: args += ['-v']
         if tempDict['isBenchmark']==2: args += ['-bc']
         return args
