@@ -30,11 +30,9 @@ class longreadWindow(QWidget):
         self.inputLabel = QLabel('Input Directory Path')
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
-        self.inputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode07')
+        self.inputField.setText('/Users/calebcranney/Desktop/pass')
         self.inputBrowseButton = QPushButton('Browse')
         self.inputBrowseButton.clicked.connect(lambda:self.get_file(self.inputField))
-        #self.inputCopyButton = QPushButton('Copy to Clipboard')
-        #self.inputCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.inputField.text()))
 
         formLayout.addRow(self.inputLabel, self.inputBrowseButton)
         formLayout.addRow(self.inputField)
@@ -46,9 +44,6 @@ class longreadWindow(QWidget):
         self.outputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data')
         self.outputBrowseButton = QPushButton('Browse')
         self.outputBrowseButton.clicked.connect(lambda:self.get_file(self.outputField))
-        #self.outputCopyButton = QPushButton('Copy to Clipboard')
-        #self.outputCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.outputField.text()))
-
 
         formLayout.addRow(self.outputLabel, self.outputBrowseButton)
         formLayout.addRow(self.outputField)
@@ -62,11 +57,9 @@ class longreadWindow(QWidget):
         self.adapterLabel = QLabel('Adapter File Path')
         self.adapterField = QLineEdit()
         self.adapterField.setEnabled(False)
-        self.adapterField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/adapters.txt')
+        self.adapterField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/adapters.txt')
         self.adapterBrowseButton = QPushButton('Browse')
         self.adapterBrowseButton.clicked.connect(lambda:self.get_file(self.adapterField, isFile=True))
-        #self.adapterCopyButton = QPushButton('Copy to Clipboard')
-        #self.adapterCopyButton.clicked.connect(lambda:self.copy_to_clipboard(self.adapterField.text()))
 
         formLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
         formLayout.addRow(self.adapterField)
@@ -151,12 +144,12 @@ class longreadWindow(QWidget):
     def start_process(self):
         args = self.set_args()
         if not args: return
-        print(args)
         self.killBtn.setEnabled(True)
 
         if self.p is None:  # No process running.
 
             self.message("Executing process")
+            self.message('python ' + ' '.join(args))
             self.message("Input Directory: " + self.inputField.text())
             self.message("Output Directory: " + self.outputField.text() + '/' + self.outputNameField.text())
             self.message("Adapter File: " + self.adapterField.text())

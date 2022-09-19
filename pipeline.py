@@ -33,29 +33,29 @@ def main():
     startTime = timer()
     print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
-    print('----> ' + str(round(timer()-startTime, 2)) + ' setting adapter objects')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' setting adapter objects', flush=True)
     with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
     UMIExtractor.set_universal_front_and_reverse_linked_adapters(adapters[0], adapters[1], adapters[2], adapters[3])
     files = [args['input']+file for file in os.listdir(args['input'])]
-    print('----> ' + str(round(timer()-startTime, 2)) + ' identifying adapter start indices')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' identifying adapter start indices', flush=True)
     UMIExtractor.identify_and_set_front_and_reverse_adapter_start_indices_from_file(files)
-    print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' extracting UMI sequences', flush=True)
     excludedCount = UMIExtractor.extract_umi_and_sequences_from_files(files, args['output'])
-    print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded because adapters didn\'t match: ' + str(excludedCount))
+    print('----> ' + str(round(timer()-startTime, 2)) + ' lines excluded because adapters didn\'t match: ' + str(excludedCount), flush=True)
     print('\nStarcode Binning')
-    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi1 process', flush=True)
     run_starcode(args['output']+ 'umi1.txt', args['output']+ 'starcode1.txt')
 
-    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi2 process')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' begin umi2 process', flush=True)
     run_starcode(args['output']+ 'umi2.txt', args['output']+ 'starcode2.txt')
 
-    print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' remove chimeras', flush=True)
     ub.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
-    print('----> ' + str(round(timer()-startTime, 2)) + ' bin sequences by UMI pair')
+    print('----> ' + str(round(timer()-startTime, 2)) + ' bin sequences by UMI pair', flush=True)
     ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
 
     if args['benchmarkClusters']:
-        print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' bootstrapping', flush=True)
         dfs = []
         binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
         for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
@@ -64,27 +64,27 @@ def main():
             tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
             dfs.append(tempDf)
         df = pd.concat(dfs)
-        print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing benchmarking output', flush=True)
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
     else:
 
         print('\nConsensus Sequence Generation')
-        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining consensus sequences', flush=True)
 
         binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
         pattern = '(\d+)'
         records = medaka_pipeline(args['output'], binFiles, pattern)
-        print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output')
+        print('----> ' + str(round(timer()-startTime, 2)) + ' writing consensus output', flush=True)
         with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
             SeqIO.write(records, output_handle, "fasta")
         if args['variants']:
-            print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences')
+            print('----> ' + str(round(timer()-startTime, 2)) + ' obtaining variant sequences', flush=True)
             superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
             superPattern = '(_super[_\d]+)'
             finalRecords = medaka_pipeline(args['output'], superBinFiles, superPattern)
             with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
                 SeqIO.write(finalRecords, output_handle, "fasta")
-            print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output')
+            print('----> ' + str(round(timer()-startTime, 2)) + ' writing variant output', flush=True)
 
 def medaka_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
