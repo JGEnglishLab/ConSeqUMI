@@ -74,9 +74,10 @@ def main():
 
         binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
         pattern = '(\d+)'
-        records = medaka_pipeline(args['output'], binFiles, pattern)
+        if args['customConsensus']: records = custom_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_custom.fasta'
+        else: records = medaka_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_medaka.fasta'
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing consensus output', flush=True)
-        with open(args['oldOutput'] + 'consensus.fasta', "w") as output_handle:
+        with open(args['oldOutput'] + consensusFile, "w") as output_handle:
             SeqIO.write(records, output_handle, "fasta")
         if args['variants']:
             print('----> ' + stringify_time_since_start(startTime, timer()) + ' obtaining variant sequences', flush=True)
@@ -89,6 +90,19 @@ def main():
 
 def stringify_time_since_start(start, end):
     return time.strftime("%H:%M:%S", time.gmtime(end-start))
+
+def custom_pipeline(outputDir, binFiles, pattern):
+    binPattern = "seq_bin" + pattern + "\.fq"
+    binPattern = re.compile(binPattern)
+    records = []
+    for binFile in binFiles:
+        seqStrs = [str(record.seq) for record in SeqIO.parse(binFile, "fastq")]
+        consensusSeq = find_consensus(seqStrs)
+        seqRecord = SeqRecord(Seq(consensusSeq),id=binPattern.search(binFile).group(1))
+        records.append(seqRecord)
+    return records
+
+
 
 def medaka_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
@@ -277,6 +291,7 @@ def set_command_line_settings():
     cons_parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
     cons_parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
     cons_parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
+    cons_parser.add_argument('-cc', '--customConsensus', action="store_true", help='A flag indicating we want to skip the medaka consensus sequence workflow and only use the custom consensus sequence algorithm. WARNING: this setting can have systematic errors in homopolymeric or long repeat sequences.')
     return parser
 
 def check_for_invalid_input(parser, args):
