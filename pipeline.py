@@ -286,7 +286,7 @@ def set_command_line_settings():
     subparsers = parser.add_subparsers(dest='command', help='CsoDIAq Functions')
     subparsers.add_parser('gui', help='Launches the (optional) GUI application for using longread_umi_python.')
     cons_parser = subparsers.add_parser('cons', help='Identifying Consensus Sequences from UMI-binnable nanopore reads.')
-    cons_parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder only containing input Nanopore read fastq files.')
+    cons_parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder that only contains input Nanopore read fastq files.')
     cons_parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
     cons_parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
     cons_parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
@@ -300,7 +300,9 @@ def check_for_invalid_input(parser, args):
         files = os.listdir(args['input'])
         for file in files:
             if not restricted_file_or_directory(file, permittedTypes=['fq', 'fastq']): parser.error('The directory indicated by the -i or --input argument must only contain fastq files (.fq or .fastq)')
-        if restricted_file_or_directory(args['output']): parser.error('The -o or --output argument must indicate a directory that does not exist yet')
+        output = restricted_file_or_directory(args['output'], isOutput = True)
+        if not output: parser.error('The -o or --output argument must indicate a directory that does not exist yet')
+        args['output'] = output
         if not restricted_file_or_directory(args['adapters'], permittedTypes=['txt']): parser.error('The -a or --adapters argument must be an existing file of type text (.txt) format')
         with open(args['adapters'], 'r') as adapterFile: adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
         if len(adapters) != 4: parser.error('The -a or --adapters argument file must contain 4 adapters.')
@@ -315,8 +317,17 @@ def check_for_invalid_input(parser, args):
         os.mkdir(args['oldOutput'])
         os.mkdir(args['output'])
 
-def restricted_file_or_directory(x, permittedTypes=[]):
+def restricted_file_or_directory(x, permittedTypes=[], isOutput = False):
     if not len(permittedTypes):
+        if isOutput:
+            if x[-1] == '/': x = x[:-1]
+            name = ''
+            if os.path.isdir(x): name += '/ConsSeqUMI'
+            name += '-' + time.strftime("%Y%m%d-%H%M%S")
+            x += name
+            if os.path.isdir(x): return False
+            return x
+
         if not os.path.isdir(x): return False
         else: return True
     if x.split('.')[-1].lower() not in permittedTypes and not os.path.isfile(x): return False
