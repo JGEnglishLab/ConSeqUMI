@@ -53,7 +53,7 @@ def main():
     print('----> ' + stringify_time_since_start(startTime, timer()) + ' remove chimeras', flush=True)
     ub.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
     print('----> ' + stringify_time_since_start(startTime, timer()) + ' bin sequences by UMI pair', flush=True)
-    ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt')
+    ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt', args['minimumReads'])
 
     if args['benchmarkClusters']:
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
@@ -289,6 +289,7 @@ def set_command_line_settings():
     cons_parser.add_argument('-i', '--input', type=str, required=True, help='Path to folder that only contains input Nanopore read fastq files.')
     cons_parser.add_argument('-o', '--output', type=str, required=True, help='Path for folder output. Folder should not currently exist.')
     cons_parser.add_argument('-a', '--adapters', type=str, required=True, help='A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.')
+    cons_parser.add_argument('-min', '--minimumReads', type=restricted_int, default=50, help='Minimum number of cluster reads required to generate a consensus sequence. Default is 50.')
     cons_parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
     cons_parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
     cons_parser.add_argument('-cc', '--customConsensus', action="store_true", help='A flag indicating we want to skip the medaka consensus sequence workflow and only use the custom consensus sequence algorithm. WARNING: this setting can have systematic errors in homopolymeric or long repeat sequences.')
@@ -308,6 +309,7 @@ def check_for_invalid_input(parser, args):
         if len(adapters) != 4: parser.error('The -a or --adapters argument file must contain 4 adapters.')
         nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
         if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
+        if args['minimumReads'] < 20: parser.error('The -min or --minimumReads argument must be 20 or higher.')
 
         if args['input'][-1] != '/': args['input'] += '/'
         if args['output'][-1] != '/': args['output'] += '/'
@@ -332,6 +334,16 @@ def restricted_file_or_directory(x, permittedTypes=[], isOutput = False):
         else: return True
     if x.split('.')[-1].lower() not in permittedTypes and not os.path.isfile(x): return False
     return True
+
+def restricted_int(x):
+    try:
+        x = int(x)
+    except ValueError:
+        raise argparse.ArgumentTypeError("%r not an integer literal" % (x,))
+    if x < 1:
+        raise argparse.ArgumentTypeError("%r must be an integer greater than 0"%(x,))
+    return x
+
 
 def run_starcode(input, output):
     process = subprocess.Popen(['starcode',

@@ -69,14 +69,14 @@ def remove_duplicate_umis_from_pairs(umi1List, umi2List, indicesList):
 
     return umi1List, umi2List, indicesList
 
-def bin_sequences_by_umi_pair(seqPath, starcodePath):
+def bin_sequences_by_umi_pair(seqPath, starcodePath, minReads):
     index_recordID = {}
     with open(seqPath) as handle:
         count = 1
         for record in SeqIO.parse(handle, "fastq"): index_recordID[count] = record.id; count += 1
 
     starcode = pd.read_csv(starcodePath, sep='\t', header=None)
-    starcode = starcode[starcode.iloc[:,1] >= 50]
+    starcode = starcode[starcode.iloc[:,1] >= minReads]
     starcode = list(starcode.iloc[:,2])
     fq = SeqIO.index(seqPath, "fastq")
 
