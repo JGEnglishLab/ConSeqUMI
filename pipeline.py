@@ -31,6 +31,7 @@ def main():
         gui.main()
         return
 
+    print('\nOutput Directory Created: ' + args['output'])
     startTime = timer()
     print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
