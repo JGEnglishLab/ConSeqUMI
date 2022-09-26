@@ -5,7 +5,7 @@ import argparse
 import os
 import umi_extractor as ue
 import umi_binner as ub
-from consensus_algorithm_experimentation2 import ConsensusSequenceGenerator
+from consensus_algorithm_experimentation3 import ConsensusSequenceGenerator
 import gui
 import subprocess
 from timeit import default_timer as timer
@@ -97,6 +97,7 @@ def custom_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
     records = []
+    #binFiles.sort(key=lambda x: binPattern.search(x).group(1))
     for binFile in binFiles:
         print(binPattern.search(binFile).group(1), flush=True)
         csg = ConsensusSequenceGenerator()

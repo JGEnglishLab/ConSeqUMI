@@ -35,7 +35,7 @@ class longreadWindow(QWidget):
         self.inputLabel.setToolTip('Required. \nPath to folder that only contains input Nanopore read fastq files.')
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
-        self.inputField.setText('/Users/calebcranney/Desktop/pass')
+        self.inputField.setText('/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode07_sup_input')
         self.inputBrowseButton = QPushButton('Browse')
         self.inputBrowseButton.clicked.connect(lambda:self.get_file(self.inputField))
 
