@@ -2,9 +2,20 @@ import numpy as np
 import pandas as pd
 import re
 from collections import defaultdict, Counter
-from statistics import median
+from statistics import median, mean
 from Bio import SeqIO
 from Bio.Align import PairwiseAligner
+
+def find_average_aligned_score(candidateSeq, binSeqs):
+    aligner = PairwiseAligner()
+    aligner.mismatch_score = -1
+    aligner.open_gap_score = -1
+    aligner.extend_gap_score = -0.5
+    scores = []
+    for binSeq in binSeqs:
+        alignments = aligner.align(candidateSeq, binSeq)
+        scores.append(alignments[0].score)
+    return mean(scores)
 
 def find_aligned_differences(seq1, seq2):
 
@@ -18,12 +29,32 @@ def find_aligned_differences(seq1, seq2):
     b_idx.append((len(seq2),len(seq2)))
 
     diffs = []
+
     for i in range(len(a_idx)-1):
         start = a_idx[i][1]
         end = a_idx[i+1][0]
         insert = seq2[b_idx[i][1]:b_idx[i+1][0]]
+        if start == end and len(insert)==0: continue
         diffs.append((start, end, insert))
     return diffs
+
+def update_candidate_seq_by_common_diffs(candidateSeq, binSeqs, cutoff_percent = None):
+    diffs = []
+    for binSeq in binSeqs: diffs.extend(find_aligned_differences(candidateSeq, binSeq))
+    finalSeq = candidateSeq[:]
+
+    if cutoff_percent:
+        cutoff = len(binSeqs) * cutoff_percent
+        commonDiffs = sorted([key for key,value in Counter(diffs).items() if value > cutoff],reverse=True)
+        for diff in commonDiffs:
+            start, end, insert = diff
+            finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+    else:
+        most_common_diff = Counter(diffs).most_common(1)[0][0]
+        start, end, insert = most_common_diff
+        finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+    return finalSeq
+
 
 class ConsensusSequenceGenerator:
     def __init__(self, match_reward=1, mismatch_penalty=-1, gap_penalty=-2):
@@ -31,20 +62,24 @@ class ConsensusSequenceGenerator:
         self.SAME_AWARD = match_reward
         self.DIFFERENCE_PENALTY = mismatch_penalty
 
-    def generate_consensus_sequence_from_file(self, binFile, cutoff_percent=0.4):
+    def generate_consensus_sequence_from_file(self, binFile, cutoff_percent=None):
         binSeqs = [str(record.seq) for record in SeqIO.parse(binFile, "fastq")]
         return self.generate_consensus_sequence(binSeqs, cutoff_percent)
 
     def generate_consensus_sequence(self, binSeqs, cutoff_percent):
         diffs = []
         refSeq = find_reference_sequence(binSeqs)
-        for binSeq in binSeqs: diffs.extend(find_aligned_differences(refSeq, binSeq))
-        cutoff = len(binSeqs) * cutoff_percent
-        commonDiffs = sorted([key for key,value in Counter(diffs).items() if value > cutoff],reverse=True)
-        finalSeq = refSeq[:]
-        for diff in commonDiffs:
-            start, end, insert = diff
-            finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+        if cutoff_percent: return update_candidate_seq_by_common_diffs(refSeq, binSeqs, cutoff_percent)
+        bestScore = -np.inf
+        candidateSeq = refSeq[:]
+        curScore = find_average_aligned_score(candidateSeq, binSeqs)
+        while curScore >= bestScore:
+            bestScore = curScore
+            tempSeq = update_candidate_seq_by_common_diffs(candidateSeq, binSeqs)
+            curScore = find_average_aligned_score(tempSeq, binSeqs)
+            if curScore >= bestScore: candidateSeq = tempSeq
+        return candidateSeq
+
         '''
         cutoff_percents = [round(i,2) for i in np.arange(0.3, 0.61, 0.01)]
         seqs = []
