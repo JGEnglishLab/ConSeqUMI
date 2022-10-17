@@ -5,7 +5,6 @@ import argparse
 import os
 import umi_extractor as ue
 import umi_binner as ub
-from consensus_algorithm_experimentation3 import ConsensusSequenceGenerator
 import gui
 import subprocess
 from timeit import default_timer as timer
@@ -21,6 +20,7 @@ from os.path import exists
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from statistics import mean, median
+from Bio.Align import PairwiseAligner
 
 
 def main():
@@ -61,9 +61,9 @@ def main():
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
         dfs = []
         binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
-        for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
+        #for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
         for binFile in sorted(binFiles):
-            tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 10)
+            tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 1)
             tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
             dfs.append(tempDf)
         df = pd.concat(dfs)
@@ -93,17 +93,100 @@ def main():
 def stringify_time_since_start(start, end):
     return time.strftime("%H:%M:%S", time.gmtime(end-start))
 
+def find_average_aligned_score(candidateSeq, binSeqs):
+    aligner = PairwiseAligner()
+    aligner.mismatch_score = -1
+    aligner.open_gap_score = -1
+    aligner.extend_gap_score = -0.5
+    scores = []
+    for binSeq in binSeqs:
+        alignments = aligner.align(candidateSeq, binSeq)
+        scores.append(alignments[0].score)
+    return mean(scores)
+
+def find_aligned_differences(seq1, seq2):
+
+    aligner = PairwiseAligner()
+    alignments = aligner.align(seq1,seq2)
+    indices = alignments[0].aligned
+    a_idx, b_idx = list(indices[0]), list(indices[1])
+    a_idx.insert(0, (0,0))
+    b_idx.insert(0, (0,0))
+    a_idx.append((len(seq1),len(seq1)))
+    b_idx.append((len(seq2),len(seq2)))
+
+    diffs = []
+
+    for i in range(len(a_idx)-1):
+        start = a_idx[i][1]
+        end = a_idx[i+1][0]
+        insert = seq2[b_idx[i][1]:b_idx[i+1][0]]
+        if start == end and len(insert)==0: continue
+        diffs.append((start, end, insert))
+    return diffs
+
+def update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percent = None, binNum = None):
+    diffs = []
+    for binRecord in binRecords:
+        tempDiffs = find_aligned_differences(candidateSeq, str(binRecord.seq))
+        tempDiffs = [(x[0], x[1], x[2], binNum, binRecord.id) for x in tempDiffs]
+        diffs.extend(tempDiffs)
+    finalSeq = candidateSeq[:]
+
+    if cutoff_percent:
+        cutoff = len(binRecords) * cutoff_percent
+        commonDiffs = sorted([key for key,value in Counter(diffs).items() if value > cutoff],reverse=True)
+        for diff in commonDiffs:
+            start, end, insert, _, _ = diff
+            finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+    else:
+        most_common_diff = Counter(diffs).most_common(1)[0][0]
+        start, end, insert, _, _ = most_common_diff
+        finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+    return finalSeq, diffs
+
+def generate_consensus_sequence_from_file(binFile, cutoff_percent=None):
+    binPattern = "seq_bin(\d+)\.fq"
+    binPattern = re.compile(binPattern)
+    binNum = binPattern.search(binFile).group(1)
+    binRecords = [record for record in SeqIO.parse(binFile, "fastq")]
+    return generate_consensus_sequence(binRecords, cutoff_percent, binNum)
+
+def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
+    diffs = []
+    binSeqs = [str(record.seq) for record in binRecords]
+    refSeq = find_consensus(binSeqs)
+    if cutoff_percent: return update_candidate_seq_by_common_diffs(refSeq, binRecords, cutoff_percent, binNum)
+    bestScore = -np.inf
+    candidateSeq = refSeq[:]
+    curScore = find_average_aligned_score(candidateSeq, binSeqs)
+    counter = 0
+    while curScore >= bestScore:
+        bestScore = curScore
+        tempSeq, diffs = update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percent, binNum)
+        curScore = find_average_aligned_score(tempSeq, binSeqs)
+        if curScore >= bestScore: candidateSeq = tempSeq
+        counter += 1
+        if counter > 9: return refSeq
+    return candidateSeq, diffs
+
 def custom_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
     records = []
-    #binFiles.sort(key=lambda x: binPattern.search(x).group(1))
-    for binFile in binFiles:
-        print(binPattern.search(binFile).group(1), flush=True)
-        csg = ConsensusSequenceGenerator()
-        consensusSeq = csg.generate_consensus_sequence(binFile)
-        seqRecord = SeqRecord(Seq(consensusSeq),id=binPattern.search(binFile).group(1))
+    allDiffs = []
+    #for i in range(len(binFiles)):
+    for i in range(2):
+        binFile = binFiles[i]
+        binNum = binPattern.search(binFile).group(1)
+        consensusSeq, diffs = generate_consensus_sequence_from_file(binFile)
+        allDiffs.extend(diffs)
+        seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
         records.append(seqRecord)
+        if i % 20 == 0: print(f'{i} / {len(binFiles)}', flush=True)
+    diffDf = pd.DataFrame(allDiffs, columns = ['start','end','insert','binNum','seqID'])
+    diffDf.to_csv(outputDir + 'differences.csv', index=False)
+
     return records
 
 
@@ -213,11 +296,8 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
 def benchmark_binned_sequences(outDir, binPath, iteration = 100):
     records = [record for record in SeqIO.parse(binPath, "fastq")]
     fullData = []
-    if len(records) >= 500:
-        tempBinPath = outDir + 'temp_bin.fq'
-        referenceSequence = run_medaka_on_file(outDir, binPath, bc = True)
-
-        if referenceSequence == 'XXXXX': return pd.DataFrame(columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize'])
+    if len(records) >= 300:
+        referenceSequence, diffs = generate_consensus_sequence_from_file(binPath)
         data = []
         sequenceData = []
         clusterSizes = [1]
@@ -233,9 +313,8 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
                 tempRecords = random.sample(records, k=i)
                 if i == 1: tempSequence = str(tempRecords[0].seq)
                 else:
-                    with open(tempBinPath, "w") as output_handle:
-                        SeqIO.write(tempRecords, output_handle, "fastq")
-                    tempSequence = run_medaka_on_file(outDir, tempBinPath, bc = True)
+                    print(generate_consensus_sequence(tempRecords, cutoff_percent=None))
+                    tempSequence, _ = generate_consensus_sequence(tempRecords, cutoff_percent=None)
                 print('*'*20)
                 print('binFile: ' + binPath)
                 print('clusterSize: ' + str(i))
@@ -243,8 +322,9 @@ def benchmark_binned_sequences(outDir, binPath, iteration = 100):
                 print('distance: ' + str(distance(referenceSequence, tempSequence)))
                 print('refSeq: ' + referenceSequence)
                 print('temSeq: ' + tempSequence)
-                print('*'*20)
+                print('*'*20, flush=True)
                 levDist = distance(referenceSequence, tempSequence)
+
                 clusterNum = int(re.search(r'seq_bin(\d+).fq', binPath).group(1))
                 originalClusterSize = pd.read_csv(outDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
 
