@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Visualization Test</title>
+  <style>
+    /* style div and headers */
+    .chart,
+    h2 {
+      text-align: center;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .toolbox span {
+      padding: 5px;
+    }
+
+    svg {
+      padding: 10px;
+      width: 500px;
+      height: 250px;
+    }
+
+    /* style of bar charts */
+    .bar-chart rect {
+      fill: 'black';
+    }
+
+    .bar-chart .hovered {
+      fill: #979696;
+    }
+
+    /* style of line charts */
+    .line-chart {
+      stroke: rgb(79, 175, 211);
+      stroke-width: 2;
+      fill: none;
+    }
+
+    text {
+      fill: black;
+    }
+
+    /* style of area charts */
+    .area-chart {
+      fill: rgb(79, 175, 211);
+    }
+
+    /* style of scatter plot */
+    .scatter-plot circle {
+      fill: rgb(79, 175, 211);
+    }
+
+    .scatter-plot .hovered {
+      fill: #979696;
+    }
+  </style>
+  <!-- d3 script -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+  <h3>Consensus Sequence Visualization Test</h3>
+  <address>
+    <span>Caleb Cranney</span>
+    <span>caleb.cranney@utah.edu</span>
+    <span>u0704188</span>
+  </address>
+  <br />
+  <hr />
+  <br />
+
+  <div class="chart">
+    <h2>Bar Chart</h2>
+    <div id="Barchart-div">
+    </div>
+  </div>
+
+</body>
+<script src="js/barplot.js"></script>
+<script src="js/script.js"></script>
+
+</html>
