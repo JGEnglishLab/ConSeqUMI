@@ -3,9 +3,13 @@ class Barplot {
     /**
      * Creates a Table Object
      */
-  constructor(seq, data) {
+  constructor(seq, data, globalApplicationState) {
     this.seq = seq;
-    this.data = d3.group(data, d => parseInt(d.start));
+    this.data = d3.group(data, d => d.start);
+    this.initializeBarPlot();
+  }
+
+  initializeBarPlot(){
     d3.select('#Barchart-div')
       .append('svg')
       .attr('id', 'Barchart-svg')
@@ -68,12 +72,15 @@ class Barplot {
           .remove()
       )
       .on('mouseover', (e) => d3.select(e.target).classed('hovered', true))
-      .on('mouseout', (e) => d3.select(e.target).classed('hovered', false));
+      .on('mouseout', (e) => d3.select(e.target).classed('hovered', false))
+      .on('click', (e,d) => {
+        globalApplicationState.selectedStartPeak.has(d[0]) ? globalApplicationState.selectedStartPeak.delete(d[0]) : globalApplicationState.selectedStartPeak.add(d[0])
+        let isSelected = globalApplicationState.selectedStartPeak.has(d[0]) ? true : false;
+        d3.select(e.target).classed('hovered', false);
+        d3.select(e.target).classed('selected', isSelected);
+        globalApplicationState.sequenceTable.drawTable();
+      });
 
-
-
-      console.log(this.seq);
-      console.log(this.data);
   }
 
 }

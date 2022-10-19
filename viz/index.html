@@ -4,62 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Visualization Test</title>
-  <style>
-    /* style div and headers */
-    .chart,
-    h2 {
-      text-align: center;
-    }
-
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-    }
-
-    .toolbox span {
-      padding: 5px;
-    }
-
-    svg {
-      padding: 10px;
-      width: 500px;
-      height: 250px;
-    }
-
-    /* style of bar charts */
-    .bar-chart rect {
-      fill: 'black';
-    }
-
-    .bar-chart .hovered {
-      fill: #979696;
-    }
-
-    /* style of line charts */
-    .line-chart {
-      stroke: rgb(79, 175, 211);
-      stroke-width: 2;
-      fill: none;
-    }
-
-    text {
-      fill: black;
-    }
-
-    /* style of area charts */
-    .area-chart {
-      fill: rgb(79, 175, 211);
-    }
-
-    /* style of scatter plot */
-    .scatter-plot circle {
-      fill: rgb(79, 175, 211);
-    }
-
-    .scatter-plot .hovered {
-      fill: #979696;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css"/>
   <!-- d3 script -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -75,14 +20,32 @@
   <hr />
   <br />
 
-  <div class="chart">
-    <h2>Bar Chart</h2>
-    <div id="Barchart-div">
+  <div class="sequence error drilling">
+    <h3 id="num_sequences"></h3>
+    <div class="chart">
+      <h2>Bar Charts</h2>
+      <div id="Barchart-div">
+      </div>
     </div>
+
+    <table id="sequenceTable">
+        <thead>
+        <tr id="columnHeaders">
+            <th class="sortable">Error Type <i class="fas no-display"></i></th>
+            <th class="sortable">Frequency <i class="fas no-display"></i></th>
+            <th class="not_sortable"/>
+            <th class="not_sortable">Sequence Comparison</th>
+        </tr>
+        </thead>
+        <tbody id="predictionTableBody">
+
+        </tbody>
+    </table>
   </div>
 
 </body>
 <script src="js/barplot.js"></script>
 <script src="js/script.js"></script>
+<script src="js/sequenceTable.js"></script>
 
 </html>
