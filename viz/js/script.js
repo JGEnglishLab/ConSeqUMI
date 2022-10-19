@@ -33,6 +33,7 @@ function setup () {
     globalApplicationState.diffData = diffData;
     let barplot = new Barplot(seq, diffData, globalApplicationState);
     let sequenceTable = new SequenceTable(seq, diffData, globalApplicationState);
+    sequenceTable.drawTable();
     globalApplicationState.barplot = barplot;
     globalApplicationState.sequenceTable = sequenceTable;
   })

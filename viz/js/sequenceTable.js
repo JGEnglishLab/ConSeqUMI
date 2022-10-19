@@ -2,11 +2,31 @@
 class SequenceTable {
   constructor(seq, data, globalApplicationState) {
     this.seq = seq;
-    this.data = data.groupBy(['start','end','insert']);
-    this.drawTable();
+    this.data = data.groupBy(['start','end','insert']).sort((a,b) => a.values.length > b.values.length ? -1 : 1);
+    this.headerData = [
+        {
+            sorted: false,
+            ascending: false,
+            key: 'nucleotideIndex'
+        },
+        {
+            sorted: false,
+            ascending: false,
+            key: 'errorType',
+        },
+        {
+            sorted: false,
+            ascending: false,
+            key: 'frequency',
+        },
+    ]
+
+    this.attachSortHandlers();
   }
 
   drawTable(){
+
+    this.updateHeaders();
     let tempData = globalApplicationState.selectedStartPeak.size === 0 ? this.data : this.data.filter((d) => globalApplicationState.selectedStartPeak.has(d.start));
     tempData = this.addSecondRowsToData(tempData);
     let rowSelection = d3.select('#predictionTableBody')
@@ -24,6 +44,13 @@ class SequenceTable {
 
     let seqSelection = rowSelection.selectAll('td')
         .data((d) => {
+
+          let nucleotideIndex = {
+            type: 'text',
+            class: 'plain',
+            value: d.isFirst ? d.start : ''
+          }
+
           let type = this.determineErrorType(d);
           let errorType = {
             type: 'text',
@@ -51,7 +78,7 @@ class SequenceTable {
             value: seq
           };
 
-          let dataList = [errorType, frequencyNum, sequenceOrigin, sequence];
+          let dataList = [nucleotideIndex, errorType, frequencyNum, sequenceOrigin, sequence];
           return dataList;
 
         })
@@ -130,4 +157,68 @@ class SequenceTable {
     return first_sub + '.' + insert + '.' + second_sub;
 
   }
+
+  attachSortHandlers() {
+
+       const headerRow = d3.select('#columnHeaders')
+          .selectAll('.s')
+          .data(this.headerData)
+          .join('th')
+          .on("click", (e, d) => {
+             this.headerData.filter(s => s !== d).forEach(col => col.sorted = false);
+             this.headerData.filter(s => s !== d).forEach(col => col.ascending = false);
+             d.sorted = true;
+             let newData = this.data.sort((a,b) => this.sortColumn(a,b,d));
+             d.ascending = !d.ascending;
+             this.data = newData;
+             this.drawTable();
+          });
+
+  }
+
+  updateHeaders() {
+   d3.select('#columnHeaders')
+      .selectAll('.s')
+      .data(this.headerData)
+      .join('th')
+      .attr("class", d => d.sorted ? "s sorting" : "s sortable");
+
+    d3.select('#columnHeaders')
+       .selectAll('i')
+       .data(this.headerData)
+       .join('i')
+       .attr("class", (d) => {
+         let sortedClass = d.ascending ? 'fas fa-sort-up' : 'fas fa-sort-down';
+         return d.sorted ? sortedClass : "fas no-display";
+       });
+
+
+}
+
+
+  sortColumn(a,b,d){
+    let aVal;
+    let bVal;
+    switch(d.key){
+      case 'nucleotideIndex':
+        aVal = a.start;
+        bVal = b.start;
+        break;
+      case 'errorType':
+        aVal = this.determineErrorType(a);
+        bVal = this.determineErrorType(b);
+        break;
+      case 'frequency':
+        aVal = a.values.length;
+        bVal = b.values.length;
+        break;
+    }
+      if (d.ascending){
+        return aVal > bVal ? -1 : 1
+      } else {
+        return aVal < bVal ? -1 : 1
+     }
+    }
+
+
 }

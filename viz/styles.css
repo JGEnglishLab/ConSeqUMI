@@ -123,9 +123,6 @@ h2 {
 
 }
 
-* {
-    font-family: 'font1';
-}
 
 header {
     padding: 0.5em;
@@ -155,11 +152,3 @@ header {
 .insertion {
   color: #007d08;
 }
-
-
-/*
-.sequence {
-  font-family: Courier;
-}
-
-*/
