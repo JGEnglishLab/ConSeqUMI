@@ -31,11 +31,11 @@ function setup () {
     d3.select("#num_sequences").text(`Total Number of Sequences in Bin: ${new Set(diffData.map(d => d.seqID)).size}`);
     globalApplicationState.seq = seq;
     globalApplicationState.diffData = diffData;
-    let barplot = new Barplot(seq, diffData, globalApplicationState);
     let sequenceTable = new SequenceTable(seq, diffData, globalApplicationState);
-    sequenceTable.drawTable();
-    globalApplicationState.barplot = barplot;
     globalApplicationState.sequenceTable = sequenceTable;
+    sequenceTable.drawTable();
+    let barplot = new Barplot(seq, diffData, globalApplicationState);
+    globalApplicationState.barplot = barplot;
   })
 }
 

@@ -28,49 +28,56 @@ class SequenceTable {
 
     this.updateHeaders();
     let tempData = globalApplicationState.selectedStartPeak.size === 0 ? this.data : this.data.filter((d) => globalApplicationState.selectedStartPeak.has(d.start));
-    tempData = this.addSecondRowsToData(tempData);
-    let rowSelection = d3.select('#predictionTableBody')
-    .selectAll('tr')
-    .data(tempData)
-    .join('tr');
+    d3.select('#sequenceTable').selectAll('tbody').remove();
+    let rowSelection = d3.select('#sequenceTable')
+      .selectAll('tbody')
+      .data(tempData)
+      .join('tbody');
+    let consSeqRows = rowSelection
+      .append('tr')
+      .attr('id', 'consensusSeq');
+    let binSeqRows = rowSelection
+      .append('tr')
+      .attr('id', 'binSeq');
+    let lineSeparators = rowSelection
+      .append('hr');
 
-    rowSelection.on('click', (event, d) =>
-    {
-        if (true)
-        {
-            let placeholder = 0;
-        }
-    });
+    let isFirst = true;
+    this.rowToCellDataTransformForSelection(consSeqRows, isFirst);
+    this.rowToCellDataTransformForSelection(binSeqRows, !isFirst);
 
-    let seqSelection = rowSelection.selectAll('td')
+  }
+
+  rowToCellDataTransformForSelection(selection, isFirst){
+    let returnSelection = selection.selectAll('td')
         .data((d) => {
 
           let nucleotideIndex = {
             type: 'text',
             class: 'plain',
-            value: d.isFirst ? d.start : ''
+            value: isFirst ? d.start : ''
           }
 
           let type = this.determineErrorType(d);
           let errorType = {
             type: 'text',
             class: type,
-            value: d.isFirst ? type : ''
+            value: isFirst ? type : ''
           };
 
           let frequencyNum = {
             type: 'text',
             class: 'plain',
-            value: d.isFirst ? d.values.length : ''
+            value: isFirst ? d.values.length : ''
           };
 
           let sequenceOrigin = {
             type: 'text',
             class: 'plain',
-            value: d.isFirst ? 'Original Sequence:' : 'Bin Sequence:'
+            value: isFirst ? 'Original Sequence:' : 'Bin Sequence:'
           };
 
-          let seq = this.determineAlignedSequence(d);
+          let seq = this.determineAlignedSequence(d, isFirst);
 
           let sequence = {
             type: 'multicolor_text',
@@ -84,40 +91,30 @@ class SequenceTable {
         })
         .join('td')
         .attr('class', d => d.class);
+      returnSelection.selectAll('tspan').remove();
+      let alignmentSelection = returnSelection.filter(d => d.type === 'multicolor_text');
+      alignmentSelection
+        .append('tspan')
+        .attr('class', 'alignment')
+        .text(d => d.value[0]);
+      alignmentSelection
+        .append('tspan')
+        .attr('class', d => d.insertion_class)
+        .text(d => d.value[1]);
+      alignmentSelection
+        .append('tspan')
+        .attr('class', 'alignment')
+        .text(d => d.value[2]);
 
-    seqSelection.selectAll('tspan').remove();
-    let alignmentSelection = seqSelection.filter(d => d.type === 'multicolor_text');
-    alignmentSelection
-      .append('tspan')
-      .attr('class', 'alignment')
-      .text(d => d.value.split('.')[0]);
-    alignmentSelection
-      .append('tspan')
-      .attr('class', d => d.insertion_class)
-      .text(d => d.value.split('.')[1]);
-    alignmentSelection
-      .append('tspan')
-      .attr('class', 'alignment')
-      .text(d => d.value.split('.')[2]);
 
-
-    let otherSelection = seqSelection.filter(d => d.type === 'text');
-    otherSelection.text(d => d.value);
+        let otherSelection = returnSelection.filter(d => d.type === 'text');
+        otherSelection.text(d => d.value);
 
   }
 
-  addSecondRowsToData(data){
-    let tempData = [];
-    for (let row of data){
-      row.isFirst = true;
-      tempData.push(row);
-      let secondRow = {...row}
-      secondRow.isFirst = false;
-      tempData.push(secondRow);
-    }
-    return tempData;
-  }
+  setTextClassesAndValuesForSelection(selection){
 
+  }
 
   determineErrorType(d){
     if (d.start === d.end) {return 'insertion';}
@@ -125,7 +122,7 @@ class SequenceTable {
     else {return 'deletion'};
   }
 
-  determineAlignedSequence(d){
+  determineAlignedSequence(d, isFirst){
     let type = this.determineErrorType(d);
     let seq = globalApplicationState.seq;
     let insertLength = type === 'insertion' ? d.insert.length : d.end-d.start
@@ -140,21 +137,21 @@ class SequenceTable {
 
     switch (type) {
       case 'insertion':
-        insert = d.isFirst ? '-'.repeat(insertLength) : d.insert;
+        insert = isFirst ? '-'.repeat(insertLength) : d.insert;
         break;
       case 'deletion':
-        insert = d.isFirst ? seq.substring(first_sub_end, second_sub_start) : '-'.repeat(insertLength);
+        insert = isFirst ? seq.substring(first_sub_end, second_sub_start) : '-'.repeat(insertLength);
         break;
       case 'mutation':
-        insert = d.isFirst ? seq.substring(first_sub_end, second_sub_start) : d.insert;
+        insert = isFirst ? seq.substring(first_sub_end, second_sub_start) : d.insert;
         let possibleDashes = '';
-        if ((d.end-d.start > d.insert.length && !d.isFirst) || (d.end-d.start < d.insert.length && d.isFirst)){
+        if ((d.end-d.start > d.insert.length && !isFirst) || (d.end-d.start < d.insert.length && isFirst)){
           possibleDashes = '-'.repeat(Math.abs(d.end-d.start-d.insert.length));
         }
         insert = insert + possibleDashes;
         break;
     }
-    return first_sub + '.' + insert + '.' + second_sub;
+    return [first_sub, insert, second_sub];
 
   }
 
@@ -194,7 +191,6 @@ class SequenceTable {
 
 
 }
-
 
   sortColumn(a,b,d){
     let aVal;
