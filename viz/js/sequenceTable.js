@@ -1,8 +1,14 @@
 
 class SequenceTable {
-  constructor(seq, data, globalApplicationState) {
-    this.seq = seq;
-    this.data = data.groupBy(['start','end','insert']).sort((a,b) => a.values.length > b.values.length ? -1 : 1);
+  constructor() {
+    this.initializeHeaderData();
+    this.setClassData();
+    this.drawTable();
+    this.attachSortHandlers();
+
+  }
+
+  initializeHeaderData(){
     this.headerData = [
         {
             sorted: false,
@@ -21,13 +27,13 @@ class SequenceTable {
         },
     ]
 
-    this.attachSortHandlers();
   }
 
   drawTable(){
 
     this.updateHeaders();
     let tempData = globalApplicationState.selectedStartPeak.size === 0 ? this.data : this.data.filter((d) => globalApplicationState.selectedStartPeak.has(d.start));
+    tempData = tempData.slice(0,20);
     d3.select('#sequenceTable').selectAll('tbody').remove();
     let rowSelection = d3.select('#sequenceTable')
       .selectAll('tbody')
@@ -46,6 +52,14 @@ class SequenceTable {
     this.rowToCellDataTransformForSelection(consSeqRows, isFirst);
     this.rowToCellDataTransformForSelection(binSeqRows, !isFirst);
 
+  }
+
+  setClassData() {
+    const binNum = d3.select('#bin_num_select').property('value');
+    this.data = globalApplicationState.data
+      .filter(d => d.binNum === parseInt(binNum))
+      .groupBy(['start','end','insert']);
+    this.data
   }
 
   rowToCellDataTransformForSelection(selection, isFirst){
@@ -109,10 +123,6 @@ class SequenceTable {
 
         let otherSelection = returnSelection.filter(d => d.type === 'text');
         otherSelection.text(d => d.value);
-
-  }
-
-  setTextClassesAndValuesForSelection(selection){
 
   }
 

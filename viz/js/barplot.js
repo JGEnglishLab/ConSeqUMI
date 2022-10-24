@@ -3,10 +3,9 @@ class Barplot {
     /**
      * Creates a Table Object
      */
-  constructor(seq, data, globalApplicationState) {
-    this.seq = seq;
-    this.data = d3.group(data, d => d.start);
+  constructor() {
     this.initializeBarPlot();
+    this.drawBarPlot();
   }
 
   initializeBarPlot(){
@@ -23,13 +22,21 @@ class Barplot {
       .attr('id', 'BarChart')
       .attr('class', 'bar-chart');
 
+
+  }
+
+  drawBarPlot(){
+
+    const binNum = d3.select('#bin_num_select').property('value');
+    const data = d3.group(globalApplicationState.data.filter(d => d.binNum === parseInt(binNum)), d => d.start);
+
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max([...this.data.values()], n => n.length)])
+      .domain([0, d3.max([...data.values()], n => n.length)])
       .range([CHART_HEIGHT - MARGIN.bottom - MARGIN.top, 0])
       .nice();
 
     const xScale = d3.scaleLinear()
-      .domain([0, this.seq.length])
+      .domain([0, globalApplicationState.seq.length])
       .range([MARGIN.left, CHART_WIDTH-MARGIN.right])
       .nice();
 
@@ -43,7 +50,7 @@ class Barplot {
 
     d3.select('#BarChart')
       .selectAll('rect')
-      .data(this.data)
+      .data(data)
       .join(
         enter => enter
           .append('rect')
@@ -52,6 +59,7 @@ class Barplot {
           .attr('y', d => yScale(d[1].length) + MARGIN.top)
           .attr('height', d=> yScale(0) - yScale(d[1].length))
           .attr('opacity', 0)
+          .attr('id', d => d.start)
           .transition()
           .duration(ANIMATION_DURATION)
           .delay(ANIMATION_DURATION)
@@ -63,7 +71,8 @@ class Barplot {
           .attr('width', 2)
           .attr('x', d => xScale(d[0]))
           .attr('y', d => yScale(d[1].length) + MARGIN.top)
-          .attr('height', d=> yScale(0) - yScale(d[1].length)),
+          .attr('height', d=> yScale(0) - yScale(d[1].length))
+          .attr('id', d => d.start),
         exit => exit
           .transition()
           .duration(ANIMATION_DURATION)
@@ -77,10 +86,17 @@ class Barplot {
         globalApplicationState.selectedStartPeak.has(d[0]) ? globalApplicationState.selectedStartPeak.delete(d[0]) : globalApplicationState.selectedStartPeak.add(d[0])
         let isSelected = globalApplicationState.selectedStartPeak.has(d[0]) ? true : false;
         d3.select(e.target).classed('hovered', false);
-        d3.select(e.target).classed('selected', isSelected);
+        this.updateSelectedRects();
+        globalApplicationState.sequenceTable.setClassData();
         globalApplicationState.sequenceTable.drawTable();
       });
+      this.updateSelectedRects();
+  }
 
+  updateSelectedRects(){
+    d3.select('#BarChart')
+      .selectAll('rect')
+      .classed('selected', (d) => globalApplicationState.selectedStartPeak.has(d[0]) ? true : false);
   }
 
 }

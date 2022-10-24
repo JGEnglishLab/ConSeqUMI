@@ -12,33 +12,59 @@ const ANIMATION_DURATION = 300;
  const globalApplicationState = {
    selectedStartPeak: new Set(),
    seq:null,
-   diffData:null,
+   data:null,
+   filteredData:null,
    barplot: null,
    table:null
  };
 
 function setup () {
+  document.querySelector('#bin_num_select').addEventListener('change', changeData);
 
   let seq = 'TGCCACCCGGCTTCAACGAGTACGACTTCGTGCCCGAGAGCTTCGACCGGGACAAAACCATCGCCCTGATCATGAACAGTAGTGGCAGTACCGGATTGCCCAAGGGCGTAGCCCTACCGCACCGCACCGCTTGTGTCCGATTCAGTCATGCCCGCGACCCCATCTTCGGCAACCAGATCATCCCCGACACCGCTATCCTCAGCGTGGTGCCATTTCACCACGGCTTCGGCATGTTCACCACGCTGGGCTACTTGATCTGCGGCTTTCGGGTCGTGCTCATGTACCGCTTCGAGGAGGAGCTATTCTTGCGCAGCTTGCAAGACTATAAGATTCAATCTGCCCTGCTGGTGCCCACACTATTTAGCTTCTTCGCTAAGAGCACTCTCATCGACAAGTACGACCTAAGCAACTTGCACGAGATCGCCAGCGGCGGGGCGCCGCTCAGCAAGGAGGTAGGTGAGGCCGTGGCCAAACGCTTCCACCTACCAGGCATCCGCCAGGGCTACGGCCTGACAGAAACAACCAGCGCCATTCTGATCACCCCCGAAGGGGACGACAAGCCTGGCGCAGTAGGCAAGGTGGTGCCCTTCTTCGAGGCTAAGGTGGTGGACTTGGACACCGGCAAGACACTGGGTGTGAACCAGCGCGGCGAGCTGTGCGTCCGTGGCCCCATGATCATGAGCGGCTACGTTAACAACCCCGAGGCTACAAACGCTCTCATCGACAAGGACGGCTGGCTGCACAGCGGCGACATCGCCTACTGGGACGAGGACGAGCACTTCTTCATCGTGGACCGGCTGAAGAGCCTGATCAAATACAAGGGCTACCAGGTAGCCCCAGCCGAACTGGAGAGCATCCTGCTGCAACACCCCAACATCTTCGACGCCGGGGTCGCCGGCCTGCCCGACGACGATGCCGGCGAGCTGCCCGCCGCAGTCGTCGTGCTGGAACACGGTAAAACCATGACCGAGAAGGAGATCGTGGACTATGTGGCCAGCCAGGTTACAACCGCCAAGAAGCTGCGCGGTGGTGTTGTGTTCGTGGACGAGGTGCCTAAAGGACTGACCGGCAAGTTGGACGCCCGCAAGATCCGCGAGATTCTCATTAAGGCCAAGAAGGGCGGCAAGATCGCCGTGTAATAATCGTTCCTCTAGAGACGCGCAGGAGAAATTAATCAAGACTAGTACACTCCCCGTCGATCAGGGTGGTTACGTCAGTCACCGGTCGACTGTGCCTTCTAGTTGCCAGCCATCTGTTGTTTGCCCCTCCCCCGTGCCTTCCTTGACCCTGGAAGGTGCCACTCCCACTGTCCTTTCCTAATA';
 
-  Promise.all([d3.csv('./data/differences.csv')]).then( data => {
-    let diffData = data[0];
-    diffData = diffData.map(function(d) {
+  Promise.all([d3.csv('./data/differences.csv')]).then( csvData => {
+    let data = csvData[0];
+    data = data.map(function(d) {
       d.start = parseInt(d.start);
       d.end = parseInt(d.end);
+      d.binNum = parseInt(d.binNum);
       return d;
-    })
-    d3.select("#num_sequences").text(`Total Number of Sequences in Bin: ${new Set(diffData.map(d => d.seqID)).size}`);
+    });
+    //.filter(d => (d.binNum === 0 || d.binNum === 1));
+
+    const binNums = [...new Set(data.map(d => d.binNum))];
+    binNums.sort((a,b) => a-b);
+    d3.select('#bin_num_select').selectAll('option')
+      .data(binNums)
+      .enter()
+      .append("option")
+      .text(d => d)
+      .attr("value",d => d);
+
     globalApplicationState.seq = seq;
-    globalApplicationState.diffData = diffData;
-    let sequenceTable = new SequenceTable(seq, diffData, globalApplicationState);
+    globalApplicationState.data = data;
+    const binNum = d3.select('#bin_num_select').property('value');
+    let tempData = globalApplicationState.data.filter(d => d.binNum === parseInt(binNum))
+    d3.select("#num_sequences").text(`Total Number of Sequences in Bin: ${new Set(tempData.map(d => d.seqID)).size}`);
+
+
+    let sequenceTable = new SequenceTable();
     globalApplicationState.sequenceTable = sequenceTable;
-    sequenceTable.drawTable();
-    let barplot = new Barplot(seq, diffData, globalApplicationState);
+    let barplot = new Barplot();
     globalApplicationState.barplot = barplot;
   })
 }
 
+function changeData(){
+  const binNum = d3.select('#bin_num_select').property('value');
+  let tempData = globalApplicationState.data.filter(d => d.binNum === parseInt(binNum))
+  d3.select("#num_sequences").text(`Total Number of Sequences in Bin: ${new Set(tempData.map(d => d.seqID)).size}`);
+  globalApplicationState.barplot.drawBarPlot();
+  globalApplicationState.sequenceTable.initializeHeaderData();
+  globalApplicationState.sequenceTable.setClassData();
+  globalApplicationState.sequenceTable.drawTable();
+}
 
 Array.prototype.groupBy = function (props) {
    var arr = this;
