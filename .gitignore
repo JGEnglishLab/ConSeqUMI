@@ -6,6 +6,7 @@ test/data/
 .DS_Store
 test/.DS_Store
 scratchpaper_code/
+viz/data/differences.csv
 
 # C extensions
 *.so
