@@ -1,3 +1,8 @@
+div.wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
 /* style div and headers */
 .chart,
 h2 {

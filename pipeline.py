@@ -93,16 +93,20 @@ def main():
 def stringify_time_since_start(start, end):
     return time.strftime("%H:%M:%S", time.gmtime(end-start))
 
-def find_average_aligned_score(candidateSeq, binSeqs):
+def find_average_aligned_score(candidateSeq, binRecords):
+    binSeqs = [str(record.seq) for record in binRecords]
     aligner = PairwiseAligner()
     aligner.mismatch_score = -1
     aligner.open_gap_score = -1
     aligner.extend_gap_score = -0.5
     scores = []
-    for binSeq in binSeqs:
-        alignments = aligner.align(candidateSeq, binSeq)
+    score_to_ids = []
+    for i in range(len(binSeqs)):
+        if i % 100 == 0: print(i)
+        alignments = aligner.align(candidateSeq, binSeqs[i])
         scores.append(alignments[0].score)
-    return mean(scores)
+        score_to_ids.append([binRecords[i].id, alignments[0].score])
+    return mean(scores), score_to_ids
 
 def find_aligned_differences(seq1, seq2):
 
@@ -140,8 +144,10 @@ def update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percen
             start, end, insert, _, _ = diff
             finalSeq = finalSeq[:start] + insert + finalSeq[end:]
     else:
-        most_common_diff = Counter(diffs).most_common(1)[0][0]
-        start, end, insert, _, _ = most_common_diff
+        tempDiffs = [(x[0],x[1],x[2]) for x in diffs]
+        most_common_diff = Counter(tempDiffs).most_common(1)[0][0]
+        print(most_common_diff)
+        start, end, insert = most_common_diff
         finalSeq = finalSeq[:start] + insert + finalSeq[end:]
     return finalSeq, diffs
 
@@ -155,31 +161,50 @@ def generate_consensus_sequence_from_file(binFile, cutoff_percent=None):
 def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
     diffs = []
     binSeqs = [str(record.seq) for record in binRecords]
+    #print(len(binSeqs))
+    #for key, value in sorted(Counter([len(x) for x in binSeqs]).items(), key=lambda x:x[1]):
+    #    print(f'{key}, {value}')
     refSeq = find_consensus(binSeqs)
+    print(f'refSeq: {refSeq}')
     if cutoff_percent: return update_candidate_seq_by_common_diffs(refSeq, binRecords, cutoff_percent, binNum)
+    #print('skip cutoff')
     bestScore = -np.inf
     candidateSeq = refSeq[:]
-    curScore = find_average_aligned_score(candidateSeq, binSeqs)
     counter = 0
+
+    curScore, score_to_ids = find_average_aligned_score(candidateSeq, binRecords)
+    scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
+    scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
+    print(curScore)
     while curScore >= bestScore:
+        print(counter)
         bestScore = curScore
         tempSeq, diffs = update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percent, binNum)
-        curScore = find_average_aligned_score(tempSeq, binSeqs)
+        diffDf = pd.DataFrame(diffs, columns = ['start','end','insert','binNum','seqID'])
+        diffDf.to_csv(f'differences{counter}.csv', index=False)
+
+        curScore, score_to_ids = find_average_aligned_score(tempSeq, binRecords)
         if curScore >= bestScore: candidateSeq = tempSeq
         counter += 1
-        if counter > 9: return refSeq
-    return candidateSeq, diffs
+        scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
+        scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
+        print(curScore)
+        if counter > 15: return candidateSeq
+        if counter > 2: return candidateSeq, diffs, True
+    return candidateSeq, diffs, False
+
 
 def custom_pipeline(outputDir, binFiles, pattern):
     binPattern = "seq_bin" + pattern + "\.fq"
     binPattern = re.compile(binPattern)
     records = []
     allDiffs = []
-    #for i in range(len(binFiles)):
-    for i in range(2):
+    for i in range(len(binFiles)):
+    #for i in range(1):
         binFile = binFiles[i]
         binNum = binPattern.search(binFile).group(1)
-        consensusSeq, diffs = generate_consensus_sequence_from_file(binFile)
+        consensusSeq, diffs, b = generate_consensus_sequence_from_file(binFile)
+        if b: break
         allDiffs.extend(diffs)
         seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
         records.append(seqRecord)
