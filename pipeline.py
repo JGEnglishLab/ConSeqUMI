@@ -21,6 +21,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from statistics import mean, median
 from Bio.Align import PairwiseAligner
+import subprocess
+from io import StringIO
 
 
 def main():
@@ -102,7 +104,7 @@ def find_average_aligned_score(candidateSeq, binRecords):
     scores = []
     score_to_ids = []
     for i in range(len(binSeqs)):
-        if i % 100 == 0: print(i)
+        #if i % 100 == 0: print(i)
         alignments = aligner.align(candidateSeq, binSeqs[i])
         scores.append(alignments[0].score)
         score_to_ids.append([binRecords[i].id, alignments[0].score])
@@ -146,7 +148,7 @@ def update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percen
     else:
         tempDiffs = [(x[0],x[1],x[2]) for x in diffs]
         most_common_diff = Counter(tempDiffs).most_common(1)[0][0]
-        print(most_common_diff)
+        #print(most_common_diff)
         start, end, insert = most_common_diff
         finalSeq = finalSeq[:start] + insert + finalSeq[end:]
     return finalSeq, diffs
@@ -165,7 +167,7 @@ def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
     #for key, value in sorted(Counter([len(x) for x in binSeqs]).items(), key=lambda x:x[1]):
     #    print(f'{key}, {value}')
     refSeq = find_consensus(binSeqs)
-    print(f'refSeq: {refSeq}')
+    #print(f'refSeq: {refSeq}')
     if cutoff_percent: return update_candidate_seq_by_common_diffs(refSeq, binRecords, cutoff_percent, binNum)
     #print('skip cutoff')
     bestScore = -np.inf
@@ -175,9 +177,9 @@ def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
     curScore, score_to_ids = find_average_aligned_score(candidateSeq, binRecords)
     scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
     scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
-    print(curScore)
+    #print(curScore)
     while curScore >= bestScore:
-        print(counter)
+        #print(counter)
         bestScore = curScore
         tempSeq, diffs = update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percent, binNum)
         diffDf = pd.DataFrame(diffs, columns = ['start','end','insert','binNum','seqID'])
@@ -188,10 +190,53 @@ def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
         counter += 1
         scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
         scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
-        print(curScore)
+        #print(curScore)
         if counter > 15: return candidateSeq
         if counter > 2: return candidateSeq, diffs, True
     return candidateSeq, diffs, False
+
+def align_seqs(seqs):
+    '''
+    if len(seqs) > 100:
+        lengths = [len(seq) for seq in seqs]
+        occurence_count = Counter(lengths)
+        most_freq_length = occurence_count.most_common(1)[0][0]
+        seqs = [seq for seq in seqs if len(seq) > most_freq_length - 5 and len(seq) < most_freq_length + 5]
+        if len(seqs) > 100: seqs = random.choices(seqs, k=100)
+    #'''
+    seq_str = ''
+    for seq in seqs:
+        seq_str += '>' + seq.description + '\n'
+        seq_str += str(seq.seq) + '\n'
+    print('start mafft')
+    child = subprocess.Popen(['mafft', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    child.stdin.write(seq_str.encode())
+    child_out = child.communicate()[0].decode('utf8')
+    print('end mafft')
+    seq_ali = list(SeqIO.parse(StringIO(child_out), 'fasta'))
+    child.stdin.close()
+    return seq_ali
+
+def find_consensus_from_alignment(binPath, fast=True):
+    #pattern = '(\d+)'
+    #binPattern = "seq_bin" + pattern + "\.fq"
+    #binPattern = re.compile(binPattern)
+    #binNum = binPattern.search(binPath).group(1)
+    records = [record for record in SeqIO.parse(binPath, "fastq")]
+
+    aligned = align_seqs(records)
+    arr = pd.DataFrame([list(str(seq.seq)) for seq in aligned])
+
+    if fast:
+        common = arr.mode()
+        return ''.join([x.upper() for x in common.iloc[0] if x != '-'])
+
+    seqCharacters = []
+    for (columnName, columnData) in arr.iteritems():
+        c = Counter(columnData.values).most_common()
+        if len(c) > 1 and c[0][0] == '-' and abs(c[0][1] - c[1][1]) < 10: seqCharacters.append(c[1][0])
+        else: seqCharacters.append(c[0][0])
+    return ''.join([x.upper() for x in seqCharacters if x != '-'])
 
 
 def custom_pipeline(outputDir, binFiles, pattern):
@@ -203,14 +248,16 @@ def custom_pipeline(outputDir, binFiles, pattern):
     #for i in range(1):
         binFile = binFiles[i]
         binNum = binPattern.search(binFile).group(1)
-        consensusSeq, diffs, b = generate_consensus_sequence_from_file(binFile)
-        if b: break
-        allDiffs.extend(diffs)
+        consensusSeq = find_consensus_from_alignment(binFile)
+        #consensusSeq, _, _ = generate_consensus_sequence_from_file(binFile)
+        #consensusSeq, diffs, b = generate_consensus_sequence_from_file(binFile)
+        #if b: break
+        #allDiffs.extend(diffs)
         seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
         records.append(seqRecord)
-        if i % 20 == 0: print(f'{i} / {len(binFiles)}', flush=True)
-    diffDf = pd.DataFrame(allDiffs, columns = ['start','end','insert','binNum','seqID'])
-    diffDf.to_csv(outputDir + 'differences.csv', index=False)
+        if i % 1 == 0: print(f'{i+1} / {len(binFiles)}', flush=True)
+    #diffDf = pd.DataFrame(allDiffs, columns = ['start','end','insert','binNum','seqID'])
+    #diffDf.to_csv(outputDir + 'differences.csv', index=False)
 
     return records
 
