@@ -208,11 +208,11 @@ def align_seqs(seqs):
     for seq in seqs:
         seq_str += '>' + seq.description + '\n'
         seq_str += str(seq.seq) + '\n'
-    print('start mafft')
-    child = subprocess.Popen(['mafft', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    #print('start mafft')
+    child = subprocess.Popen(['mafft', '--quiet', '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     child.stdin.write(seq_str.encode())
     child_out = child.communicate()[0].decode('utf8')
-    print('end mafft')
+    #print('end mafft')
     seq_ali = list(SeqIO.parse(StringIO(child_out), 'fasta'))
     child.stdin.close()
     return seq_ali
