@@ -33,9 +33,9 @@ def main():
     if args['command'] == 'gui' or args['command'] is None:  # Default to GUI
         gui.main()
         return
-
     print('\nOutput Directory Created: ' + args['output'])
     startTime = timer()
+    '''
     print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
     print('----> ' + stringify_time_since_start(startTime, timer()) + ' setting adapter objects', flush=True)
@@ -58,7 +58,8 @@ def main():
     ub.remove_chimeras_from_umi_pairs(args['output']+ 'starcode1.txt', args['output']+ 'starcode2.txt', args['output']+ 'starcode_without_chimeras.txt')
     print('----> ' + stringify_time_since_start(startTime, timer()) + ' bin sequences by UMI pair', flush=True)
     ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt', args['minimumReads'])
-
+    #'''
+    args['output'] = '/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/'
     if args['benchmarkClusters']:
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
         dfs = []
@@ -78,6 +79,8 @@ def main():
 
         binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
         pattern = '(\d+)'
+        records = consensus_pipeline(args['consensusAlgorithm'], args['output'], binFiles, pattern)
+        consensusFile = 'consensus_' + args['consensusAlgorithm'] + '.fasta'
         if args['customConsensus']: records = custom_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_custom.fasta'
         else: records = medaka_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_medaka.fasta'
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing consensus output', flush=True)
@@ -87,7 +90,7 @@ def main():
             print('----> ' + stringify_time_since_start(startTime, timer()) + ' obtaining variant sequences', flush=True)
             superBinFiles = cluster_consensus_sequences(args['output'], args['oldOutput'] + 'consensus.fasta', binFiles)
             superPattern = '(_super[_\d]+)'
-            finalRecords = medaka_pipeline(args['output'], superBinFiles, superPattern)
+            finalRecords = consensus_pipeline(args['consensusAlgorithm'], args['output'], superBinFiles, superPattern)
             with open(args['oldOutput'] + 'variants.fasta', "w") as output_handle:
                 SeqIO.write(finalRecords, output_handle, "fasta")
             print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing variant output', flush=True)
@@ -166,7 +169,7 @@ def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
     #print(len(binSeqs))
     #for key, value in sorted(Counter([len(x) for x in binSeqs]).items(), key=lambda x:x[1]):
     #    print(f'{key}, {value}')
-    refSeq = find_consensus(binSeqs)
+    refSeq = find_initial_consensus(binSeqs)
     #print(f'refSeq: {refSeq}')
     if cutoff_percent: return update_candidate_seq_by_common_diffs(refSeq, binRecords, cutoff_percent, binNum)
     #print('skip cutoff')
@@ -175,25 +178,25 @@ def generate_consensus_sequence(binRecords, cutoff_percent, binNum=None):
     counter = 0
 
     curScore, score_to_ids = find_average_aligned_score(candidateSeq, binRecords)
-    scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
-    scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
-    #print(curScore)
+    #scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
+    #scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
     while curScore >= bestScore:
         #print(counter)
         bestScore = curScore
         tempSeq, diffs = update_candidate_seq_by_common_diffs(candidateSeq, binRecords, cutoff_percent, binNum)
-        diffDf = pd.DataFrame(diffs, columns = ['start','end','insert','binNum','seqID'])
-        diffDf.to_csv(f'differences{counter}.csv', index=False)
+        #diffDf = pd.DataFrame(diffs, columns = ['start','end','insert','binNum','seqID'])
+        #diffDf.to_csv(f'differences{counter}.csv', index=False)
 
         curScore, score_to_ids = find_average_aligned_score(tempSeq, binRecords)
         if curScore >= bestScore: candidateSeq = tempSeq
         counter += 1
-        scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
-        scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
+        #scoreDf = pd.DataFrame(score_to_ids, columns = ['seqID','score'])
+        #scoreDf.to_csv(f'score_to_ids{counter}.csv', index=False)
         #print(curScore)
         if counter > 15: return candidateSeq
-        if counter > 2: return candidateSeq, diffs, True
-    return candidateSeq, diffs, False
+        #if counter > 2: return candidateSeq, diffs, True
+    #return candidateSeq, diffs, False
+    return candidateSeq
 
 def align_seqs(seqs):
     '''
@@ -217,7 +220,7 @@ def align_seqs(seqs):
     child.stdin.close()
     return seq_ali
 
-def find_consensus_from_alignment(binPath, fast=True):
+def find_consensus_mafft(binPath, fast=True):
     #pattern = '(\d+)'
     #binPattern = "seq_bin" + pattern + "\.fq"
     #binPattern = re.compile(binPattern)
@@ -248,7 +251,7 @@ def custom_pipeline(outputDir, binFiles, pattern):
     #for i in range(1):
         binFile = binFiles[i]
         binNum = binPattern.search(binFile).group(1)
-        consensusSeq = find_consensus_from_alignment(binFile)
+        consensusSeq = generate_consensus_sequence_from_file(binFile)
         #consensusSeq, _, _ = generate_consensus_sequence_from_file(binFile)
         #consensusSeq, diffs, b = generate_consensus_sequence_from_file(binFile)
         #if b: break
@@ -258,6 +261,21 @@ def custom_pipeline(outputDir, binFiles, pattern):
         if i % 1 == 0: print(f'{i+1} / {len(binFiles)}', flush=True)
     #diffDf = pd.DataFrame(allDiffs, columns = ['start','end','insert','binNum','seqID'])
     #diffDf.to_csv(outputDir + 'differences.csv', index=False)
+
+    return records
+
+def mafft_pipeline(outputDir, binFiles, pattern):
+    binPattern = "seq_bin" + pattern + "\.fq"
+    binPattern = re.compile(binPattern)
+    records = []
+    allDiffs = []
+    for i in range(len(binFiles)):
+        binFile = binFiles[i]
+        binNum = binPattern.search(binFile).group(1)
+        consensusSeq = find_consensus_mafft(binFile)
+        seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
+        records.append(seqRecord)
+        if i % 1 == 0: print(f'{i+1} / {len(binFiles)}', flush=True)
 
     return records
 
@@ -278,6 +296,11 @@ def medaka_pipeline(outputDir, binFiles, pattern):
     for file in consensusFiles:
         for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
     return records
+
+def consensus_pipeline(option, outputDir, binFiles, pattern):
+    if option == 'custom': return custom_pipeline(outputDir, binFiles, pattern)
+    if option == 'medaka': return medaka_pipeline(outputDir, binFiles, pattern)
+    if option == 'mafft': return mafft_pipeline(outputDir, binFiles, pattern)
 
 def adjust_all_string_lengths(strs, buffer_length):
     max_length = len(max(strs, key = len))
@@ -306,7 +329,7 @@ def find_next_character(subStrings, tempPattern):
         return res[0]
     return c.most_common()[0][0]
 
-def find_consensus(strs, excerpt_length = 10, buffer_length = 20):
+def find_initial_consensus(strs, excerpt_length = 10, buffer_length = 20):
     strs = adjust_all_string_lengths(strs, buffer_length)
     final = initialize_consensus_output_string(strs, excerpt_length)
     for i in range(len(strs[0])-buffer_length):
@@ -328,7 +351,7 @@ def run_medaka_on_file(outputDir, binFile, bc = False):
 
         for i in range(len(seqStrs)):
             if len(seqStrs[i]) == 0: return returnSequence
-        draftSeq = find_consensus(seqStrs)
+        draftSeq = find_initial_consensus(seqStrs)
         consSeqs = [draftSeq]
         while len(consSeqs) < 5:
             draftSeq = SeqRecord(Seq(consSeqs[-1]),id='draft seq')
@@ -448,7 +471,8 @@ def set_command_line_settings():
     cons_parser.add_argument('-min', '--minimumReads', type=restricted_int, default=50, help='Minimum number of cluster reads required to generate a consensus sequence. Default is 50.')
     cons_parser.add_argument('-v', '--variants', action="store_true", help='A flag indicating if variants should be deduced from consensus sequences. For example, if consensus sequences 1, 2, and 3 are generated, and sequences 1 and 3 are the same sequence, the variant file will combine them. The variant output would then have 2 sequences.')
     cons_parser.add_argument('-bc', '--benchmarkClusters', action="store_true", help='A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.')
-    cons_parser.add_argument('-cc', '--customConsensus', action="store_true", help='A flag indicating we want to skip the medaka consensus sequence workflow and only use the custom consensus sequence algorithm. WARNING: this setting can have systematic errors in homopolymeric or long repeat sequences.')
+    cons_parser.add_argument('-c', '--consensusAlgorithm', type=str, help='An option between three consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: custom, medaka, mafft')
+    #cons_parser.add_argument('-cc', '--customConsensus', action="store_true", help='A flag indicating we want to skip the medaka consensus sequence workflow and only use the custom consensus sequence algorithm. WARNING: this setting can have systematic errors in homopolymeric or long repeat sequences.')
     return parser
 
 def check_for_invalid_input(parser, args):
@@ -466,7 +490,8 @@ def check_for_invalid_input(parser, args):
         nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
         if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
         if args['minimumReads'] < 20: parser.error('The -min or --minimumReads argument must be 20 or higher.')
-
+        if not args['consensusAlgorithm']: args['consensusAlgorithm'] = 'custom'
+        if args['consensusAlgorithm'] not in ['custom','medaka','mafft']: parser.error('The -c or --consensusAlgorithm argument must be `custom`, `medaka` or `mafft`.')
         if args['input'][-1] != '/': args['input'] += '/'
         if args['output'][-1] != '/': args['output'] += '/'
         newOutput = args['output'] + 'delete/'
