@@ -81,8 +81,6 @@ def main():
         pattern = '(\d+)'
         records = consensus_pipeline(args['consensusAlgorithm'], args['output'], binFiles, pattern)
         consensusFile = 'consensus_' + args['consensusAlgorithm'] + '.fasta'
-        if args['customConsensus']: records = custom_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_custom.fasta'
-        else: records = medaka_pipeline(args['output'], binFiles, pattern); consensusFile = 'consensus_medaka.fasta'
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing consensus output', flush=True)
         with open(args['oldOutput'] + consensusFile, "w") as output_handle:
             SeqIO.write(records, output_handle, "fasta")
@@ -220,6 +218,8 @@ def align_seqs(seqs):
     child.stdin.close()
     return seq_ali
 
+
+
 def find_consensus_mafft(binPath, fast=True):
     #pattern = '(\d+)'
     #binPattern = "seq_bin" + pattern + "\.fq"
@@ -240,6 +240,20 @@ def find_consensus_mafft(binPath, fast=True):
         if len(c) > 1 and c[0][0] == '-' and abs(c[0][1] - c[1][1]) < 10: seqCharacters.append(c[1][0])
         else: seqCharacters.append(c[0][0])
     return ''.join([x.upper() for x in seqCharacters if x != '-'])
+
+
+def lamassemble_pipeline_returns_consensus_record(binPath):
+    child = subprocess.Popen(['lamassemble',
+                              '/Users/calebcranney/Documents/Projects/lamassemble/train/promethion.mat',
+                              binPath,
+                              '--end',
+                              '-g60'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    #child.stdin.write(seq_str.encode())
+    child_out = child.communicate()[0].decode('utf8')
+    seq_ali = list(SeqIO.parse(StringIO(child_out), 'fasta'))
+    child.stdin.close()
+    return seq_ali
+
 
 
 def custom_pipeline(outputDir, binFiles, pattern):
@@ -276,9 +290,21 @@ def mafft_pipeline(outputDir, binFiles, pattern):
         seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
         records.append(seqRecord)
         if i % 1 == 0: print(f'{i+1} / {len(binFiles)}', flush=True)
-
     return records
 
+def lamassemble_pipeline(outputDir, binFiles, pattern):
+    binPattern = "seq_bin" + pattern + "\.fq"
+    binPattern = re.compile(binPattern)
+    records = []
+    allDiffs = []
+    for i in range(len(binFiles)):
+        binFile = binFiles[i]
+        binNum = binPattern.search(binFile).group(1)
+        consensusSeq = str(lamassemble_pipeline_returns_consensus_record(binFile)[0].seq)
+        seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
+        records.append(seqRecord)
+        if i % 1 == 0: print(f'{i+1} / {len(binFiles)}', flush=True)
+    return records
 
 
 def medaka_pipeline(outputDir, binFiles, pattern):
@@ -301,6 +327,7 @@ def consensus_pipeline(option, outputDir, binFiles, pattern):
     if option == 'custom': return custom_pipeline(outputDir, binFiles, pattern)
     if option == 'medaka': return medaka_pipeline(outputDir, binFiles, pattern)
     if option == 'mafft': return mafft_pipeline(outputDir, binFiles, pattern)
+    if option == 'lamassemble': return lamassemble_pipeline(outputDir, binFiles, pattern)
 
 def adjust_all_string_lengths(strs, buffer_length):
     max_length = len(max(strs, key = len))
@@ -491,7 +518,7 @@ def check_for_invalid_input(parser, args):
         if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
         if args['minimumReads'] < 20: parser.error('The -min or --minimumReads argument must be 20 or higher.')
         if not args['consensusAlgorithm']: args['consensusAlgorithm'] = 'custom'
-        if args['consensusAlgorithm'] not in ['custom','medaka','mafft']: parser.error('The -c or --consensusAlgorithm argument must be `custom`, `medaka` or `mafft`.')
+        if args['consensusAlgorithm'] not in ['custom','medaka','mafft','lamassemble']: parser.error('The -c or --consensusAlgorithm argument must be `custom`, `medaka`, `mafft`, or `lamassemble`.')
         if args['input'][-1] != '/': args['input'] += '/'
         if args['output'][-1] != '/': args['output'] += '/'
         newOutput = args['output'] + 'delete/'
