@@ -23,6 +23,7 @@ from statistics import mean, median
 from Bio.Align import PairwiseAligner
 import subprocess
 from io import StringIO
+from consensus_generators.ConsensusContext import ConsensusContext
 
 
 def main():
@@ -324,7 +325,9 @@ def medaka_pipeline(outputDir, binFiles, pattern):
     return records
 
 def consensus_pipeline(option, outputDir, binFiles, pattern):
-    if option == 'custom': return custom_pipeline(outputDir, binFiles, pattern)
+    if option == 'pairwise':
+        cc = ConsensusContext(option)
+        return cc.generate_consensus_sequences(binFiles)
     if option == 'medaka': return medaka_pipeline(outputDir, binFiles, pattern)
     if option == 'mafft': return mafft_pipeline(outputDir, binFiles, pattern)
     if option == 'lamassemble': return lamassemble_pipeline(outputDir, binFiles, pattern)
@@ -517,8 +520,8 @@ def check_for_invalid_input(parser, args):
         nucleotideCheck = [[characters in ['A','T','G','C'] for characters in adapter] for adapter in adapters]
         if not all(nucleotideCheck): parser.error('The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.')
         if args['minimumReads'] < 20: parser.error('The -min or --minimumReads argument must be 20 or higher.')
-        if not args['consensusAlgorithm']: args['consensusAlgorithm'] = 'custom'
-        if args['consensusAlgorithm'] not in ['custom','medaka','mafft','lamassemble']: parser.error('The -c or --consensusAlgorithm argument must be `custom`, `medaka`, `mafft`, or `lamassemble`.')
+        if not args['consensusAlgorithm']: args['consensusAlgorithm'] = 'pairwise'
+        if args['consensusAlgorithm'] not in ['pairwise','medaka','mafft','lamassemble']: parser.error('The -c or --consensusAlgorithm argument must be `custom`, `medaka`, `mafft`, or `lamassemble`.')
         if args['input'][-1] != '/': args['input'] += '/'
         if args['output'][-1] != '/': args['output'] += '/'
         newOutput = args['output'] + 'delete/'

@@ -150,7 +150,7 @@ class longreadWindow(QWidget):
         #if tempDict['isLoose']==2: args += ['-l']
         if tempDict['isVariant']==2: args += ['-v']
         if tempDict['isBenchmark']==2: args += ['-bc']
-        args += ['-c', 'lamassemble']
+        args += ['-c', 'pairwise']
         return args
 
     def return_file_path_value(self, path, text, permittedTypes=[]):
