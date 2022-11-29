@@ -9,6 +9,8 @@ from statistics import mean, median
 import numpy as np
 import subprocess
 from io import StringIO
+import os
+from os.path import exists
 
 class ConsensusStrategy(ABC):
 
@@ -134,7 +136,6 @@ class PairwiseStrategy(ConsensusStrategy):
         return candidateSeq
 
     def generate_consensus_sequences(self, binPaths: list) -> list:
-        outputDir = '/'.join(binPaths[0].split('/')[:-2]) + '/'
         records = []
         allDiffs = []
         for i in range(len(binPaths)):
@@ -172,4 +173,73 @@ class LamassembleStrategy(ConsensusStrategy):
             seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
             records.append(seqRecord)
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
+        return records
+
+class MedakaStrategy(ConsensusStrategy):
+
+    def __init__(self):
+        super().__init__()
+
+    def generate_medaka_consensus_sequence_from_file(self, binPath, outputDir):
+        records = [record for record in SeqIO.parse(binPath, "fastq")]
+        draftFile = '.'.join(binPath.split('.')[:-1])+'_draft.fq'
+        consSequence_count = defaultdict(int)
+        returnSequence = 'XXXXX'
+        for i in range(len(records)):
+            seqStrs = [str(record.seq) for record in records]
+            for i in range(len(seqStrs)):
+                while len(seqStrs[i]) != 0 and seqStrs[i][-1] == 'A': seqStrs[i] = seqStrs[i][:-1]
+
+            for i in range(len(seqStrs)):
+                if len(seqStrs[i]) == 0: return returnSequence
+
+            draftSeq = ReferenceConsensusGenerator.find_initial_consensus(seqStrs)
+            consSeqs = [draftSeq]
+            while len(consSeqs) < 5:
+                draftSeq = SeqRecord(Seq(consSeqs[-1]),id='draft seq')
+                with open(draftFile, "w") as output_handle: SeqIO.write([draftSeq], output_handle, "fasta")
+
+                process = subprocess.Popen(['medaka_consensus',
+                 '-i', binPath,
+                 '-d', draftFile,
+                 #'-m', 'r941_min_high_g303',
+                 '-o', outputDir])
+                stdout, stderr = process.communicate()
+                print(f'Draft File: {draftFile}')
+                print(f'Bin File: {binPath}')
+                if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+                else: return returnSequence
+                os.remove(outputDir + 'calls_to_draft.bam')
+                os.remove(outputDir + 'calls_to_draft.bam.bai')
+                os.remove(outputDir + 'consensus_probs.hdf')
+                os.remove(draftFile)
+                os.remove(draftFile + '.mmi')
+
+
+                if len(consensusRecords) == 0:
+                    os.remove(outputDir + 'consensus.fasta')
+                    return returnSequence
+
+                consensusSequence = str(consensusRecords[0].seq)
+                if bc: os.remove(outputDir + 'consensus.fasta')
+                if consSeqs[-1] == consensusSequence: return consensusSequence
+                consSeqs.append(consensusSequence)
+            return consensusSequence
+
+
+    def generate_consensus_sequences(self, binPaths: list) -> list:
+        outputDir = '/'.join(binPaths[0].split('/')[:-1]) + '/'
+        #os.mkdir(outputDir)
+
+        for binPath in binPaths:
+            binNum = self.binPattern.search(binPath).group(1)
+            seq = self.generate_medaka_consensus_sequence_from_file(binPath, outputDir)
+            if seq == 'XXXXX': print('empty sequence: ' + str(binNum)); continue
+            os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + str(binNum) + '.fasta')
+
+        consPattern = re.compile("consensus(\d+)\.fasta")
+        consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus(\d+).fasta',x)]
+        records = []
+        for file in consensusFiles:
+            for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
         return records

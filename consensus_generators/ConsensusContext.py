@@ -1,25 +1,22 @@
-import consensus_generators.ConsensusStrategy
-#import ConsensusStrategy
+import consensus_generators.ConsensusStrategy as cs
+#import ConsensusStrategy as cs
 
 class ConsensusContext:
 
     def __init__(self, strategy: str):
         self._strategy_types = {
-            'pairwise': consensus_generators.ConsensusStrategy.PairwiseStrategy(),
-            'lamassemble': consensus_generators.ConsensusStrategy.LamassembleStrategy(),
-            #'pairwise': ConsensusStrategy.PairwiseStrategy(),
-            #'lamassemble': ConsensusStrategy.LamassembleStrategy(),
+            'pairwise': cs.PairwiseStrategy(),
+            'lamassemble': cs.LamassembleStrategy(),
+            'medaka': cs.MedakaStrategy(),
             }
         self._strategy = self._strategy_types[strategy]
 
     @property
-    def strategy(self) -> consensus_generators.ConsensusStrategy.ConsensusStrategy:
-    #def strategy(self) -> ConsensusStrategy.ConsensusStrategy:
+    def strategy(self) -> cs.ConsensusStrategy:
         return self._strategy
 
     @strategy.setter
-    def strategy(self, strategy: consensus_generators.ConsensusStrategy.ConsensusStrategy) -> None:
-    #def strategy(self, strategy: ConsensusStrategy.ConsensusStrategy) -> None:
+    def strategy(self, strategy: cs.ConsensusStrategy) -> None:
         self._strategy = strategy
 
     def generate_consensus_sequences(self, binPaths) -> None:

@@ -326,8 +326,7 @@ def medaka_pipeline(outputDir, binFiles, pattern):
 
 def consensus_pipeline(option, outputDir, binFiles, pattern):
     cc = ConsensusContext(option)
-    if option == 'pairwise' or option == 'lamassemble': return cc.generate_consensus_sequences(binFiles)
-    if option == 'medaka': return medaka_pipeline(outputDir, binFiles, pattern)
+    if option == 'pairwise' or option == 'lamassemble' or option == 'medaka': return cc.generate_consensus_sequences(binFiles)
     if option == 'mafft': return mafft_pipeline(outputDir, binFiles, pattern)
 
 def adjust_all_string_lengths(strs, buffer_length):
