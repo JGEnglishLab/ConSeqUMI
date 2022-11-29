@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QWidget,
     QApplication,
     QFormLayout,
+    QComboBox,
     QCheckBox,
     QPushButton,
     QFileDialog,
@@ -73,6 +74,11 @@ class longreadWindow(QWidget):
         formLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
         formLayout.addRow(self.adapterField)
 
+        self.consensusAlgorithmLabel = QLabel('Consensus Algorithm')
+        self.consensusAlgorithmComboBox = QComboBox()
+        self.consensusAlgorithmComboBox.addItems(['pairwise', 'lamassemble', 'medaka'])
+        formLayout.addRow(self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox)
+
         self.strictVLooseLabel = QLabel('Loose Adapter Identification Settings?')
         self.strictVLooseCheckBox = QCheckBox()
         formLayout.addRow(self.strictVLooseLabel, self.strictVLooseCheckBox)
@@ -134,6 +140,7 @@ class longreadWindow(QWidget):
         #else: tempDict['outputName'] = self.outputNameField.text(); self.set_text_color(self.outputNameLabel, isValid = True)
         tempDict['outputName'] = self.outputNameField.text(); self.set_text_color(self.outputNameLabel, isValid = True)
         tempDict['adapterFile'] = self.return_file_path_value(self.adapterField.text(), self.adapterLabel, permittedTypes=['txt'])
+        tempDict['consensusAlgorithm'] = self.consensusAlgorithmComboBox.currentText(); self.set_text_color(self.consensusAlgorithmLabel, isValid=True)
         if self.strictVLooseCheckBox.isChecked(): tempDict['isLoose'] = 2; self.set_text_color(self.strictVLooseLabel, isValid=True)
         else: tempDict['isLoose'] = 1; self.set_text_color(self.strictVLooseLabel, isValid=True)
         if self.variantCheckBox.isChecked(): tempDict['isVariant'] = 2; self.set_text_color(self.variantLabel, isValid=True)
@@ -150,7 +157,7 @@ class longreadWindow(QWidget):
         #if tempDict['isLoose']==2: args += ['-l']
         if tempDict['isVariant']==2: args += ['-v']
         if tempDict['isBenchmark']==2: args += ['-bc']
-        args += ['-c', 'pairwise']
+        args += ['-c', tempDict['consensusAlgorithm']]
         return args
 
     def return_file_path_value(self, path, text, permittedTypes=[]):

@@ -7,6 +7,8 @@ from Bio.SeqRecord import SeqRecord
 from collections import defaultdict, Counter
 from statistics import mean, median
 import numpy as np
+import subprocess
+from io import StringIO
 
 class ConsensusStrategy(ABC):
 
@@ -131,7 +133,6 @@ class PairwiseStrategy(ConsensusStrategy):
             if counter > 15: return candidateSeq
         return candidateSeq
 
-
     def generate_consensus_sequences(self, binPaths: list) -> list:
         outputDir = '/'.join(binPaths[0].split('/')[:-2]) + '/'
         records = []
@@ -140,6 +141,34 @@ class PairwiseStrategy(ConsensusStrategy):
             binPath = binPaths[i]
             binNum = self.binPattern.search(binPath).group(1)
             consensusSeq = self.generate_pairwise_consensus_sequence_from_file(binPath)
+            seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
+            records.append(seqRecord)
+            if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
+        return records
+
+class LamassembleStrategy(ConsensusStrategy):
+
+    def __init__(self):
+        super().__init__()
+
+    def generate_lamassemble_consensus_sequence_from_file(self, binPath):
+        child = subprocess.Popen(['lamassemble',
+                                  '/Users/calebcranney/Documents/Projects/lamassemble/train/promethion.mat',
+                                  binPath,
+                                  '--end',
+                                  '-g60'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        child_out = child.communicate()[0].decode('utf8')
+        seq_ali = list(SeqIO.parse(StringIO(child_out), 'fasta'))
+        child.stdin.close()
+        return str(seq_ali[0].seq).upper()
+
+
+    def generate_consensus_sequences(self, binPaths: list) -> list:
+        records = []
+        for i in range(len(binPaths)):
+            binPath = binPaths[i]
+            binNum = self.binPattern.search(binPath).group(1)
+            consensusSeq = self.generate_lamassemble_consensus_sequence_from_file(binPath)
             seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
             records.append(seqRecord)
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)

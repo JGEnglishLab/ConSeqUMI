@@ -325,12 +325,10 @@ def medaka_pipeline(outputDir, binFiles, pattern):
     return records
 
 def consensus_pipeline(option, outputDir, binFiles, pattern):
-    if option == 'pairwise':
-        cc = ConsensusContext(option)
-        return cc.generate_consensus_sequences(binFiles)
+    cc = ConsensusContext(option)
+    if option == 'pairwise' or option == 'lamassemble': return cc.generate_consensus_sequences(binFiles)
     if option == 'medaka': return medaka_pipeline(outputDir, binFiles, pattern)
     if option == 'mafft': return mafft_pipeline(outputDir, binFiles, pattern)
-    if option == 'lamassemble': return lamassemble_pipeline(outputDir, binFiles, pattern)
 
 def adjust_all_string_lengths(strs, buffer_length):
     max_length = len(max(strs, key = len))
