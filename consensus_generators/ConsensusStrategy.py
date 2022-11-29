@@ -111,7 +111,6 @@ class PairwiseStrategy(ConsensusStrategy):
         scores = []
         score_to_ids = []
         for i in range(len(binSeqs)):
-            #if i % 100 == 0: print(i)
             alignments = aligner.align(candidateSeq, binSeqs[i])
             scores.append(alignments[0].score)
             score_to_ids.append([binRecords[i].id, alignments[0].score])
@@ -229,8 +228,6 @@ class MedakaStrategy(ConsensusStrategy):
 
     def generate_consensus_sequences(self, binPaths: list) -> list:
         outputDir = '/'.join(binPaths[0].split('/')[:-1]) + '/'
-        #os.mkdir(outputDir)
-
         for binPath in binPaths:
             binNum = self.binPattern.search(binPath).group(1)
             seq = self.generate_medaka_consensus_sequence_from_file(binPath, outputDir)
