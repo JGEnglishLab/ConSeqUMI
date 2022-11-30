@@ -36,7 +36,7 @@ def main():
         return
     print('\nOutput Directory Created: ' + args['output'])
     startTime = timer()
-    '''
+    #'''
     print('\nUMI Extraction')
     UMIExtractor = ue.UMIExtractor()
     print('----> ' + stringify_time_since_start(startTime, timer()) + ' setting adapter objects', flush=True)
@@ -61,7 +61,7 @@ def main():
     ub.bin_sequences_by_umi_pair(args['output'] + 'seq.fq', args['output']+ 'starcode_without_chimeras.txt', args['minimumReads'])
     #'''
     #args['output'] = '/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/'
-    args['output'] = '/home/u0704188@path.utah.edu/Desktop/newConsensus_medaka-20221129-184407/delete/'
+    #args['output'] = '/home/u0704188@path.utah.edu/Desktop/newConsensus_medaka-20221129-184407/delete/'
     if args['benchmarkClusters']:
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
         dfs = []
