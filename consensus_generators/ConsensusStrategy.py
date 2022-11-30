@@ -37,7 +37,7 @@ class ConsensusStrategy(ABC):
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
         return records
 
-    def benchmark_binned_sequences(self, binPath, iteration = 100):
+    def benchmark_binned_sequences(self, binPath, iteration = 10):
         self.outputDir = '/'.join(binPath.split('/')[:-1]) + '/'
         records = [record for record in SeqIO.parse(binPath, "fastq")]
         fullData = []
@@ -51,7 +51,7 @@ class ConsensusStrategy(ABC):
             for i in range(1, len(records)//iteration+1):
                 #if i*iteration == 500: clusterSizes.append(i*iteration)
                 clusterSizes.append(i*iteration)
-            clusterSizes = clusterSizes[:30] #only go to 300
+            clusterSizes = clusterSizes[:20] #only go to 300
             if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
             for i in clusterSizes:
                 levenshteinDistances = []
@@ -256,13 +256,13 @@ class MedakaStrategy(ConsensusStrategy):
                 print(f'Bin File: {binFile}')
                 if exists(self.outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(self.outputDir + 'consensus.fasta', "fasta")]
                 else: return returnSequence
-                os.remove(self.outputDir + 'calls_to_draft.bam')
-                os.remove(self.outputDir + 'calls_to_draft.bam.bai')
-                os.remove(self.outputDir + 'consensus_probs.hdf')
-                os.remove(draftFile)
-                #os.remove(draftFile + '.mmi')
-                os.remove(binFile)
+                if exists(self.outputDir + 'calls_to_draft.bam'): os.remove(self.outputDir + 'calls_to_draft.bam')
+                if exists(self.outputDir + 'calls_to_draft.bam.bai'): os.remove(self.outputDir + 'calls_to_draft.bam.bai')
+                if exists(self.outputDir + 'consensus_probs.hdf'): os.remove(self.outputDir + 'consensus_probs.hdf')
+                if exists(draftFile + '.mmi'): os.remove(draftFile + '.mmi')
                 os.remove(self.outputDir + 'consensus.fasta')
+                os.remove(binFile)
+                os.remove(draftFile)
 
                 if len(consensusRecords) == 0: return returnSequence
 
