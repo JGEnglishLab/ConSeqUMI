@@ -212,7 +212,7 @@ class MedakaStrategy(ConsensusStrategy):
                 os.remove(outputDir + 'calls_to_draft.bam.bai')
                 os.remove(outputDir + 'consensus_probs.hdf')
                 os.remove(draftFile)
-                os.remove(draftFile + '.mmi')
+                #os.remove(draftFile + '.mmi')
 
 
                 if len(consensusRecords) == 0:
@@ -220,7 +220,7 @@ class MedakaStrategy(ConsensusStrategy):
                     return returnSequence
 
                 consensusSequence = str(consensusRecords[0].seq)
-                if bc: os.remove(outputDir + 'consensus.fasta')
+                #if bc: os.remove(outputDir + 'consensus.fasta')
                 if consSeqs[-1] == consensusSequence: return consensusSequence
                 consSeqs.append(consensusSequence)
             return consensusSequence
