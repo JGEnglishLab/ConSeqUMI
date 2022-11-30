@@ -153,7 +153,7 @@ class LamassembleStrategy(ConsensusStrategy):
 
     def generate_lamassemble_consensus_sequence_from_file(self, binPath):
         child = subprocess.Popen(['lamassemble',
-                                  '/Users/calebcranney/Documents/Projects/lamassemble/train/promethion.mat',
+                                  'dependencies_download/promethion.mat',
                                   binPath,
                                   '--end',
                                   '-g60'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)

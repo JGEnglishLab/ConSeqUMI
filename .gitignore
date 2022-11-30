@@ -7,6 +7,7 @@ test/data/
 test/.DS_Store
 scratchpaper_code/
 viz/data/differences.csv
+dependencies_download/promethion.mat
 
 # C extensions
 *.so
