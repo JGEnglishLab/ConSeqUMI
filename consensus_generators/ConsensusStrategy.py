@@ -18,7 +18,21 @@ class ConsensusStrategy(ABC):
         self.binPattern = re.compile('seq_bin(\d+)\.fq')
 
     @abstractmethod
-    def generate_consensus_sequences(self, binPaths: list): pass
+    def generate_consensus_sequence_from_records(self, binRecords: list) -> str: pass
+
+    def generate_consensus_sequences(self, binPaths: list):
+        self.outputDir = '/'.join(binPaths[0].split('/')[:-1]) + '/'
+        records = []
+        for i in range(len(binPaths)):
+            binPath = binPaths[i]
+            binNum = self.binPattern.search(binPath).group(1)
+            binRecords = [record for record in SeqIO.parse(binPath, "fastq")]
+            consensusSeq = self.generate_consensus_sequence_from_records(binRecords)
+            seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
+            records.append(seqRecord)
+            if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
+        return records
+
 
 class ReferenceConsensusGenerator:
 
@@ -116,8 +130,7 @@ class PairwiseStrategy(ConsensusStrategy):
             score_to_ids.append([binRecords[i].id, alignments[0].score])
         return mean(scores), score_to_ids
 
-    def generate_pairwise_consensus_sequence_from_file(self, binPath):
-        binRecords = [record for record in SeqIO.parse(binPath, "fastq")]
+    def generate_consensus_sequence_from_records(self, binRecords):
         diffs = []
         binSeqs = [str(record.seq) for record in binRecords]
         refSeq = ReferenceConsensusGenerator.find_initial_consensus(binSeqs)
@@ -134,58 +147,43 @@ class PairwiseStrategy(ConsensusStrategy):
             if counter > 15: return candidateSeq
         return candidateSeq
 
-    def generate_consensus_sequences(self, binPaths: list) -> list:
-        records = []
-        allDiffs = []
-        for i in range(len(binPaths)):
-            binPath = binPaths[i]
-            binNum = self.binPattern.search(binPath).group(1)
-            consensusSeq = self.generate_pairwise_consensus_sequence_from_file(binPath)
-            seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
-            records.append(seqRecord)
-            if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
-        return records
 
 class LamassembleStrategy(ConsensusStrategy):
 
     def __init__(self):
         super().__init__()
 
-    def generate_lamassemble_consensus_sequence_from_file(self, binPath):
+    def generate_consensus_sequence_from_records(self, binRecords):
+
+        tempRecordFile = self.outputDir + 'delete.fq'
+        with open(tempRecordFile, "w") as output_handle: SeqIO.write(binRecords, output_handle, "fastq")
+
         child = subprocess.Popen(['lamassemble',
                                   'dependencies_download/promethion.mat',
-                                  binPath,
+                                  tempRecordFile,
                                   '--end',
                                   '-g60'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         child_out = child.communicate()[0].decode('utf8')
         seq_ali = list(SeqIO.parse(StringIO(child_out), 'fasta'))
         child.stdin.close()
+        os.remove(tempRecordFile)
+
         return str(seq_ali[0].seq).upper()
-
-
-    def generate_consensus_sequences(self, binPaths: list) -> list:
-        records = []
-        for i in range(len(binPaths)):
-            binPath = binPaths[i]
-            binNum = self.binPattern.search(binPath).group(1)
-            consensusSeq = self.generate_lamassemble_consensus_sequence_from_file(binPath)
-            seqRecord = SeqRecord(Seq(consensusSeq),id=binNum)
-            records.append(seqRecord)
-            if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
-        return records
 
 class MedakaStrategy(ConsensusStrategy):
 
     def __init__(self):
         super().__init__()
 
-    def generate_medaka_consensus_sequence_from_file(self, binPath, outputDir):
-        records = [record for record in SeqIO.parse(binPath, "fastq")]
-        draftFile = '.'.join(binPath.split('.')[:-1])+'_draft.fq'
+    def generate_consensus_sequence_from_records(self, binRecords):
+        binFile = self.outputDir + 'delete.fq'
+        with open(binFile, "w") as output_handle: SeqIO.write(binRecords, output_handle, "fastq")
+
+        draftFile = self.outputDir + 'draft.fq'
         consSequence_count = defaultdict(int)
-        returnSequence = 'XXXXX'
-        for i in range(len(records)):
-            seqStrs = [str(record.seq) for record in records]
+        returnSequence = ''
+        for i in range(len(binRecords)):
+            seqStrs = [str(record.seq) for record in binRecords]
             for i in range(len(seqStrs)):
                 while len(seqStrs[i]) != 0 and seqStrs[i][-1] == 'A': seqStrs[i] = seqStrs[i][:-1]
 
@@ -195,48 +193,31 @@ class MedakaStrategy(ConsensusStrategy):
             draftSeq = ReferenceConsensusGenerator.find_initial_consensus(seqStrs)
             consSeqs = [draftSeq]
             while len(consSeqs) < 5:
+
                 draftSeq = SeqRecord(Seq(consSeqs[-1]),id='draft seq')
                 with open(draftFile, "w") as output_handle: SeqIO.write([draftSeq], output_handle, "fasta")
 
                 process = subprocess.Popen(['medaka_consensus',
-                 '-i', binPath,
+                 '-i', binFile,
                  '-d', draftFile,
                  #'-m', 'r941_min_high_g303',
-                 '-o', outputDir])
+                 '-o', self.outputDir])
                 stdout, stderr = process.communicate()
                 print(f'Draft File: {draftFile}')
-                print(f'Bin File: {binPath}')
-                if exists(outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(outputDir + 'consensus.fasta', "fasta")]
+                print(f'Bin File: {binFile}')
+                if exists(self.outputDir + 'consensus.fasta'): consensusRecords = [record for record in SeqIO.parse(self.outputDir + 'consensus.fasta', "fasta")]
                 else: return returnSequence
-                os.remove(outputDir + 'calls_to_draft.bam')
-                os.remove(outputDir + 'calls_to_draft.bam.bai')
-                os.remove(outputDir + 'consensus_probs.hdf')
+                os.remove(self.outputDir + 'calls_to_draft.bam')
+                os.remove(self.outputDir + 'calls_to_draft.bam.bai')
+                os.remove(self.outputDir + 'consensus_probs.hdf')
                 os.remove(draftFile)
                 #os.remove(draftFile + '.mmi')
+                os.remove(binFile)
+                os.remove(self.outputDir + 'consensus.fasta')
 
-
-                if len(consensusRecords) == 0:
-                    os.remove(outputDir + 'consensus.fasta')
-                    return returnSequence
+                if len(consensusRecords) == 0: return returnSequence
 
                 consensusSequence = str(consensusRecords[0].seq)
-                #if bc: os.remove(outputDir + 'consensus.fasta')
                 if consSeqs[-1] == consensusSequence: return consensusSequence
                 consSeqs.append(consensusSequence)
             return consensusSequence
-
-
-    def generate_consensus_sequences(self, binPaths: list) -> list:
-        outputDir = '/'.join(binPaths[0].split('/')[:-1]) + '/'
-        for binPath in binPaths:
-            binNum = self.binPattern.search(binPath).group(1)
-            seq = self.generate_medaka_consensus_sequence_from_file(binPath, outputDir)
-            if seq == 'XXXXX': print('empty sequence: ' + str(binNum)); continue
-            os.rename(outputDir + 'consensus.fasta', outputDir + 'consensus' + str(binNum) + '.fasta')
-
-        consPattern = re.compile("consensus(\d+)\.fasta")
-        consensusFiles = [outputDir+x for x in sorted(os.listdir(outputDir)) if re.match('consensus(\d+).fasta',x)]
-        records = []
-        for file in consensusFiles:
-            for record in SeqIO.parse(file, "fasta"): record.id = consPattern.search(file).group(1); records.append(record)
-        return records
