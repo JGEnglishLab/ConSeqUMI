@@ -21,3 +21,6 @@ class ConsensusContext:
 
     def generate_consensus_sequences(self, binPaths) -> None:
         return self._strategy.generate_consensus_sequences(binPaths)
+
+    def benchmark_binned_sequences(self, binPath):
+        return self._strategy.benchmark_binned_sequences(binPath)

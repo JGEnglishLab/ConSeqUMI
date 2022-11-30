@@ -65,13 +65,14 @@ def main():
     if args['benchmarkClusters']:
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
         dfs = []
-        binFiles = [args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)]
+        binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
+        df = ConsensusContext(args['consensusAlgorithm']).benchmark_binned_sequences(binFiles[0])
         #for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
-        for binFile in sorted(binFiles):
-            tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 1)
-            tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
-            dfs.append(tempDf)
-        df = pd.concat(dfs)
+        #for binFile in sorted(binFiles):
+        #    tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 1)
+        #    tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
+        #    dfs.append(tempDf)
+        #df = pd.concat(dfs)
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing benchmarking output', flush=True)
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
     else:

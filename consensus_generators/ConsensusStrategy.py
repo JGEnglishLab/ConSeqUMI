@@ -11,6 +11,10 @@ import subprocess
 from io import StringIO
 import os
 from os.path import exists
+import pandas as pd
+import random
+from Levenshtein import distance
+
 
 class ConsensusStrategy(ABC):
 
@@ -32,6 +36,52 @@ class ConsensusStrategy(ABC):
             records.append(seqRecord)
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
         return records
+
+    def benchmark_binned_sequences(self, binPath, iteration = 100):
+        self.outputDir = '/'.join(binPath.split('/')[:-1]) + '/'
+        records = [record for record in SeqIO.parse(binPath, "fastq")]
+        fullData = []
+        print(binPath)
+        print(len(records))
+        if len(records) >= 300:
+            referenceSequence = self.generate_consensus_sequence_from_records(records)
+            data = []
+            sequenceData = []
+            clusterSizes = [1]
+            for i in range(1, len(records)//iteration+1):
+                #if i*iteration == 500: clusterSizes.append(i*iteration)
+                clusterSizes.append(i*iteration)
+            clusterSizes = clusterSizes[:30] #only go to 300
+            clusterSizes = clusterSizes[:2]
+            if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
+            for i in clusterSizes:
+                levenshteinDistances = []
+                sequences = []
+                for j in range(30):
+                    tempRecords = random.sample(records, k=i)
+                    if i == 1: tempSequence = str(tempRecords[0].seq)
+                    else: tempSequence = self.generate_consensus_sequence_from_records(tempRecords)
+                    print('*'*20)
+                    print('binFile: ' + binPath)
+                    print('clusterSize: ' + str(i))
+                    print('iteration: ' + str(j))
+                    print('distance: ' + str(distance(referenceSequence, tempSequence)))
+                    print('refSeq: ' + referenceSequence)
+                    print('temSeq: ' + tempSequence)
+                    print('*'*20, flush=True)
+                    levDist = distance(referenceSequence, tempSequence)
+
+                    clusterNum = int(self.binPattern.search(binPath).group(1))
+                    originalClusterSize = pd.read_csv(self.outputDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
+
+                    fullData.append([binPath, i, j, referenceSequence, tempSequence, levDist, clusterNum, originalClusterSize])
+                    levenshteinDistances.append(distance(referenceSequence, tempSequence))
+                    sequences.append(tempSequence)
+
+                data.append([i] + levenshteinDistances)
+                sequenceData.append([i] + sequences)
+        fullDf = pd.DataFrame(fullData, columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize'])
+        return fullDf
 
 
 class ReferenceConsensusGenerator:
