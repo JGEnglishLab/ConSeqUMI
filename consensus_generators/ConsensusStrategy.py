@@ -52,7 +52,6 @@ class ConsensusStrategy(ABC):
                 #if i*iteration == 500: clusterSizes.append(i*iteration)
                 clusterSizes.append(i*iteration)
             clusterSizes = clusterSizes[:30] #only go to 300
-            clusterSizes = clusterSizes[:2]
             if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
             for i in clusterSizes:
                 levenshteinDistances = []
