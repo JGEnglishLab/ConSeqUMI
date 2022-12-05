@@ -92,7 +92,8 @@ class UMIExtractor():
 
         umi1 = match1.trimmed(read1)
         umi2 = match2.trimmed(read2)
-        if (len(umi1) > self.umi_length + 2) or (len(umi1) < self.umi_length - 2) or (len(umi2) > self.umi_length + 2) or (len(umi2) < self.umi_length - 2): return None
+        umi_len_tolerance = 2
+        if (len(umi1) > self.umi_length + umi_len_tolerance) or (len(umi1) < self.umi_length - umi_len_tolerance) or (len(umi2) > self.umi_length + umi_len_tolerance) or (len(umi2) < self.umi_length - umi_len_tolerance): return None
 
         if not reverse:
             startIndex = self.forward_adapter_start_index + match1.front_match.rstop + match1.back_match.rstop

@@ -1,26 +1,48 @@
 # longread_umi_python
 
+The package has not been made executable as of yet. The programs are run directly from `python pipeline.py` at this time. 
+
 ## Installation Instructions
-The package has not been made executable as of yet. The programs are run directly from `python pipeline.py` at this time.
 
-### Conda Instructions
+Note that this program offers three alternative methods for consensus sequence generation, `pairwise`, `lamassemble` and `medaka`. `pairwise` was developed with this package, whereas `lamassemble` and `medaka` were developed elsewhere. A such, the installation instructions will differ depending on which algorithm you plan to use.
 
-The `longread.yml` file should download most necessary dependencies and generate the required environment using the command `conda env create -f longread.yml`.
+Installation instructions assume you have `pip` and `conda` on your computer. If you want all three consensus algorithms available for your environment, follow the Medaka installation instructions first.
 
-### Instructions if Conda is Unavailable
+### Pairwise Instructions
 
-The program needs to be run in an environment with python version 3.6. 
+Required packages can be downloaded using the accompanying requirements file. In your environment enter `pip install -r requirements.txt` to download the necessary dependencies.
 
-You will also need to download minimap2. See [here](https://github.com/lh3/minimap2#install) for instructions.
+### Lamassemble Instructions
 
-Required packages can be downloaded using the accompanying requirements file. Enter `pip install -r requirements.txt` at the command line once you are in your environment.
+Complete 'Pairwise Instructions,' as this method will use the same dependencies.
 
-### Finishing Installation
+You will need to download [lamassemble](https://gitlab.com/mcfrith/lamassemble/) separately. Instructions for downloading `lamassemble` can be found in their repository, but for simplicity they are listed here as well. From the command line enter:
 
-Some packages cannot be installed through pip or conda. [This page](https://www.htslib.org/download/) lists three GitHub repositories from which executables are produced. First, run `git clone --recurse-submodules https://github.com/samtools/htslib.git`. Then, for each of them:
+`conda install -c bioconda lamassemble`
 
-1. Clone the github repository (you already have for `htslib`, skip this step for that repository)
+At present, these instructions download an outdated version of the `lastal` dependency, so you will also need to run:
+
+`conda update last`
+
+Lastly, in accordance with the website instructions, a last-train file needs to be present for `lamassemble` to run properly. From the gitlab repository copy `lamassemble/train/promethion.mat` into this repository's `dependencies_download` folder.
+
+### Medaka Instructions
+
+You will need to download [medaka](https://github.com/nanoporetech/medaka) separately. Instructions for downloading `medaka` can be found in their repository, but for simplicity they are listed here as well. From the command line enter:
+
+`conda create -n medaka -c conda-forge -c bioconda medaka`
+(NOTE: This process is significantly faster if you use `mamba` rather than `conda`)
+
+Enter this conda environment by running:
+
+`conda activate medaka`
+
+Complete 'Pairwise Instructions,' as this method will use the same dependencies.
+
+## Finishing Installation
+
+You will need to download [starcode](https://github.com/gui11aume/starcode) using the three steps below.
+
+1. Clone the github repository
 2. `cd` into the repository. Enter `make`. Executables should be available in the repository now.
-3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. You will need the `bcftools` and `samtools` executables from their respective directories as well as `bgzip` and `tabix` from the `htslib` directory.
-
-You will also need to download [starcode](https://github.com/gui11aume/starcode) using the three steps above.
+3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. 

@@ -1,0 +1,159 @@
+div.wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* style div and headers */
+.chart,
+h2 {
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.toolbox span {
+  padding: 5px;
+}
+
+svg {
+  padding: 10px;
+  width: 500px;
+  height: 250px;
+}
+
+/* style of bar charts */
+.bar-chart rect {
+  fill: 'black';
+}
+
+.bar-chart .hovered {
+  fill: #979696;
+}
+.bar-chart .selected {
+  fill: #eb4034;
+}
+
+text {
+  fill: black;
+}
+
+table {
+    border-collapse: collapse;
+    font: 14px sans-serif;
+}
+
+th:first-of-type {
+    text-align: left;
+}
+
+th {
+    font-weight: normal;
+    text-align: center;
+    padding-right: 6px;
+    min-width: 125px;
+}
+
+th:last-of-type
+{
+    text-align: left;
+}
+
+td:first-of-type {
+    text-align: left;
+}
+
+td {
+    text-align: left;
+}
+
+td:last-of-type
+{
+    text-align: left;
+}
+
+.sorting {
+    background: black;
+    color: white;
+}
+
+.sortable {
+    user-select: none;
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.sortable:hover {
+    background: #d1d1d1;
+}
+
+.sortable.sorting:hover {
+    background: #232323;
+}
+
+td {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-right: 5px;
+    padding-left: 5px;
+    color:black;
+}
+
+#predictionTable td {
+    line-height: 0;
+}
+
+#predictionTable tbody tr {
+    cursor: pointer;
+}
+
+tbody tr:hover {
+    background-color: #efefef;
+}
+
+.label{
+    text-anchor: middle;
+}
+
+h1 {
+    margin-top: 0;
+    color: #343651;
+}
+
+h2 {
+    color: #343651;
+
+}
+
+
+header {
+    padding: 0.5em;
+    text-align: center;
+    height: 100px;
+}
+
+.view {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.no-display {
+    display: none !important;
+}
+
+.alignment {
+  font-family: Courier;
+}
+.deletion {
+  color: #eb4034;
+}
+.mutation {
+  color: #7700e6;
+}
+.insertion {
+  color: #007d08;
+}
