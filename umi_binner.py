@@ -6,7 +6,6 @@ import numpy as np
 from scipy.spatial.distance import pdist
 from scipy.cluster.hierarchy import linkage, fcluster, dendrogram
 from Levenshtein import ratio, distance
-import matplotlib.pyplot as plt
 
 def remove_chimeras_from_umi_pairs(starcode1Path, starcode2Path, output, tdd = False):
 
