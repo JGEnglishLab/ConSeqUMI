@@ -149,12 +149,17 @@ class PairwiseStrategy(ConsensusStrategy):
             diffs.append((start, end, insert))
         return diffs
 
-    def update_candidate_seq_by_common_diffs(self, candidateSeq, binRecords):
+    def find_all_diffs_between_candidate_and_binned_seqs(self, candidateSeq, binRecords):
         diffs = []
         for binRecord in binRecords:
             tempDiffs = self.find_aligned_differences(candidateSeq, str(binRecord.seq))
             tempDiffs = [(x[0], x[1], x[2], binRecord.id) for x in tempDiffs]
             diffs.extend(tempDiffs)
+        return diffs
+
+
+    def update_candidate_seq_by_common_diffs(self, candidateSeq, binRecords):
+        diffs = self.find_all_diffs_between_candidate_and_binned_seqs(candidateSeq, binRecords)
         finalSeq = candidateSeq[:]
 
         tempDiffs = [(x[0],x[1],x[2]) for x in diffs]
