@@ -9,7 +9,7 @@ outputDir = sys.argv[1]
 if outputDir[-1] != '/': outputDir += '/'
 
 consensusFile = [outputDir+x for x in os.listdir(outputDir) if re.match('consensus.+\.fasta', x)][0]
-consDict = {int(record.id):str(record.seq) for record in SeqIO.parse(consensusFile, "fasta")}
+consDict = {int(record.id):str(record.seq).upper() for record in SeqIO.parse(consensusFile, "fasta")}
 
 binFiles = sorted([outputDir + 'delete/' + x for x in os.listdir(outputDir + 'delete/') if re.match('seq_bin\d+\.fq', x)])
 binPattern = re.compile('seq_bin(\d+)\.fq')
