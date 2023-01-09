@@ -66,13 +66,11 @@ def main():
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' bootstrapping', flush=True)
         dfs = []
         binFiles = sorted([args['output']+x for x in os.listdir(args['output']) if re.match('seq_bin\d+\.fq', x)])
-        df = ConsensusContext(args['consensusAlgorithm']).benchmark_binned_sequences(binFiles[0])
-        #for i in range(len(binFiles)): print(str(i) + ': ' + str(sorted(binFiles)[i]))
-        #for binFile in sorted(binFiles):
-        #    tempDf = benchmark_binned_sequences(args['output'], binFile, iteration = 1)
-        #    tempDf.to_csv('.'.join(binFile.split('.')[:-1]) + '_benchmark.csv', index = False)
-        #    dfs.append(tempDf)
-        #df = pd.concat(dfs)
+        for binFile in binFiles:
+            tempDf = ConsensusContext(args['consensusAlgorithm']).benchmark_binned_sequences(binFile)
+            if len(tempDf) == 0: break
+            dfs.append(tempDf)
+        df = pd.concat(dfs)
         print('----> ' + stringify_time_since_start(startTime, timer()) + ' writing benchmarking output', flush=True)
         df.to_csv(args['oldOutput'] + 'benchmark.csv', index=False)
     else:
@@ -98,50 +96,6 @@ def main():
 
 def stringify_time_since_start(start, end):
     return time.strftime("%H:%M:%S", time.gmtime(end-start))
-
-def benchmark_binned_sequences(outDir, binPath, iteration = 100):
-    records = [record for record in SeqIO.parse(binPath, "fastq")]
-    fullData = []
-    if len(records) >= 300:
-        referenceSequence, diffs = generate_consensus_sequence_from_file(binPath)
-        data = []
-        sequenceData = []
-        clusterSizes = [1]
-        for i in range(1, len(records)//iteration+1):
-            #if i*iteration == 500: clusterSizes.append(i*iteration)
-            clusterSizes.append(i*iteration)
-        clusterSizes = clusterSizes[:30] #only go to 300
-        if len(clusterSizes) > 100: clusterSizes = clusterSizes[100:]
-        for i in clusterSizes:
-            levenshteinDistances = []
-            sequences = []
-            for j in range(30):
-                tempRecords = random.sample(records, k=i)
-                if i == 1: tempSequence = str(tempRecords[0].seq)
-                else:
-                    print(generate_consensus_sequence(tempRecords, cutoff_percent=None))
-                    tempSequence, _ = generate_consensus_sequence(tempRecords, cutoff_percent=None)
-                print('*'*20)
-                print('binFile: ' + binPath)
-                print('clusterSize: ' + str(i))
-                print('iteration: ' + str(j))
-                print('distance: ' + str(distance(referenceSequence, tempSequence)))
-                print('refSeq: ' + referenceSequence)
-                print('temSeq: ' + tempSequence)
-                print('*'*20, flush=True)
-                levDist = distance(referenceSequence, tempSequence)
-
-                clusterNum = int(re.search(r'seq_bin(\d+).fq', binPath).group(1))
-                originalClusterSize = pd.read_csv(outDir + 'starcode_without_chimeras.txt', sep='\t', header=None).iloc[:,1][clusterNum]
-
-                fullData.append([binPath, i, j, referenceSequence, tempSequence, levDist, clusterNum, originalClusterSize])
-                levenshteinDistances.append(distance(referenceSequence, tempSequence))
-                sequences.append(tempSequence)
-
-            data.append([i] + levenshteinDistances)
-            sequenceData.append([i] + sequences)
-    fullDf = pd.DataFrame(fullData, columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize'])
-    return fullDf
 
 def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
     binPattern = "seq_bin(\d+)\.fq"
