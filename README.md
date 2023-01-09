@@ -4,7 +4,7 @@ The package has not been made executable as of yet. The programs are run directl
 
 ## Installation Instructions
 
-Note that this program offers three alternative methods for consensus sequence generation, `pairwise`, `lamassemble` and `medaka`. `pairwise` was developed with this package, whereas `lamassemble` and `medaka` were developed elsewhere. A such, the installation instructions will differ depending on which algorithm you plan to use.
+Note that this program offers three alternative methods for consensus sequence generation, `pairwise`, `lamassemble` and `medaka`. `pairwise` is a custom consensus method developed with this package, whereas `lamassemble` and `medaka` were developed elsewhere. A such, the installation instructions will differ depending on which algorithm you plan to use.
 
 Installation instructions assume you have `pip` and `conda` on your computer. If you want all three consensus algorithms available for your environment, follow the Medaka installation instructions first.
 
