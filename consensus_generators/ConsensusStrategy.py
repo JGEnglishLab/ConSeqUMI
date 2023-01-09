@@ -37,14 +37,15 @@ class ConsensusStrategy(ABC):
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
         return records
 
-    def benchmark_binned_sequences(self, binPath, iteration = 1):
+    def benchmark_binned_sequences(self, binPath, iteration = 10):
         self.outputDir = '/'.join(binPath.split('/')[:-1]) + '/'
+        binNum = self.binPattern.search(binPath).group(1)
         records = [record for record in SeqIO.parse(binPath, "fastq")]
         fullData = []
         print(binPath)
         print(len(records))
         if len(records) >= 300:
-            backupFile = '/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/delete/newConsensus-20230104-115922/delete/' + 'backup_benchmark.csv'
+            backupFile = self.outputDir + f'backup_benchmark{binNum}.csv'
             with open(backupFile, 'w') as f:
                 columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize']
                 f.write(','.join(columns))
