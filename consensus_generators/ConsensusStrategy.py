@@ -37,17 +37,17 @@ class ConsensusStrategy(ABC):
             if i % 1 == 0: print(f'{i+1} / {len(binPaths)}', flush=True)
         return records
 
-    def benchmark_binned_sequences(self, binPath, iteration = 10):
+    def benchmark_binned_sequences(self, binPath, iteration = 1):
         self.outputDir = '/'.join(binPath.split('/')[:-1]) + '/'
         binNum = self.binPattern.search(binPath).group(1)
         records = [record for record in SeqIO.parse(binPath, "fastq")]
         fullData = []
+        columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize']
         print(binPath)
         print(len(records))
         if len(records) >= 300:
             backupFile = self.outputDir + f'backup_benchmark{binNum}.csv'
             with open(backupFile, 'w') as f:
-                columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize']
                 f.write(','.join(columns))
                 f.write('\n')
 
@@ -85,7 +85,7 @@ class ConsensusStrategy(ABC):
                         levenshteinDistances.append(distance(referenceSequence, tempSequence))
                         sequences.append(tempSequence)
 
-                    if i == 3: break
+                    #if i == 2: break
                     data.append([i] + levenshteinDistances)
                     sequenceData.append([i] + sequences)
         fullDf = pd.DataFrame(fullData, columns = columns)
@@ -137,6 +137,7 @@ class PairwiseStrategy(ConsensusStrategy):
 
     def __init__(self):
         super().__init__()
+        self.previousConsensusSeqs = set()
 
     def find_aligned_differences(self, seq1, seq2):
         aligner = PairwiseAligner()
@@ -169,14 +170,16 @@ class PairwiseStrategy(ConsensusStrategy):
 
     def update_candidate_seq_by_common_diffs(self, candidateSeq, binRecords):
         diffs = self.find_all_diffs_between_candidate_and_binned_seqs(candidateSeq, binRecords)
-        finalSeq = candidateSeq[:]
 
         tempDiffs = [(x[0],x[1],x[2]) for x in diffs]
-        most_common_diff = Counter(tempDiffs).most_common(1)[0][0]
-        #print(most_common_diff)
-        start, end, insert = most_common_diff
-        finalSeq = finalSeq[:start] + insert + finalSeq[end:]
-        return finalSeq, diffs
+        diffs_sorted_by_frequency = Counter(tempDiffs).most_common()
+        for diff in diffs_sorted_by_frequency:
+            diff = diff[0]
+            finalSeq = candidateSeq[:]
+            start, end, insert = diff
+            finalSeq = finalSeq[:start] + insert + finalSeq[end:]
+            if finalSeq not in self.previousConsensusSeqs: self.previousConsensusSeqs.add(finalSeq); return finalSeq, diffs #in case the difference just reverts to previous consensus sequence
+        return candidateSeq, diffs
 
 
     def find_average_aligned_score(self, candidateSeq, binRecords):

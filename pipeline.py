@@ -15,12 +15,10 @@ import numpy as np
 import random
 from Levenshtein import distance
 import pandas as pd
-from collections import defaultdict, Counter
 from os.path import exists
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from statistics import mean, median
-from Bio.Align import PairwiseAligner
 import subprocess
 from io import StringIO
 from consensus_generators.ConsensusContext import ConsensusContext
