@@ -20,6 +20,7 @@ class ConsensusStrategy(ABC):
 
     def __init__(self):
         self.binPattern = re.compile('seq_bin(\d+)\.fq')
+        self.isBenchmarkRun = False
 
     @abstractmethod
     def generate_consensus_sequence_from_records(self, binRecords: list) -> str: pass
@@ -38,13 +39,13 @@ class ConsensusStrategy(ABC):
         return records
 
     def benchmark_binned_sequences(self, binPath, iteration = 1):
+        self.isBenchmarkRun = True
         self.outputDir = '/'.join(binPath.split('/')[:-1]) + '/'
         binNum = self.binPattern.search(binPath).group(1)
         records = [record for record in SeqIO.parse(binPath, "fastq")]
         fullData = []
         columns = ['binPath','clusterSize','iteration','referenceSequence','tempSequence','levenshteinDistance', 'clusterNum', 'originalClusterSize']
-        print(binPath)
-        print(len(records))
+        #aligner = PairwiseAligner()
         if len(records) >= 300:
             backupFile = self.outputDir + f'backup_benchmark{binNum}.csv'
             with open(backupFile, 'w') as f:
@@ -73,6 +74,8 @@ class ConsensusStrategy(ABC):
                         print('distance: ' + str(distance(referenceSequence, tempSequence)))
                         print('refSeq: ' + referenceSequence)
                         print('temSeq: ' + tempSequence)
+                        #alignments = aligner.align(referenceSequence,tempSequence)
+                        #print(alignments[0])
                         print('*'*20, flush=True)
                         levDist = distance(referenceSequence, tempSequence)
 
@@ -170,15 +173,26 @@ class PairwiseStrategy(ConsensusStrategy):
 
     def update_candidate_seq_by_common_diffs(self, candidateSeq, binRecords):
         diffs = self.find_all_diffs_between_candidate_and_binned_seqs(candidateSeq, binRecords)
-
+        prevConsRecords = [SeqRecord(Seq(val),id=str(i)) for i,val in enumerate(self.previousConsensusSeqs)]
         tempDiffs = [(x[0],x[1],x[2]) for x in diffs]
         diffs_sorted_by_frequency = Counter(tempDiffs).most_common()
+        print('-'*15)
+        print('-'*10)
+        print(diffs_sorted_by_frequency[:10])
+        print('-'*7)
         for diff in diffs_sorted_by_frequency:
+            #print(diff)
             diff = diff[0]
             finalSeq = candidateSeq[:]
             start, end, insert = diff
             finalSeq = finalSeq[:start] + insert + finalSeq[end:]
-            if finalSeq not in self.previousConsensusSeqs: self.previousConsensusSeqs.add(finalSeq); return finalSeq, diffs #in case the difference just reverts to previous consensus sequence
+            previousDiffs = self.find_all_diffs_between_candidate_and_binned_seqs(finalSeq, prevConsRecords)
+            previousDiffs = set([(x[0],x[1],x[2]) for x in previousDiffs])
+            print(previousDiffs)
+            print('-'*3)
+            if diff in previousDiffs or finalSeq in self.previousConsensusSeqs: continue
+            self.previousConsensusSeqs.add(finalSeq)
+            return finalSeq, diffs #in case the difference just reverts to previous consensus sequence
         return candidateSeq, diffs
 
 
@@ -197,20 +211,21 @@ class PairwiseStrategy(ConsensusStrategy):
         return mean(scores), score_to_ids
 
     def generate_consensus_sequence_from_records(self, binRecords):
+        if self.isBenchmarkRun: self.previousConsensusSeqs = set()
         diffs = []
         binSeqs = [str(record.seq) for record in binRecords]
         refSeq = ReferenceConsensusGenerator.find_initial_consensus(binSeqs)
         bestScore = -np.inf
         candidateSeq = refSeq[:]
-        counter = 0
+        #counter = 0
         curScore, score_to_ids = self.find_average_aligned_score(candidateSeq, binRecords)
         while curScore >= bestScore:
             bestScore = curScore
             tempSeq, diffs = self.update_candidate_seq_by_common_diffs(candidateSeq, binRecords)
             curScore, score_to_ids = self.find_average_aligned_score(tempSeq, binRecords)
             if curScore >= bestScore: candidateSeq = tempSeq
-            counter += 1
-            if counter > 15: return candidateSeq
+            #counter += 1
+            #if counter > 15: return candidateSeq
         return candidateSeq
 
 

@@ -1,6 +1,15 @@
+# PairwiseEdit Branch
+
+I tried to update the pairwise function so that it never re-implemented a change, as described below. It didn't improve performance, and may have even downgraded performance. Keeping this branch here in case I want to revisit it in the future.
+
+```
+Keep prior sequences in a set. If a change would move the current sequence to one that has already existed, move on to the next change until you run out of changes or make a new sequence.
+Update: Additionally, track changes from those previously-existing sequences and compare them to the change made now, in case there was a different change that occurred in between the original/revert changes.
+```
+
 # longread_umi_python
 
-The package has not been made executable as of yet. The programs are run directly from `python pipeline.py` at this time. 
+The package has not been made executable as of yet. The programs are run directly from `python pipeline.py` at this time.
 
 ## Installation Instructions
 
@@ -45,4 +54,4 @@ You will need to download [starcode](https://github.com/gui11aume/starcode) usin
 
 1. Clone the github repository
 2. `cd` into the repository. Enter `make`. Executables should be available in the repository now.
-3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. 
+3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories.

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import sys
 import argparse
 import os
 import umi_extractor as ue
