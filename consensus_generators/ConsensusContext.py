@@ -1,14 +1,15 @@
 import consensus_generators.ConsensusStrategy as cs
-#import ConsensusStrategy as cs
+
+# import ConsensusStrategy as cs
+
 
 class ConsensusContext:
-
     def __init__(self, strategy: str):
         self._strategy_types = {
-            'pairwise': cs.PairwiseStrategy(),
-            'lamassemble': cs.LamassembleStrategy(),
-            'medaka': cs.MedakaStrategy(),
-            }
+            "pairwise": cs.PairwiseStrategy(),
+            "lamassemble": cs.LamassembleStrategy(),
+            "medaka": cs.MedakaStrategy(),
+        }
         self._strategy = self._strategy_types[strategy]
 
     @property
