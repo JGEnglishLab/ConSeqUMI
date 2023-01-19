@@ -40,7 +40,7 @@ class longreadWindow(QWidget):
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
         self.inputField.setText(
-            "/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/barcode07_sup_input"
+            "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data/7_UMI_test_input/barcode07_sup_input"
         )
         self.inputBrowseButton = QPushButton("Browse")
         self.inputBrowseButton.clicked.connect(lambda: self.get_file(self.inputField))
@@ -55,7 +55,7 @@ class longreadWindow(QWidget):
         self.outputField = QLineEdit()
         self.outputField.setEnabled(False)
         self.outputField.setText(
-            "/Users/calebcranney/Documents/Projects/longread_umi_python/test/data"
+            "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data"
         )
         self.outputBrowseButton = QPushButton("Browse")
         self.outputBrowseButton.clicked.connect(lambda: self.get_file(self.outputField))
@@ -79,7 +79,7 @@ class longreadWindow(QWidget):
         self.adapterField = QLineEdit()
         self.adapterField.setEnabled(False)
         self.adapterField.setText(
-            "/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/7_UMI_test_input/adapters.txt"
+            "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data/7_UMI_test_input/adapters.txt"
         )
         self.adapterBrowseButton = QPushButton("Browse")
         self.adapterBrowseButton.clicked.connect(
