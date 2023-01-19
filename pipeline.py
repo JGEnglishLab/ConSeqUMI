@@ -36,7 +36,7 @@ def main():
         return
     print("\nOutput Directory Created: " + args["output"])
     startTime = timer()
-    """
+    #"""
     print("\nUMI Extraction")
     UMIExtractor = ue.UMIExtractor()
     print(
@@ -114,9 +114,7 @@ def main():
         args["minimumReads"],
     )
     #"""
-    args[
-        "output"
-    ] = "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/"
+    # args["output"] = "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/"
     # args['output'] = '/home/u0704188@path.utah.edu/Desktop/newConsensus_medaka-20221129-184407/delete/'
     if args["benchmarkClusters"]:
         print(
