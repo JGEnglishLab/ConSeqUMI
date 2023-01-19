@@ -36,7 +36,7 @@ def main():
         return
     print("\nOutput Directory Created: " + args["output"])
     startTime = timer()
-    #'''
+    """
     print("\nUMI Extraction")
     UMIExtractor = ue.UMIExtractor()
     print(
@@ -113,9 +113,11 @@ def main():
         args["output"] + "starcode_without_chimeras.txt",
         args["minimumReads"],
     )
-    #'''
-    #args['output'] = '/Users/calebcranney/Documents/Projects/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/'
-    #args['output'] = '/home/u0704188@path.utah.edu/Desktop/newConsensus_medaka-20221129-184407/delete/'
+    #"""
+    args[
+        "output"
+    ] = "/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/test/data/delete/newConsensus_delete-20221116-151545/delete/"
+    # args['output'] = '/home/u0704188@path.utah.edu/Desktop/newConsensus_medaka-20221129-184407/delete/'
     if args["benchmarkClusters"]:
         print(
             "----> "
@@ -134,7 +136,7 @@ def main():
         for binFile in binFiles:
             tempDf = ConsensusContext(
                 args["consensusAlgorithm"]
-            ).benchmark_binned_sequences(binFile)
+            ).benchmark_binned_sequences(binFile, args["iteration"])
             if len(tempDf) == 0:
                 break
             dfs.append(tempDf)
@@ -284,6 +286,13 @@ def set_command_line_settings():
         "--benchmarkClusters",
         action="store_true",
         help="A flag indicating we want to benchmark the optimal cluster size required to generate an accurate consensus sequence.",
+    )
+    cons_parser.add_argument(
+        "-iter",
+        "--iteration",
+        type=restricted_int,
+        default=10,
+        help="Only valid in conjunction with the benchmarkClusters flag. Indicates the iteration of cluster sizes to benchmark. Default is 10.",
     )
     cons_parser.add_argument(
         "-c",

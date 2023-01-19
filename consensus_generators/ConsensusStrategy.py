@@ -38,26 +38,25 @@ class ConsensusStrategy(ABC):
                 print(f"{i+1} / {len(binPaths)}", flush=True)
         return records
 
-    def benchmark_binned_sequences(self, binPath, iteration=10):
+    def benchmark_binned_sequences(self, binPath, iteration):
         self.outputDir = "/".join(binPath.split("/")[:-1]) + "/"
         binNum = self.binPattern.search(binPath).group(1)
         records = [record for record in SeqIO.parse(binPath, "fastq")]
         fullData = []
-        print(binPath)
-        print(len(records))
+        columns = [
+            "binPath",
+            "clusterSize",
+            "iteration",
+            "referenceSequence",
+            "tempSequence",
+            "levenshteinDistance",
+            "clusterNum",
+            "originalClusterSize",
+        ]
+
         if len(records) >= 300:
             backupFile = self.outputDir + f"backup_benchmark{binNum}.csv"
             with open(backupFile, "w") as f:
-                columns = [
-                    "binPath",
-                    "clusterSize",
-                    "iteration",
-                    "referenceSequence",
-                    "tempSequence",
-                    "levenshteinDistance",
-                    "clusterNum",
-                    "originalClusterSize",
-                ]
                 f.write(",".join(columns))
                 f.write("\n")
 
@@ -122,8 +121,8 @@ class ConsensusStrategy(ABC):
                         )
                         sequences.append(tempSequence)
 
-                    if i == 3:
-                        break
+                    # if i == 3:
+                    #    break
                     data.append([i] + levenshteinDistances)
                     sequenceData.append([i] + sequences)
         fullDf = pd.DataFrame(fullData, columns=columns)
