@@ -14,7 +14,7 @@ from os.path import exists
 import pandas as pd
 import random
 from Levenshtein import distance
-
+from consensus_generators.config import LCOMMAND, MCOMMAND
 
 class ConsensusStrategy(ABC):
     def __init__(self):
@@ -269,14 +269,10 @@ class LamassembleStrategy(ConsensusStrategy):
         with open(tempRecordFile, "w") as output_handle:
             SeqIO.write(binRecords, output_handle, "fastq")
 
+        processCommands = LCOMMAND[:]
+        processCommands.append(tempRecordFile)
         child = subprocess.Popen(
-            [
-                "lamassemble",
-                "dependencies_download/promethion.mat",
-                tempRecordFile,
-                "--end",
-                "-g60",
-            ],
+            processCommands,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
         )
@@ -318,18 +314,15 @@ class MedakaStrategy(ConsensusStrategy):
                 with open(draftFile, "w") as output_handle:
                     SeqIO.write([draftSeq], output_handle, "fasta")
 
-                process = subprocess.Popen(
-                    [
-                        "medaka_consensus",
-                        "-i",
-                        binFile,
-                        "-d",
-                        draftFile,
-                        #'-m', 'r941_min_high_g303',
-                        "-o",
-                        self.outputDir,
-                    ]
-                )
+                processSettings = MCOMMAND[:]
+                processSettings.append("-i")
+                processSettings.append(binFile)
+                processSettings.append("-d")
+                processSettings.append(draftFile)
+                processSettings.append("-o")
+                processSettings.append(self.outputDir)
+                
+                process = subprocess.Popen(processSettings)
                 stdout, stderr = process.communicate()
                 print(f"Draft File: {draftFile}")
                 print(f"Bin File: {binFile}")
