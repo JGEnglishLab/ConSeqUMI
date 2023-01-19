@@ -26,6 +26,8 @@ At present, these instructions download an outdated version of the `lastal` depe
 
 Lastly, in accordance with the website instructions, a last-train file needs to be present for `lamassemble` to run properly. From the gitlab repository copy `lamassemble/train/promethion.mat` into this repository's `dependencies_download` folder.
 
+To adjust the default lamassemble settings used by this program, edit the `lamassembleCommandLine` variable in the `consensus_generators/config.py` file.
+
 ### Medaka Instructions
 
 You will need to download [medaka](https://github.com/nanoporetech/medaka) separately. Instructions for downloading `medaka` can be found in their repository, but for simplicity they are listed here as well. From the command line enter:
@@ -38,6 +40,8 @@ Enter this conda environment by running:
 `conda activate medaka`
 
 Complete 'Pairwise Instructions,' as this method will use the same dependencies.
+
+To adjust the default medaka settings used by this program, edit the `medakaCommandLine` variable in the `consensus_generators/config.py` file.
 
 ## Finishing Installation
 
