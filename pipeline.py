@@ -24,6 +24,7 @@ from Bio.Align import PairwiseAligner
 import subprocess
 from io import StringIO
 from consensus_generators.ConsensusContext import ConsensusContext
+from consensus_generators.config import SCOMMAND
 
 
 def main():
@@ -391,18 +392,12 @@ def restricted_int(x):
 
 
 def run_starcode(input, output):
-    process = subprocess.Popen(
-        [
-            "starcode",
-            "-i",
-            input,
-            "-o",
-            output,
-            "--seq-id",
-            #'-s',
-            #'-d 5',
-        ]
-    )
+    processSettings = SCOMMAND[:]
+    processSettings.append("-i")
+    processSettings.append(input)
+    processSettings.append("-o")
+    processSettings.append(output)
+    process = subprocess.Popen(processSettings)
     stdout, stderr = process.communicate()
 
 
