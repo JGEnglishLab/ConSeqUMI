@@ -2,6 +2,7 @@ import pytest
 import sys
 sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
 from general import genomicFunctions
+import re
 
 def test_genomic_function_convert_IUPAC_to_regular_expression():
     allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
@@ -20,12 +21,14 @@ def test_genomic_function_find_reverse_complement_accounts_for_only_standard_nuc
     nonStandardNucleotides_reverseComplement = "YCGAT"
     assert genomicFunctions.find_reverse_complement(standardNucleotides, isOnlyStandardNucleotide=True) == standardNucleotides_reverseComplement
     assert genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=False) == nonStandardNucleotides_reverseComplement
-    with pytest.raises(TypeError):
+    errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
+    with pytest.raises(TypeError, match=re.escape(errorOutput)):
         genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=True)
 
 def test_genomic_function_find_reverse_complement_non_nucleotide_character_error():
     nonNucleotideCharacter = "@"
-    with pytest.raises(TypeError):
+    errorOutput = "Provided Sequence contains non-standard nucleotide characters"
+    with pytest.raises(TypeError, match=re.escape(errorOutput)):
         genomicFunctions.find_reverse_complement(nonNucleotideCharacter)
 
 def test_genomic_function_find_reverse_complement_works_regardless_of_case():

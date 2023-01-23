@@ -3,6 +3,7 @@ import sys
 sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
 from umi.UmiExtractor import UmiExtractor
 from unittest.mock import Mock
+import re
 
 @pytest.fixture
 def umiPattern():
@@ -73,13 +74,15 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractor
 
 
 def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSeqs):
-    with pytest.raises(TypeError):
+    errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
+    with pytest.raises(TypeError, match=re.escape(errorOutput)):
         umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
             adapterSeqs["topFrontAdapter"] + "R",
             adapterSeqs["topBackAdapter"],
             adapterSeqs["bottomFrontAdapter"],
             adapterSeqs["bottomBackAdapter"],
         )
+
 
 def test_umi_extractor_initialization_with_umi_pattern(umiPattern, umiPatternRegEx):
     umiExtractor = UmiExtractor(umiPattern=umiPattern)
