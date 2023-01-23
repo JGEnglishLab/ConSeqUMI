@@ -1,3 +1,6 @@
+from Bio.Seq import Seq
+
+
 def convert_IUPAC_to_regular_expression(nucleotides):
     iupacToRegExDict = {
         "A":"A",
@@ -20,3 +23,6 @@ def convert_IUPAC_to_regular_expression(nucleotides):
     for n in nucleotides:
         regEx += iupacToRegExDict[n]
     return regEx
+
+def find_reverse_complement(sequence):
+    return str(Seq(sequence).reverse_complement())
