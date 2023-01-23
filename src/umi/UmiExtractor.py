@@ -36,12 +36,12 @@ class UmiExtractor:
             "bottom",
         )
         self.topLinkedAdapter_reverseComplement = self.create_linked_adapter(
-            genomicFunctions.find_reverse_complement(topAdapterSeq2),
-            genomicFunctions.find_reverse_complement(topAdapterSeq1),
+            genomicFunctions.find_reverse_complement(topAdapterSeq2, isOnlyStandardNucleotide=True),
+            genomicFunctions.find_reverse_complement(topAdapterSeq1, isOnlyStandardNucleotide=True),
             "top_reverseComplement",
         )
         self.bottomLinkedAdapter_reverseComplement = self.create_linked_adapter(
-            genomicFunctions.find_reverse_complement(bottomAdapterSeq2),
-            genomicFunctions.find_reverse_complement(bottomAdapterSeq1),
+            genomicFunctions.find_reverse_complement(bottomAdapterSeq2, isOnlyStandardNucleotide=True),
+            genomicFunctions.find_reverse_complement(bottomAdapterSeq1, isOnlyStandardNucleotide=True),
             "bottom_reverseComplement",
         )

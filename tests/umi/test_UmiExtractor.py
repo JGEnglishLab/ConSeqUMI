@@ -11,14 +11,14 @@ def test_umi_extractor_initialization():
 @pytest.fixture
 def adapterSeqs():
     adapterSeqs = {
-        "topAdapterFront":"CAAGCAGAAGACGGCATACGAGAT",
-        "topAdapterBack":"AGRGTTYGATYMTGGCTCAG",
-        "bottomAdapterFront":"AATGATACGGCGACCACCGAGATC",
-        "bottomAdapterBack":"CGACATCGAGGTGCCAAAC",
-        "topAdapterFront_reverseComplement":"ATCTCGTATGCCGTCTTCTGCTTG",
-        "topAdapterBack_reverseComplement":"CTGAGCCAKRATCRAACYCT",
-        "bottomAdapterFront_reverseComplement":"GATCTCGGTGGTCGCCGTATCATT",
-        "bottomAdapterBack_reverseComplement":"GTTTGGCACCTCGATGTCG",
+        "topAdapterFront":"GAGTGTGGCTCTTCGGAT",
+        "topAdapterBack":"CACCTTCGTGACTTCCCATT",
+        "bottomAdapterFront":"GTGGGACTGCTGATGACGACTGAT",
+        "bottomAdapterBack":"GCGATGCAATTTCCTCATTT",
+        "topAdapterFront_reverseComplement":"ATCCGAAGAGCCACACTC",
+        "topAdapterBack_reverseComplement":"AATGGGAAGTCACGAAGGTG",
+        "bottomAdapterFront_reverseComplement":"ATCAGTCGTCATCAGCAGTCCCAC",
+        "bottomAdapterBack_reverseComplement":"AAATGAGGAAATTGCATCGC",
     }
     return adapterSeqs
 
@@ -61,3 +61,13 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractor
     assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["bottomAdapterBack_reverseComplement"]
     assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["bottomAdapterFront_reverseComplement"]
     assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.name == "bottom_reverseComplement"
+
+
+def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSeqs):
+    with pytest.raises(TypeError):
+        umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
+            adapterSeqs["topAdapterFront"] + "R",
+            adapterSeqs["topAdapterBack"],
+            adapterSeqs["bottomAdapterFront"],
+            adapterSeqs["bottomAdapterBack"],
+        )

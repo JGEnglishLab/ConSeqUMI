@@ -24,5 +24,7 @@ def convert_IUPAC_to_regular_expression(nucleotides):
         regEx += iupacToRegExDict[n]
     return regEx
 
-def find_reverse_complement(sequence):
+def find_reverse_complement(sequence, isOnlyStandardNucleotide=False):
+    if isOnlyStandardNucleotide and not set(sequence).issubset(["A", "T", "C", "G"]):
+        raise TypeError("Provided Sequence must only contain standard nucleotides (A, T, C, G)")
     return str(Seq(sequence).reverse_complement())
