@@ -33,3 +33,9 @@ def find_reverse_complement(sequence, isOnlyStandardNucleotide=False):
     if isOnlyStandardNucleotide and not set(sequence).issubset([*standardNucleotides]):
         raise ValueError("Provided Sequence must only contain standard nucleotides (A, T, C, G)")
     return str(Seq(sequence).reverse_complement())
+
+def extract_top_and_bottom_of_sequence(sequence):
+    seqExtractionLength = 200
+    topSequence = sequence[:seqExtractionLength]
+    bottomSequence_reverseComplement = find_reverse_complement(sequence[-seqExtractionLength:])
+    return topSequence, bottomSequence_reverseComplement

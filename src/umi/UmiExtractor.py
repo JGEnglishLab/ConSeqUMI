@@ -54,3 +54,16 @@ class UmiExtractor:
             genomicFunctions.find_reverse_complement(bottomFrontAdapterSeq, isOnlyStandardNucleotide=True),
             "bottom_reverseComplement",
         )
+
+    def find_matches_of_adapters_in_sequence(self, sequence):
+        topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
+        topMatch = self.topLinkedAdapter.match_to(topSequence)
+        bottomMatch = self.bottomLinkedAdapter.match_to(bottomSequence)
+        return topMatch, bottomMatch
+
+    def extract_umis_and_target_sequence_from_record(self, record):
+        sequence = str(record.seq)
+        topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
+        topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence)
+        topUmi = topMatch.trimmed(topSequence)
+        umi2 = match2.trimmed(read2)

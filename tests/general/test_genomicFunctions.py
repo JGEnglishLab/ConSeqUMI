@@ -35,3 +35,14 @@ def test_genomic_function_find_reverse_complement_works_regardless_of_case():
     standardNucleotides_lowerCase = "atcg"
     standardNucleotides_reverseComplement = "CGAT"
     assert genomicFunctions.find_reverse_complement(standardNucleotides_lowerCase) == standardNucleotides_reverseComplement
+
+def test_genomic_function_extract_top_and_bottom_of_sequence():
+    seqExtractionLength = 200
+    topSeq = "A" * seqExtractionLength
+    middleSeq = "T"
+    bottomSeq = "C" * seqExtractionLength
+    bottomSeq_reverseComplement = genomicFunctions.find_reverse_complement(bottomSeq)
+    sequence = topSeq + middleSeq + bottomSeq
+    topSeqOutput, bottomSeqOutput = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
+    assert topSeqOutput == topSeq
+    assert bottomSeqOutput == bottomSeq_reverseComplement

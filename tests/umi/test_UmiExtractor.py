@@ -2,8 +2,12 @@ import pytest
 import sys
 sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
 from umi.UmiExtractor import UmiExtractor
+from general import genomicFunctions
 from unittest.mock import Mock
 import re
+import random
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 @pytest.fixture
 def umiPattern():
@@ -110,3 +114,71 @@ def test_umi_extractor_initialization_with_adapter_sequences(adapterSeqs):
     assert umiExtractor.bottomLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["bottomBackAdapter_reverseComplement"]
     assert umiExtractor.bottomLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["bottomFrontAdapter_reverseComplement"]
     assert umiExtractor.bottomLinkedAdapter_reverseComplement.name == "bottom_reverseComplement"
+
+@pytest.fixture
+def umiExtractor(umiPattern, adapterSeqs):
+    umiExtractor = UmiExtractor(
+        umiPattern=umiPattern,
+        topFrontAdapter=adapterSeqs["topFrontAdapter"],
+        topBackAdapter=adapterSeqs["topBackAdapter"],
+        bottomFrontAdapter=adapterSeqs["bottomFrontAdapter"],
+        bottomBackAdapter=adapterSeqs["bottomBackAdapter"],
+    )
+    return umiExtractor
+
+@pytest.fixture
+def targetSequence():
+    random.seed(0)
+    targetSequence = "".join(random.choices("ATGC", k=200))
+    return targetSequence
+
+@pytest.fixture
+def topUmi(): return "ATATGTACTATTGTATAC"
+
+@pytest.fixture
+def bottomUmi(): return "CAATGTGTCGGCATAGGG"
+
+@pytest.fixture
+def exampleForwardRecord(adapterSeqs, topUmi, bottomUmi, targetSequence):
+    fillerSeq1 = "A" * 110
+    fillerSeq2 = "T" * 100
+    exampleForwardSequence = "".join(
+        [
+            fillerSeq1,
+            adapterSeqs["topFrontAdapter"],
+            topUmi,
+            adapterSeqs["topBackAdapter"],
+            targetSequence,
+            adapterSeqs["bottomBackAdapter_reverseComplement"],
+            genomicFunctions.find_reverse_complement(bottomUmi),
+            adapterSeqs["bottomFrontAdapter_reverseComplement"],
+            fillerSeq2,
+        ]
+    )
+    return SeqRecord(Seq(exampleForwardSequence), id="forward")
+
+@pytest.fixture
+def exampleReverseRecord(exampleForwardRecord):
+    return SeqRecord(exampleForwardRecord.seq.reverse_complement, id="reverse")
+
+def test_umi_extractor_find_matches_of_adapters_in_sequence(umiExtractor, exampleForwardRecord):
+    sequence = str(exampleForwardRecord.seq)
+    topMatch, bottomMatch = umiExtractor.find_matches_of_adapters_in_sequence(sequence)
+    assert topMatch is not None
+    assert bottomMatch is not None
+
+def test_umi_extractor_find_matches_of_adapters_in_sequence_when_no_match_found(umiExtractor, exampleForwardRecord):
+    sequence = str(exampleForwardRecord.seq)
+    topErrorSequence = "A"*200 + sequence[200:]
+    topMatchError, bottomMatch = umiExtractor.find_matches_of_adapters_in_sequence(topErrorSequence)
+    assert topMatchError is None
+    assert bottomMatch is not None
+
+    bottomErrorSequence = sequence[:-200] + "A"*200
+    topMatch, bottomMatchError = umiExtractor.find_matches_of_adapters_in_sequence(bottomErrorSequence)
+    assert topMatch is not None
+    assert bottomMatchError is None
+
+
+#def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+#    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_record(exampleForwardRecord)
