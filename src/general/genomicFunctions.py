@@ -29,7 +29,7 @@ def find_reverse_complement(sequence, isOnlyStandardNucleotide=False):
     allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
     standardNucleotides = "ATCG"
     if not set(sequence).issubset([*allIUPAC_nucleotides]):
-        raise TypeError("Provided Sequence contains non-standard nucleotide characters")
+        raise ValueError("Provided Sequence contains non-standard nucleotide characters")
     if isOnlyStandardNucleotide and not set(sequence).issubset([*standardNucleotides]):
-        raise TypeError("Provided Sequence must only contain standard nucleotides (A, T, C, G)")
+        raise ValueError("Provided Sequence must only contain standard nucleotides (A, T, C, G)")
     return str(Seq(sequence).reverse_complement())

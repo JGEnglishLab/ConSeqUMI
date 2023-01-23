@@ -75,7 +75,7 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractor
 
 def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSeqs):
     errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
-    with pytest.raises(TypeError, match=re.escape(errorOutput)):
+    with pytest.raises(ValueError, match=re.escape(errorOutput)):
         umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
             adapterSeqs["topFrontAdapter"] + "R",
             adapterSeqs["topBackAdapter"],

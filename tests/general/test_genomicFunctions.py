@@ -22,13 +22,13 @@ def test_genomic_function_find_reverse_complement_accounts_for_only_standard_nuc
     assert genomicFunctions.find_reverse_complement(standardNucleotides, isOnlyStandardNucleotide=True) == standardNucleotides_reverseComplement
     assert genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=False) == nonStandardNucleotides_reverseComplement
     errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
-    with pytest.raises(TypeError, match=re.escape(errorOutput)):
+    with pytest.raises(ValueError, match=re.escape(errorOutput)):
         genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=True)
 
 def test_genomic_function_find_reverse_complement_non_nucleotide_character_error():
     nonNucleotideCharacter = "@"
     errorOutput = "Provided Sequence contains non-standard nucleotide characters"
-    with pytest.raises(TypeError, match=re.escape(errorOutput)):
+    with pytest.raises(ValueError, match=re.escape(errorOutput)):
         genomicFunctions.find_reverse_complement(nonNucleotideCharacter)
 
 def test_genomic_function_find_reverse_complement_works_regardless_of_case():
