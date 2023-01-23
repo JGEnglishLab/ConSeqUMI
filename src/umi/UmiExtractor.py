@@ -34,6 +34,10 @@ class UmiExtractor:
         bottomFrontAdapterSeq,
         bottomBackAdapterSeq,
     ):
+        for seq in [topFrontAdapterSeq,topBackAdapterSeq,bottomFrontAdapterSeq,bottomBackAdapterSeq]:
+            if not genomicFunctions.is_only_standard_nucleotide(seq):
+                raise ValueError("Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)")
+
         self.topLinkedAdapter = self.create_linked_adapter(
             topFrontAdapterSeq,
             topBackAdapterSeq,
@@ -43,16 +47,6 @@ class UmiExtractor:
             bottomFrontAdapterSeq,
             bottomBackAdapterSeq,
             "bottom",
-        )
-        self.topLinkedAdapter_reverseComplement = self.create_linked_adapter(
-            genomicFunctions.find_reverse_complement(topBackAdapterSeq, isOnlyStandardNucleotide=True),
-            genomicFunctions.find_reverse_complement(topFrontAdapterSeq, isOnlyStandardNucleotide=True),
-            "top_reverseComplement",
-        )
-        self.bottomLinkedAdapter_reverseComplement = self.create_linked_adapter(
-            genomicFunctions.find_reverse_complement(bottomBackAdapterSeq, isOnlyStandardNucleotide=True),
-            genomicFunctions.find_reverse_complement(bottomFrontAdapterSeq, isOnlyStandardNucleotide=True),
-            "bottom_reverseComplement",
         )
 
     def find_matches_of_adapters_in_sequence(self, sequence):

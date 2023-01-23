@@ -4,30 +4,34 @@ sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread
 from general import genomicFunctions
 import re
 
-def test_genomic_function_convert_IUPAC_to_regular_expression():
-    allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
+@pytest.fixture
+def allIUPAC_nucleotides(): return "ACGTWSRYKMBDHVN"
+
+
+def test_genomic_function_convert_IUPAC_to_regular_expression(allIUPAC_nucleotides):
     nucleotidesInRegExFormat = "ACGT[AT][CG][AG][CT][GT][AC][CGT][AGT][ACT][ACG][ACGT]"
     assert genomicFunctions.convert_IUPAC_to_regular_expression(allIUPAC_nucleotides) == nucleotidesInRegExFormat
 
-def test_genomic_function_find_reverse_complement():
-    allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
+def test_genomic_function_is_only_standard_nucleotide():
+    standardNucleotides = "ATCG"
+    nonStandardNucleotides = "ATCGR"
+    assert genomicFunctions.is_only_standard_nucleotide(standardNucleotides)
+    assert not genomicFunctions.is_only_standard_nucleotide(nonStandardNucleotides)
+
+def test_genomic_function_is_IUPAC_nucleotide(allIUPAC_nucleotides):
+    assert genomicFunctions.is_IUPAC_nucleotide(allIUPAC_nucleotides)
+
+def test_genomic_function_is_IUPAC_nucleotide_rejects_inappropriate_character(allIUPAC_nucleotides):
+    allIUPAC_nucleotides_withError = allIUPAC_nucleotides + "@"
+    assert not genomicFunctions.is_IUPAC_nucleotide(allIUPAC_nucleotides_withError)
+
+def test_genomic_function_find_reverse_complement(allIUPAC_nucleotides):
     allIUPAC_nucleotides_reverseComplement = "NBDHVKMRYSWACGT"
     assert genomicFunctions.find_reverse_complement(allIUPAC_nucleotides) == allIUPAC_nucleotides_reverseComplement
 
-def test_genomic_function_find_reverse_complement_accounts_for_only_standard_nucleotides_when_specified():
-    standardNucleotides = "ATCG"
-    standardNucleotides_reverseComplement = "CGAT"
-    nonStandardNucleotides = "ATCGR"
-    nonStandardNucleotides_reverseComplement = "YCGAT"
-    assert genomicFunctions.find_reverse_complement(standardNucleotides, isOnlyStandardNucleotide=True) == standardNucleotides_reverseComplement
-    assert genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=False) == nonStandardNucleotides_reverseComplement
-    errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
-    with pytest.raises(ValueError, match=re.escape(errorOutput)):
-        genomicFunctions.find_reverse_complement(nonStandardNucleotides, isOnlyStandardNucleotide=True)
-
 def test_genomic_function_find_reverse_complement_non_nucleotide_character_error():
     nonNucleotideCharacter = "@"
-    errorOutput = "Provided Sequence contains non-standard nucleotide characters"
+    errorOutput = "Provided sequence contains non-nucleotide characters"
     with pytest.raises(ValueError, match=re.escape(errorOutput)):
         genomicFunctions.find_reverse_complement(nonNucleotideCharacter)
 

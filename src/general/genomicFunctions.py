@@ -24,14 +24,18 @@ def convert_IUPAC_to_regular_expression(nucleotides):
         regEx += iupacToRegExDict[n]
     return regEx
 
-def find_reverse_complement(sequence, isOnlyStandardNucleotide=False):
-    sequence = sequence.upper()
-    allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
+def is_only_standard_nucleotide(sequence):
     standardNucleotides = "ATCG"
-    if not set(sequence).issubset([*allIUPAC_nucleotides]):
-        raise ValueError("Provided Sequence contains non-standard nucleotide characters")
-    if isOnlyStandardNucleotide and not set(sequence).issubset([*standardNucleotides]):
-        raise ValueError("Provided Sequence must only contain standard nucleotides (A, T, C, G)")
+    return set(sequence).issubset([*standardNucleotides])
+
+def is_IUPAC_nucleotide(sequence):
+    allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
+    return set(sequence).issubset([*allIUPAC_nucleotides])
+
+def find_reverse_complement(sequence):
+    sequence = sequence.upper()
+    if not is_IUPAC_nucleotide(sequence):
+        raise ValueError("Provided sequence contains non-nucleotide characters")
     return str(Seq(sequence).reverse_complement())
 
 def extract_top_and_bottom_of_sequence(sequence):

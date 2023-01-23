@@ -68,17 +68,8 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractor
     assert umiExtractorBasic.bottomLinkedAdapter.back_adapter.sequence == adapterSeqs["bottomBackAdapter"]
     assert umiExtractorBasic.bottomLinkedAdapter.name == "bottom"
 
-    assert umiExtractorBasic.topLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["topBackAdapter_reverseComplement"]
-    assert umiExtractorBasic.topLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["topFrontAdapter_reverseComplement"]
-    assert umiExtractorBasic.topLinkedAdapter_reverseComplement.name == "top_reverseComplement"
-
-    assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["bottomBackAdapter_reverseComplement"]
-    assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["bottomFrontAdapter_reverseComplement"]
-    assert umiExtractorBasic.bottomLinkedAdapter_reverseComplement.name == "bottom_reverseComplement"
-
-
 def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSeqs):
-    errorOutput = "Provided Sequence must only contain standard nucleotides (A, T, C, G)"
+    errorOutput = "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
     with pytest.raises(ValueError, match=re.escape(errorOutput)):
         umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
             adapterSeqs["topFrontAdapter"] + "R",
@@ -106,14 +97,6 @@ def test_umi_extractor_initialization_with_adapter_sequences(adapterSeqs):
     assert umiExtractor.bottomLinkedAdapter.front_adapter.sequence == adapterSeqs["bottomFrontAdapter"]
     assert umiExtractor.bottomLinkedAdapter.back_adapter.sequence == adapterSeqs["bottomBackAdapter"]
     assert umiExtractor.bottomLinkedAdapter.name == "bottom"
-
-    assert umiExtractor.topLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["topBackAdapter_reverseComplement"]
-    assert umiExtractor.topLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["topFrontAdapter_reverseComplement"]
-    assert umiExtractor.topLinkedAdapter_reverseComplement.name == "top_reverseComplement"
-
-    assert umiExtractor.bottomLinkedAdapter_reverseComplement.front_adapter.sequence == adapterSeqs["bottomBackAdapter_reverseComplement"]
-    assert umiExtractor.bottomLinkedAdapter_reverseComplement.back_adapter.sequence == adapterSeqs["bottomFrontAdapter_reverseComplement"]
-    assert umiExtractor.bottomLinkedAdapter_reverseComplement.name == "bottom_reverseComplement"
 
 @pytest.fixture
 def umiExtractor(umiPattern, adapterSeqs):
