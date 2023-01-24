@@ -71,7 +71,7 @@ class UmiExtractor:
             topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence_reverseComplement)
 
         if topMatch is None or bottomMatch is None:
-            return "","",SeqRecord(Seq(""),id="not found")
+            return "","",SeqRecord(Seq(""),id="umi not found")
 
         topUmi = topMatch.trimmed(topSequence)
         bottomUmi = bottomMatch.trimmed(bottomSequence)
