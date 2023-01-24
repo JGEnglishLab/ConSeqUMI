@@ -1,5 +1,7 @@
 from general import genomicFunctions
 from cutadapt.parser import FrontAdapter, BackAdapter, LinkedAdapter
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 class UmiExtractor:
     def __init__(self, *args, **kwargs):
@@ -55,21 +57,25 @@ class UmiExtractor:
         bottomMatch = self.bottomLinkedAdapter.match_to(bottomSequence)
         return topMatch, bottomMatch
 
-    def extract_umis_and_target_sequence_from_read(self, sequence):
+    def extract_umis_and_target_sequence_from_read(self, record):
+        tempRecord = SeqRecord(record.seq,id=record.id)
+        sequence = str(record.seq)
         topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
         topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence)
-        
+
         if topMatch is None or bottomMatch is None:
+            tempRecord = record.reverse_complement()
+            tempRecord.id = record.id
             sequence_reverseComplement = genomicFunctions.find_reverse_complement(sequence)
             topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence_reverseComplement)
             topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence_reverseComplement)
 
         if topMatch is None or bottomMatch is None:
-            return "","",""
+            return "","",SeqRecord(Seq(""),id="not found")
 
         topUmi = topMatch.trimmed(topSequence)
         bottomUmi = bottomMatch.trimmed(bottomSequence)
         targetSeqStartIndex = topMatch.front_match.rstop + topMatch.back_match.rstop
         targetSeqEndIndex = bottomMatch.front_match.rstop + bottomMatch.back_match.rstop
-        targetSequence = sequence[targetSeqStartIndex:-targetSeqEndIndex]
-        return topUmi, bottomUmi, targetSequence
+        targetSequenceRecord = tempRecord[targetSeqStartIndex:-targetSeqEndIndex]
+        return topUmi, bottomUmi, targetSequenceRecord
