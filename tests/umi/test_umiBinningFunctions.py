@@ -29,15 +29,6 @@ def bottomUmiToReadIndices():
     return bottomUmiToReadIndices
 
 @pytest.fixture
-def pairedUmiToReadIndices():
-    pairedUmiToReadIndices = {
-        "AAAATTTTCCCCGGGG":{1,2,3,4,5,6,7,8,9,10},
-        "TTTTAAAAGGGGCCCC":{16,17,18,19,20},
-        "AATTAATTCCGGCCGG":{13,14,15},
-    }
-    return pairedUmiToReadIndices
-
-@pytest.fixture
 def allUmiPairStructure():
     topUmis = [
         "AAAATTTT",
@@ -71,3 +62,48 @@ def test_umi_binning_functions_pair_top_and_bottom_umi_by_matching_reads(topUmiT
     assert topUmis == topUmisOutput
     assert bottomUmis == bottomUmisOutput
     assert readIndices == readIndicesOutput
+
+@pytest.fixture
+def chimeraIndices():
+    return [2, 4, 5]
+
+def test_umi_binning_functions_identify_chimera_indices(allUmiPairStructure, chimeraIndices):
+    topUmis, bottomUmis, readIndices = allUmiPairStructure
+    chimeraIndicesOutput = umiBinningFunctions.identify_chimera_indices(topUmis, bottomUmis)
+    assert chimeraIndicesOutput == chimeraIndices
+
+@pytest.fixture
+def pairedUmiToReadIndices():
+    pairedUmiToReadIndices = {
+        "AAAATTTTCCCCGGGG":{1,2,3,4,5,6},
+        "TTTTAAAAGGGGCCCC":{16,17,18,19,20},
+        "AATTAATTCCGGCCGG":{13,14,15},
+    }
+    return pairedUmiToReadIndices
+
+def test_umi_binning_functions_remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_indices_dict(allUmiPairStructure, chimeraIndices, pairedUmiToReadIndices):
+    pairedUmiToReadIndicesOutput = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_indices_dict(*allUmiPairStructure, chimeraIndices)
+    assert pairedUmiToReadIndicesOutput == pairedUmiToReadIndices
+
+def test_umi_binning_functions_compile_chimera_data_analysis_data_frame(allUmiPairStructure, chimeraIndices):
+    topUmis, bottomUmis, readIndices = allUmiPairStructure
+    readIndicesString = ["/".join([str(index) for index in sorted(readIndexSet)]) for readIndexSet in readIndices]
+    readIndicesLength = [len(readIndexSet) for readIndexSet in readIndices]
+    nonChimeraIndicator = [1 if i in chimeraIndices else 0 for i in range(len(topUmis))]
+    chimeraDataValues = [
+        topUmis,
+        bottomUmis,
+        readIndicesLength,
+        readIndicesString,
+        nonChimeraIndicator,
+    ]
+    chimeraDataColumnNames = [
+        "top UMI",
+        "bottom UMI",
+        "Number of Reads",
+        "Read Identifiers",
+        "Not Chimera",
+    ]
+    chimeraData = pd.DataFrame(list(zip(*chimeraDataValues)), columns=chimeraDataColumnNames)
+    chimeraDataOutput = umiBinningFunctions.compile_chimera_data_analysis_data_frame(*allUmiPairStructure, chimeraIndices)
+    assert chimeraDataOutput.equals(chimeraData)
