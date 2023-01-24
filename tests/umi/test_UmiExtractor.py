@@ -142,7 +142,7 @@ def exampleForwardRecord(adapterSeqs, topUmi, bottomUmi, targetSequence):
 
 @pytest.fixture
 def exampleReverseRecord(exampleForwardRecord):
-    return SeqRecord(exampleForwardRecord.seq.reverse_complement, id="reverse")
+    return SeqRecord(exampleForwardRecord.seq.reverse_complement(), id="reverse")
 
 def test_umi_extractor_find_matches_of_adapters_in_sequence(umiExtractor, exampleForwardRecord):
     sequence = str(exampleForwardRecord.seq)
@@ -163,5 +163,30 @@ def test_umi_extractor_find_matches_of_adapters_in_sequence_when_no_match_found(
     assert bottomMatchError is None
 
 
-#def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
-#    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_record(exampleForwardRecord)
+def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+    exampleForwardSequence = str(exampleForwardRecord.seq)
+    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardSequence)
+    assert topUmiOutput == topUmi
+    assert bottomUmiOutput == bottomUmi
+    assert targetSequenceOutput == targetSequenceOutput
+
+def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
+    exampleReverseSequence = str(exampleReverseRecord.seq)
+    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleReverseSequence)
+    assert topUmiOutput == topUmi
+    assert bottomUmiOutput == bottomUmi
+    assert targetSequenceOutput == targetSequenceOutput
+
+def test_umi_extractor_extract_umis_and_target_sequence_from_record_errors_when_no_umi_found(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+    exampleForwardSequence = str(exampleForwardRecord.seq)
+    exampleForwardSequence_withTopError = "A"*200 + exampleForwardSequence[200:]
+    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardSequence_withTopError)
+    assert topUmiOutput == ""
+    assert bottomUmiOutput == ""
+    assert targetSequenceOutput == ""
+
+    exampleForwardSequence_withBottomError = exampleForwardSequence[:-200] + "A"*200
+    topUmiOutput, bottomUmiOutput, targetSequenceOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardSequence_withBottomError)
+    assert topUmiOutput == ""
+    assert bottomUmiOutput == ""
+    assert targetSequenceOutput == ""

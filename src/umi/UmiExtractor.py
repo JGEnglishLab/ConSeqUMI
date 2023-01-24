@@ -55,9 +55,21 @@ class UmiExtractor:
         bottomMatch = self.bottomLinkedAdapter.match_to(bottomSequence)
         return topMatch, bottomMatch
 
-    def extract_umis_and_target_sequence_from_record(self, record):
-        sequence = str(record.seq)
+    def extract_umis_and_target_sequence_from_read(self, sequence):
         topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
         topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence)
+        
+        if topMatch is None or bottomMatch is None:
+            sequence_reverseComplement = genomicFunctions.find_reverse_complement(sequence)
+            topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence_reverseComplement)
+            topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence_reverseComplement)
+
+        if topMatch is None or bottomMatch is None:
+            return "","",""
+
         topUmi = topMatch.trimmed(topSequence)
-        umi2 = match2.trimmed(read2)
+        bottomUmi = bottomMatch.trimmed(bottomSequence)
+        targetSeqStartIndex = topMatch.front_match.rstop + topMatch.back_match.rstop
+        targetSeqEndIndex = bottomMatch.front_match.rstop + bottomMatch.back_match.rstop
+        targetSequence = sequence[targetSeqStartIndex:-targetSeqEndIndex]
+        return topUmi, bottomUmi, targetSequence
