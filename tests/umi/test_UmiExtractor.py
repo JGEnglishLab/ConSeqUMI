@@ -177,20 +177,38 @@ def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_reverse_s
     assert str(targetSequenceRecordOutput.seq) == targetSequence
     assert targetSequenceRecordOutput.id == exampleReverseRecord.id
 
-def test_umi_extractor_extract_umis_and_target_sequence_from_record_errors_when_no_umi_found(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+@pytest.fixture
+def exampleForwardRecord_withTopUmiNotFound(exampleForwardRecord):
     exampleForwardSequence = str(exampleForwardRecord.seq)
-    exampleForwardSequence_withTopError = "A"*200 + exampleForwardSequence[200:]
-    exampleForwardRecord_withTopError = SeqRecord(Seq(exampleForwardSequence_withTopError), id="forward top error")
-    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withTopError)
-    assert topUmiOutput == ""
-    assert bottomUmiOutput == ""
-    assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "not found"
+    exampleForwardSequence_withTopUmiNotFound = "A"*200 + exampleForwardSequence[200:]
+    exampleForwardRecord_withTopUmiNotFound = SeqRecord(Seq(exampleForwardSequence_withTopUmiNotFound), id="forward top error")
+    return exampleForwardRecord_withTopUmiNotFound
 
-    exampleForwardSequence_withBottomError = exampleForwardSequence[:-200] + "A"*200
-    exampleForwardRecord_withBottomError = SeqRecord(Seq(exampleForwardSequence_withBottomError), id="forward bottom error")
-    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withBottomError)
+@pytest.fixture
+def exampleForwardRecord_withBottomUmiNotFound(exampleForwardRecord):
+    exampleForwardSequence = str(exampleForwardRecord.seq)
+    exampleForwardSequence_withBottomUmiNotFound = exampleForwardSequence[:-200] + "A"*200
+    exampleForwardRecord_withBottomUmiNotFound = SeqRecord(Seq(exampleForwardSequence_withBottomUmiNotFound), id="forward Bottom error")
+    return exampleForwardRecord_withBottomUmiNotFound
+
+def test_umi_extractor_extract_umis_and_target_sequence_from_record_errors_when_no_umi_found_in_top_or_bottom(umiExtractor, exampleForwardRecord_withTopUmiNotFound, exampleForwardRecord_withBottomUmiNotFound):
+    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withTopUmiNotFound)
     assert topUmiOutput == ""
     assert bottomUmiOutput == ""
     assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "not found"
+    assert targetSequenceRecordOutput.id == "umi not found"
+
+    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withBottomUmiNotFound)
+    assert topUmiOutput == ""
+    assert bottomUmiOutput == ""
+    assert str(targetSequenceRecordOutput.seq) == ""
+    assert targetSequenceRecordOutput.id == "umi not found"
+
+def test_umi_extractor_extract_umis_and_target_sequences_from_all_records(umiExtractor, exampleForwardRecord, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
+    topUmisOutput, bottomUmisOutput, targetSequenceRecordsOutput = umiExtractor.extract_umis_and_target_sequences_from_all_records([exampleForwardRecord, exampleReverseRecord])
+    assert set(topUmisOutput) == {topUmi}
+    assert set(bottomUmisOutput) == {bottomUmi}
+    assert str(targetSequenceRecordsOutput[0].seq) == targetSequence
+    assert str(targetSequenceRecordsOutput[1].seq) == targetSequence
+    assert targetSequenceRecordsOutput[0].id == exampleForwardRecord.id
+    assert targetSequenceRecordsOutput[1].id == exampleReverseRecord.id

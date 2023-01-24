@@ -79,3 +79,13 @@ class UmiExtractor:
         targetSeqEndIndex = bottomMatch.front_match.rstop + bottomMatch.back_match.rstop
         targetSequenceRecord = tempRecord[targetSeqStartIndex:-targetSeqEndIndex]
         return topUmi, bottomUmi, targetSequenceRecord
+
+    def extract_umis_and_target_sequences_from_all_records(self, records):
+        topUmis, bottomUmis, targetSequenceRecords = [], [], []
+        for record in records:
+            topUmi, bottomUmi, targetSequenceRecord = self.extract_umis_and_target_sequence_from_read(record)
+            #if not topUmi or not bottomUmi: continue
+            topUmis.append(topUmi)
+            bottomUmis.append(bottomUmi)
+            targetSequenceRecords.append(targetSequenceRecord)
+        return topUmis, bottomUmis, targetSequenceRecords
