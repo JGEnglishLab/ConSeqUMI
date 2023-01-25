@@ -1,6 +1,7 @@
 from consensus.ConsensusStrategy import ConsensusStrategy
 from Bio.Align import PairwiseAligner
 from statistics import mean
+from consensus.consensusStrategyPairwiseFunctions import identify_differences_from_indices, find_in_string_indices_of_character
 
 class ConsensusStrategyPairwise(ConsensusStrategy):
     def __init__(self):
@@ -19,38 +20,16 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
 
     def find_all_differences_between_two_sequences(self, originalSequence, differentSequence):
         alignments = self.aligner.align(originalSequence, differentSequence)
-        matchingIndices = alignments[0].aligned
-
-        originalSequenceMatchingIndices, differentSequenceMatchingIndices = list(matchingIndices[0]), list(matchingIndices[1])
-
-        startingIndices = (0,0)
-        originalSequenceMatchingIndices.insert(0,startingIndices)
-        differentSequenceMatchingIndices.insert(0,startingIndices)
-
-        originalSequenceEndingIndices = (len(originalSequence),len(originalSequence))
-        differentSequenceEndingIndices = (len(differentSequence),len(differentSequence))
-        originalSequenceMatchingIndices.append(originalSequenceEndingIndices)
-        differentSequenceMatchingIndices.append(differentSequenceEndingIndices)
-
+        originalSequenceAlignment, matchIndicator, differentSequenceAlignment, _ = alignments[0].format().split("\n")
         differencesFromOriginal = []
-        numMatchingIndices = len(originalSequenceMatchingIndices)
-        print()
-        print(alignments[0].format().split("\n")[1])
-        for i in range(numMatchingIndices - 1):
-            originalSequenceDifferenceStartIndex = originalSequenceMatchingIndices[i][1]
-            originalSequenceDifferenceEndIndex = originalSequenceMatchingIndices[i + 1][0]
-            differentSequenceInsertStartIndex = differentSequenceMatchingIndices[i][1]
-            differentSequenceInsertEndIndex = differentSequenceMatchingIndices[i + 1][0]
-            differentSequenceInsert = differentSequence[differentSequenceInsertStartIndex:differentSequenceInsertEndIndex]
-            if originalSequenceDifferenceStartIndex == originalSequenceDifferenceEndIndex and len(differentSequenceInsert) == 0: continue
-            differencesFromOriginal.append((originalSequenceDifferenceStartIndex, originalSequenceDifferenceEndIndex, differentSequenceInsert))
+        insertionIndices = find_in_string_indices_of_character(originalSequenceAlignment, "-")
+        differencesFromOriginal.extend(identify_differences_from_indices("insertion", insertionIndices, differentSequenceAlignment))
 
-        print(originalSequence)
-        print(differentSequence)
-        print(alignments[0])
-        print(originalSequenceMatchingIndices)
-        print(differentSequenceMatchingIndices)
-        print(differencesFromOriginal)
+        deletionIndices = find_in_string_indices_of_character(differentSequenceAlignment, "-")
+        differencesFromOriginal.extend(identify_differences_from_indices("deletion", deletionIndices, ""))
+
+        mutationIndices = find_in_string_indices_of_character(matchIndicator, ".")
+        differencesFromOriginal.extend(identify_differences_from_indices("mutation", mutationIndices, differentSequenceAlignment))
 
         return differencesFromOriginal
 
