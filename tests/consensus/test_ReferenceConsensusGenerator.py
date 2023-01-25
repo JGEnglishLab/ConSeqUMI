@@ -1,5 +1,6 @@
 import pytest
 import sys
+import pytestConsensusFixtures
 sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
 from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 import random
@@ -16,24 +17,14 @@ def test_reference_consensus_generator_initializer():
     assert referenceConsensusGenerator.bufferLength == defaultBufferLength
 
 @pytest.fixture
-def consensusSequence():
+def referenceConsensusSequence():
     random.seed(0)
-    consensusSequence = "".join(random.choices("ATGC", k=50))
-    return consensusSequence
+    referenceConsensusSequence = "".join(random.choices("ATGC", k=50))
+    return referenceConsensusSequence
 
 @pytest.fixture
-def readSequences(consensusSequence):
-    readSequences = []
-    insertIndex = 20
-    for i in range(1, 6):
-        readSequences.append(consensusSequence[:insertIndex] + i*"A" + consensusSequence[insertIndex:])
-    deleteIndex = 30
-    for i in range(1, 6):
-        readSequences.append(consensusSequence[:deleteIndex] + consensusSequence[deleteIndex + i:])
-    mutationIndex = 40
-    for i in range(5):
-        readSequences.append(consensusSequence[:mutationIndex + i] + "R" + consensusSequence[mutationIndex + i + 1:])
-    return readSequences
+def referenceReadSequences(referenceConsensusSequence):
+    return pytestConsensusFixtures.generate_read_sequences(referenceConsensusSequence)
 
 @pytest.fixture
 def referenceConsensusGenerator():
@@ -45,26 +36,26 @@ def custom_justify_sequence_function(sequence, maxLength, bufferLength):
     tempSequence += " " *bufferLength
     return tempSequence
 
-def test_reference_consensus_generator_justify_left_all_string_lengths_with_buffer(readSequences, referenceConsensusGenerator):
+def test_reference_consensus_generator_justify_left_all_string_lengths_with_buffer(referenceReadSequences, referenceConsensusGenerator):
     maxLength = 55
     bufferLength = 20
-    justifiedSequences = [custom_justify_sequence_function(sequence, maxLength, bufferLength) for sequence in readSequences]
-    justifiedSequencesOutput = referenceConsensusGenerator.justify_left_all_string_lengths_with_buffer(readSequences)
+    justifiedSequences = [custom_justify_sequence_function(sequence, maxLength, bufferLength) for sequence in referenceReadSequences]
+    justifiedSequencesOutput = referenceConsensusGenerator.justify_left_all_string_lengths_with_buffer(referenceReadSequences)
     assert justifiedSequencesOutput == justifiedSequences
 
-def test_reference_consensus_generator_initialize_consensus_sequence_front(consensusSequence, readSequences, referenceConsensusGenerator):
-    consensusFront = consensusSequence[:10]
-    consensusFrontOutput = referenceConsensusGenerator.initialize_consensus_sequence_front(readSequences)
+def test_reference_consensus_generator_initialize_consensus_sequence_front(referenceConsensusSequence, referenceReadSequences, referenceConsensusGenerator):
+    consensusFront = referenceConsensusSequence[:10]
+    consensusFrontOutput = referenceConsensusGenerator.initialize_consensus_sequence_front(referenceReadSequences)
     assert consensusFrontOutput == consensusFront
 
-def test_reference_consensus_generator_find_next_character_in_sequence(consensusSequence, readSequences, referenceConsensusGenerator):
+def test_reference_consensus_generator_find_next_character_in_sequence(referenceConsensusSequence, referenceReadSequences, referenceConsensusGenerator):
     subSequenceLength = 10
-    consensusFront = consensusSequence[:subSequenceLength]
-    readSequenceFronts = [sequence[:subSequenceLength+1] for sequence in readSequences]
-    nextCharacterInConsensus = consensusSequence[subSequenceLength]
+    consensusFront = referenceConsensusSequence[:subSequenceLength]
+    readSequenceFronts = [sequence[:subSequenceLength+1] for sequence in referenceReadSequences]
+    nextCharacterInConsensus = referenceConsensusSequence[subSequenceLength]
     nextCharacterInConsensusOutput = referenceConsensusGenerator.find_next_character_in_sequence(readSequenceFronts, consensusFront)
     assert nextCharacterInConsensusOutput == nextCharacterInConsensus
 
-def test_reference_consensus_generator_generate_consensus_sequence(consensusSequence, readSequences, referenceConsensusGenerator):
-    consensusSequenceOutput = referenceConsensusGenerator.generate_consensus_sequence(readSequences)
-    assert consensusSequenceOutput == consensusSequence
+def test_reference_consensus_generator_generate_consensus_sequence(referenceConsensusSequence, referenceReadSequences, referenceConsensusGenerator):
+    referenceConsensusSequenceOutput = referenceConsensusGenerator.generate_consensus_sequence(referenceReadSequences)
+    assert referenceConsensusSequenceOutput == referenceConsensusSequence
