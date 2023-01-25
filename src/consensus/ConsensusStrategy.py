@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
-class ConsensusStrategy():
-    def __init__(self): pass
+class ConsensusStrategy(ABC):
 
     @abstractmethod
     def generate_consensus_sequence_from_records(self, binRecords: list) -> str:
