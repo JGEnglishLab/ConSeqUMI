@@ -1,7 +1,10 @@
 import pytest
-import sys
 import pytestConsensusFixtures
-sys.path.insert(1, '../../src')
+import sys
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
 from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 import random
 

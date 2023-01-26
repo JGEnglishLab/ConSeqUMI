@@ -1,6 +1,9 @@
 import pytest
 import sys
-sys.path.insert(1, '../../src')
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
 from umi.UmiExtractor import UmiExtractor
 from general import genomicFunctions
 from unittest.mock import Mock

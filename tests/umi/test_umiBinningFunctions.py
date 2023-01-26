@@ -1,6 +1,9 @@
 import pytest
 import sys
-sys.path.insert(1, '../../src')
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
 from umi import umiBinningFunctions
 import pandas as pd
 #from unittest.mock import Mock

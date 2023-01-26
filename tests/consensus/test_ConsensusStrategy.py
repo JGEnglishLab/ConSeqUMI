@@ -1,5 +1,9 @@
 import sys
-sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
+
 from consensus.ConsensusStrategy import ConsensusStrategy
 
 #def test_consensus_strategy_initialization():
