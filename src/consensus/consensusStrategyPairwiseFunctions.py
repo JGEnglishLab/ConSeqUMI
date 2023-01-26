@@ -8,6 +8,11 @@ def find_in_string_indices_of_character(string, character):
     indicesGroupedConsecutively = [list(group) for group in mit.consecutive_groups(individialIndices)]
     return indicesGroupedConsecutively
 
+def inject_difference_into_sequence(sequence, difference):
+    startIndex, endIndex, insert = difference
+    alteredSequence = sequence[:startIndex] + insert + sequence[endIndex:]
+    return alteredSequence
+
 def identify_differences_from_indices(type, indices, alignmentSequence=""):
     differences = []
     format_difference_from_index = format_difference_from_index_function_generator(type)
@@ -43,8 +48,3 @@ def format_mutation_difference_from_index(index, alignmentSequence):
     endIndex = index[-1] + 1
     insert = alignmentSequence[index[0]:index[-1]+1]
     return startIndex, endIndex, insert
-
-def inject_difference_into_sequence(sequence, difference):
-    startIndex, endIndex, insert = difference
-    alteredSequence = sequence[:startIndex] + insert + sequence[endIndex:]
-    return alteredSequence
