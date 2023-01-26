@@ -20,16 +20,16 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
 
     def find_all_differences_between_two_sequences(self, originalSequence, differentSequence):
         alignments = self.aligner.align(originalSequence, differentSequence)
-        originalSequenceAlignment, matchIndicator, differentSequenceAlignment, _ = alignments[0].format().split("\n")
+        originalSequenceAlignment, indelIndicator, differentSequenceAlignment, _ = alignments[0].format().split("\n")
         differencesFromOriginal = []
         insertionIndices = find_in_string_indices_of_character(originalSequenceAlignment, "-")
-        differencesFromOriginal.extend(identify_differences_from_indices("insertion", insertionIndices, differentSequenceAlignment))
+        differencesFromOriginal.extend(identify_differences_from_indices("insertion", insertionIndices, originalSequenceAlignment, differentSequenceAlignment))
 
         deletionIndices = find_in_string_indices_of_character(differentSequenceAlignment, "-")
-        differencesFromOriginal.extend(identify_differences_from_indices("deletion", deletionIndices, ""))
+        differencesFromOriginal.extend(identify_differences_from_indices("deletion", deletionIndices, originalSequenceAlignment, ""))
 
-        mutationIndices = find_in_string_indices_of_character(matchIndicator, ".")
-        differencesFromOriginal.extend(identify_differences_from_indices("mutation", mutationIndices, differentSequenceAlignment))
+        mutationIndices = find_in_string_indices_of_character(indelIndicator, ".")
+        differencesFromOriginal.extend(identify_differences_from_indices("mutation", mutationIndices, originalSequenceAlignment, differentSequenceAlignment))
 
         return differencesFromOriginal
 

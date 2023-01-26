@@ -3,6 +3,17 @@ import random
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
+@pytest.fixture
+def simpleInsert():
+    return "R"
+
+@pytest.fixture
+def simpleString():
+    return "A"*10
+
+@pytest.fixture
+def middleInsertIndex(simpleString):
+    return len(simpleString) // 2
 
 @pytest.fixture
 def consensusSequence():

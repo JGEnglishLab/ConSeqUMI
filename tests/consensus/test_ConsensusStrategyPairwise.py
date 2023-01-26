@@ -1,4 +1,4 @@
-from pytestConsensusFixtures import consensusSequence, readSequences, readSequenceRecords
+from pytestConsensusFixtures import consensusSequence, readSequences, readSequenceRecords, simpleInsert, simpleString, middleInsertIndex
 import pytest
 import random
 import sys
@@ -10,7 +10,7 @@ sys.path.insert(1, srcPath)
 from consensus import ConsensusStrategyPairwise
 
 
-def test_consensus_strategy_pairwise_initialization():
+def test__consensus_strategy_pairwise__initialization():
     pairwise = ConsensusStrategyPairwise.ConsensusStrategyPairwise()
     assert pairwise.aligner.mismatch_score == -1
     assert pairwise.aligner.open_gap_score == -1
@@ -32,121 +32,45 @@ def calculate_average_pairwise_alignment_score_for_tests(consensusSequence):
     allScores.extend(mutationScores)
     return sum(allScores) / len(allScores)
 
-def test_consensus_strategy_pairwise_find_average_pairwise_alignment_score(consensusSequence, readSequenceRecords, consensusStrategyPairwise):
+def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score(consensusSequence, readSequenceRecords, consensusStrategyPairwise):
     readSequences = [str(readSequenceRecord.seq) for readSequenceRecord in readSequenceRecords]
     averagePairwiseAlignmentScore = calculate_average_pairwise_alignment_score_for_tests(consensusSequence)
     averagePairwiseAlignmentScoreOutput = consensusStrategyPairwise.find_average_pairwise_alignment_score(consensusSequence, readSequences)
     assert averagePairwiseAlignmentScore == averagePairwiseAlignmentScoreOutput
 
 @pytest.fixture
-def originalSequence():
-    random.seed(0)
-    return "".join(random.choices("ATGC", k=20))
+def stretchLength():
+    return 4
 
 @pytest.fixture
-def otherNucleotide(): return "R"
+def simpleStringWithThreeInserts(simpleInsert, simpleString, middleInsertIndex, stretchLength):
+    simpleStringWithThreeInserts = simpleInsert * stretchLength + simpleString[:middleInsertIndex] + simpleInsert + simpleString[middleInsertIndex:] + simpleInsert * stretchLength
+    return simpleStringWithThreeInserts
 
-def test_consensus_strategy_pairwise_find_all_differences_between_two_sequences_finds_single_insertions(originalSequence, otherNucleotide, consensusStrategyPairwise):
-    insertionAtFrontSequence = otherNucleotide + originalSequence
-    insertionAtFrontDifference = (0,0,otherNucleotide)
-    insertionAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionAtFrontSequence)
-    assert insertionAtFrontDifferenceOutputList[0] == insertionAtFrontDifference
+def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_inserts(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+    insertionDifferences = [
+        (0,0,simpleInsert*stretchLength),
+        (middleInsertIndex, middleInsertIndex, simpleInsert),
+        (len(simpleString), len(simpleString), simpleInsert*stretchLength),
+    ]
+    insertionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleString, simpleStringWithThreeInserts)
+    assert insertionDifferencesOutput == insertionDifferences
 
-    insertionAtBackSequence = originalSequence + otherNucleotide
-    insertionAtBackDifference = (len(originalSequence),len(originalSequence),otherNucleotide)
-    insertionAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionAtBackSequence)
-    assert insertionAtBackDifferenceOutputList[0] == insertionAtBackDifference
+def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_deletions(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+    deletionDifferences = [
+        (0,stretchLength,""),
+        (middleInsertIndex+stretchLength, middleInsertIndex+stretchLength+len(simpleInsert), ""),
+        (len(simpleStringWithThreeInserts)-stretchLength, len(simpleStringWithThreeInserts), ""),
+    ]
+    deletionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleString)
+    assert deletionDifferencesOutput == deletionDifferences
 
-    insertionIndex = 10
-    insertionInMiddleSequence = originalSequence[:insertionIndex] + otherNucleotide + originalSequence[insertionIndex:]
-    insertionInMiddleDifference = (insertionIndex,insertionIndex,otherNucleotide)
-    insertionInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionInMiddleSequence)
-    assert insertionInMiddleDifferenceOutputList[0] == insertionInMiddleDifference
-
-def test_consensus_strategy_pairwise_find_all_differences_between_two_sequences_finds_single_deletions(originalSequence, otherNucleotide, consensusStrategyPairwise):
-    insertionIndex = 10
-    originalSequenceEditedForDeletion = otherNucleotide + originalSequence[:insertionIndex] + otherNucleotide + originalSequence[insertionIndex:] + otherNucleotide
-    deletionAtFrontSequence = originalSequenceEditedForDeletion[1:]
-    deletionAtFrontDifference = (0,1,"")
-    deletionAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionAtFrontSequence)
-    assert deletionAtFrontDifferenceOutputList[0] == deletionAtFrontDifference
-
-    deletionAtBackSequence = originalSequenceEditedForDeletion[:-1]
-    deletionAtBackDifference = (len(originalSequenceEditedForDeletion)-1,len(originalSequenceEditedForDeletion),"")
-    deletionAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionAtBackSequence)
-    assert deletionAtBackDifferenceOutputList[0] == deletionAtBackDifference
-
-    deletionInMiddleSequence = originalSequenceEditedForDeletion[:insertionIndex] + originalSequenceEditedForDeletion[insertionIndex+1:]
-    deletionInMiddleDifference = (insertionIndex,insertionIndex+1,"")
-    deletionInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionInMiddleSequence)
-    assert deletionInMiddleDifferenceOutputList[0] == deletionInMiddleDifference
-
-def test_consensus_strategy_pairwise_find_all_differences_between_two_sequences_finds_single_mutations(originalSequence, otherNucleotide, consensusStrategyPairwise):
-    mutationAtFrontSequence = otherNucleotide + originalSequence[1:]
-    mutationAtFrontDifference = (0,1,otherNucleotide)
-    mutationAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationAtFrontSequence)
-    assert mutationAtFrontDifferenceOutputList[0] == mutationAtFrontDifference
-
-    mutationAtBackSequence = originalSequence[:-1] + otherNucleotide
-    mutationAtBackDifference = (len(originalSequence)-1,len(originalSequence),otherNucleotide)
-    mutationAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationAtBackSequence)
-    assert mutationAtBackDifferenceOutputList[0] == mutationAtBackDifference
-
-    mutationIndex = 10
-    mutationInMiddleSequence = originalSequence[:mutationIndex-1] + otherNucleotide + originalSequence[mutationIndex:]
-    mutationInMiddleDifference = (mutationIndex-1,mutationIndex,otherNucleotide)
-    mutationInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationInMiddleSequence)
-    assert mutationInMiddleDifferenceOutputList[0] == mutationInMiddleDifference
-
-def test_consensus_strategy_find_all_differences_between_two_sequences_finds_insertion_stretches(originalSequence, consensusStrategyPairwise):
-    insertionValue = "RRRR"
-    insertionAtFrontSequence = insertionValue + originalSequence
-    insertionAtFrontDifference = (0,0,insertionValue)
-    insertionAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionAtFrontSequence)
-    assert insertionAtFrontDifferenceOutputList[0] == insertionAtFrontDifference
-
-    insertionAtBackSequence = originalSequence + insertionValue
-    insertionAtBackDifference = (len(originalSequence),len(originalSequence),insertionValue)
-    insertionAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionAtBackSequence)
-    assert insertionAtBackDifferenceOutputList[0] == insertionAtBackDifference
-
-    insertionIndex = 10
-    insertionInMiddleSequence = originalSequence[:insertionIndex] + insertionValue + originalSequence[insertionIndex:]
-    insertionInMiddleDifference = (insertionIndex,insertionIndex,insertionValue)
-    insertionInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, insertionInMiddleSequence)
-    assert insertionInMiddleDifferenceOutputList[0] == insertionInMiddleDifference
-
-def test_consensus_strategy_find_all_differences_between_two_sequences_finds_deletion_stretches(originalSequence, consensusStrategyPairwise):
-    insertionValue = "RRRR"
-    insertionIndex = 10
-    originalSequenceEditedForDeletion = insertionValue + originalSequence[:insertionIndex] + insertionValue + originalSequence[insertionIndex + len(insertionValue):] + insertionValue
-    deletionAtFrontSequence = originalSequenceEditedForDeletion[len(insertionValue):]
-    deletionAtFrontDifference = (0,len(insertionValue),"")
-    deletionAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionAtFrontSequence)
-    assert deletionAtFrontDifferenceOutputList[0] == deletionAtFrontDifference
-
-    deletionAtBackSequence = originalSequenceEditedForDeletion[:-len(insertionValue)]
-    deletionAtBackDifference = (len(originalSequenceEditedForDeletion)-len(insertionValue),len(originalSequenceEditedForDeletion),"")
-    deletionAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionAtBackSequence)
-    assert deletionAtBackDifferenceOutputList[0] == deletionAtBackDifference
-
-    deletionInMiddleSequence = originalSequenceEditedForDeletion[:insertionIndex] + originalSequenceEditedForDeletion[insertionIndex+len(insertionValue):]
-    deletionInMiddleDifference = (insertionIndex,insertionIndex+len(insertionValue),"")
-    deletionInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequenceEditedForDeletion, deletionInMiddleSequence)
-    assert deletionInMiddleDifferenceOutputList[0] == deletionInMiddleDifference
-
-def test_consensus_strategy_find_all_differences_between_two_sequences_finds_mutation_stretches(originalSequence, consensusStrategyPairwise):
-    mutationValue = "RRRR"
-    mutationAtFrontSequence = mutationValue + originalSequence[len(mutationValue):]
-    mutationAtFrontDifference = (0,len(mutationValue),mutationValue)
-    mutationAtFrontDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationAtFrontSequence)
-    assert mutationAtFrontDifferenceOutputList[0] == mutationAtFrontDifference
-    mutationAtBackSequence = originalSequence[:-len(mutationValue)] + mutationValue
-    mutationAtBackDifference = (len(originalSequence)-len(mutationValue),len(originalSequence),mutationValue)
-    mutationAtBackDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationAtBackSequence)
-    assert mutationAtBackDifferenceOutputList[0] == mutationAtBackDifference
-    mutationIndex = 10
-    mutationInMiddleSequence = originalSequence[:mutationIndex] + mutationValue + originalSequence[mutationIndex+len(mutationValue):]
-    mutationInMiddleDifference = (mutationIndex,mutationIndex+len(mutationValue),mutationValue)
-    mutationInMiddleDifferenceOutputList = consensusStrategyPairwise.find_all_differences_between_two_sequences(originalSequence, mutationInMiddleSequence)
-    assert mutationInMiddleDifferenceOutputList[0] == mutationInMiddleDifference
+def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_mutations(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+    simpleStringWithThreeMutations = simpleInsert + simpleString[1:middleInsertIndex] + simpleInsert + simpleString[middleInsertIndex+1:-1] + simpleInsert
+    mutationDifferences = [
+        (0,1,simpleInsert),
+        (middleInsertIndex, middleInsertIndex+len(simpleInsert), simpleInsert),
+        (len(simpleString)-1, len(simpleString), simpleInsert),
+    ]
+    mutationDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleString, simpleStringWithThreeMutations)
+    assert mutationDifferencesOutput == mutationDifferences

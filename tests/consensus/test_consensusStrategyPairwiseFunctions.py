@@ -1,18 +1,11 @@
 import pytest
 import sys
 import os
+from pytestConsensusFixtures import simpleInsert, simpleString, middleInsertIndex
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src"
 sys.path.insert(1, srcPath)
 from consensus import consensusStrategyPairwiseFunctions
-
-@pytest.fixture
-def simpleInsert():
-    return "-"
-
-@pytest.fixture
-def simpleString():
-    return "A"*10
 
 @pytest.fixture
 def simpleStringWithSingleFrontInsert(simpleInsert, simpleString):
@@ -27,12 +20,8 @@ def simpleStringWithSingleBackInsert(simpleInsert, simpleString):
     return simpleString + simpleInsert
 
 @pytest.fixture
-def singleBackInsertIndices(simpleStringWithSingleBackInsert):
-    return [[len(simpleStringWithSingleBackInsert)-1]]
-
-@pytest.fixture
-def middleInsertIndex(simpleString):
-    return len(simpleString) // 2
+def singleBackInsertIndices(simpleString):
+    return [[len(simpleString)]]
 
 @pytest.fixture
 def simpleStringWithSingleMiddleInsert(simpleInsert, simpleString, middleInsertIndex):
@@ -101,7 +90,7 @@ def singleFrontInsertDifference(simpleInsert):
 
 @pytest.fixture
 def singleBackInsertDifference(simpleInsert, simpleString):
-    return (len(simpleInsert + simpleString)-1, len(simpleInsert + simpleString)-1, simpleInsert)
+    return (len(simpleString), len(simpleString), simpleInsert)
 
 @pytest.fixture
 def singleMiddleInsertDifference(simpleInsert, middleInsertIndex):
@@ -172,65 +161,75 @@ def simpleStringWithFrontAndBackInsert(simpleStringWithSingleFrontInsert, simple
     return simpleStringWithSingleFrontInsert + simpleInsert
 
 @pytest.fixture
-def frontAndBackIndices(singleFrontInsertIndices, simpleStringWithFrontAndBackInsert):
-    return singleFrontInsertIndices + [[len(simpleStringWithFrontAndBackInsert)-1]]
+def frontAndBackIndices(singleFrontInsertIndices, simpleString):
+    return singleFrontInsertIndices + [[len(simpleString)+1]]
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_in_front(simpleString, singleFrontInsertIndices, simpleStringWithSingleFrontInsert, singleFrontInsertDifference):
-    singleFrontInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleFrontInsertIndices, simpleStringWithSingleFrontInsert)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_in_front(simpleInsert, simpleString, singleFrontInsertIndices, simpleStringWithSingleFrontInsert, singleFrontInsertDifference):
+    singleFrontInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleFrontInsertIndices, simpleStringWithSingleFrontInsert.replace(simpleInsert, "-"), simpleStringWithSingleFrontInsert)
     assert singleFrontInsertDifferenceOutput == [singleFrontInsertDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleFrontInsertDifferenceOutput) == simpleStringWithSingleFrontInsert
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_back(simpleString, singleBackInsertIndices, simpleStringWithSingleBackInsert, singleBackInsertDifference):
-    singleBackInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleBackInsertIndices, simpleStringWithSingleBackInsert)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_back(simpleInsert, simpleString, singleBackInsertIndices, simpleStringWithSingleBackInsert, singleBackInsertDifference):
+    singleBackInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleBackInsertIndices, simpleStringWithSingleBackInsert.replace(simpleInsert, "-"), simpleStringWithSingleBackInsert)
     assert singleBackInsertDifferenceOutput == [singleBackInsertDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleBackInsertDifferenceOutput) == simpleStringWithSingleBackInsert
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_middle(simpleString, singleMiddleInsertIndices, simpleStringWithSingleMiddleInsert, singleMiddleInsertDifference):
-    singleMiddleInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleMiddleInsertIndices, simpleStringWithSingleMiddleInsert)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_middle(simpleInsert, simpleString, singleMiddleInsertIndices, simpleStringWithSingleMiddleInsert, singleMiddleInsertDifference):
+    singleMiddleInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", singleMiddleInsertIndices, simpleStringWithSingleMiddleInsert.replace(simpleInsert, "-"), simpleStringWithSingleMiddleInsert)
     assert singleMiddleInsertDifferenceOutput == [singleMiddleInsertDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleMiddleInsertDifferenceOutput) == simpleStringWithSingleMiddleInsert
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_front_and_back(simpleInsert, simpleStringWithSingleFrontInsert, singleFrontInsertDifference, simpleStringWithFrontAndBackInsert, frontAndBackIndices):
-    frontAndBackDifferences = [singleFrontInsertDifference, (len(simpleStringWithFrontAndBackInsert)-1, len(simpleStringWithFrontAndBackInsert)-1, simpleInsert)]
-    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", frontAndBackIndices, simpleStringWithFrontAndBackInsert)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_indices_in_front_and_back(simpleInsert, singleFrontInsertDifference, singleBackInsertDifference, simpleStringWithFrontAndBackInsert, frontAndBackIndices):
+    frontAndBackDifferences = [singleFrontInsertDifference, singleBackInsertDifference]
+    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("insertion", frontAndBackIndices, simpleStringWithFrontAndBackInsert.replace(simpleInsert, "-"), simpleStringWithFrontAndBackInsert)
     assert frontAndBackDifferencesOutput == frontAndBackDifferences
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_front(simpleString, singleFrontInsertIndices, singleFrontDeletionDifference, simpleStringWithSingleFrontInsert):
-    singleFrontDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleFrontInsertIndices)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_front(simpleInsert, simpleString, singleFrontInsertIndices, singleFrontDeletionDifference, simpleStringWithSingleFrontInsert):
+    singleFrontDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleFrontInsertIndices, simpleStringWithSingleFrontInsert.replace(simpleInsert, "-"), "")
     assert singleFrontDeletionDifferenceOutput == [singleFrontDeletionDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleStringWithSingleFrontInsert, *singleFrontDeletionDifferenceOutput) == simpleString
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_back(simpleString, singleBackInsertIndices, singleBackDeletionDifference, simpleStringWithSingleBackInsert):
-    singleBackDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleBackInsertIndices)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_back(simpleInsert, simpleString, singleBackInsertIndices, singleBackDeletionDifference, simpleStringWithSingleBackInsert):
+    singleBackDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleBackInsertIndices, simpleStringWithSingleBackInsert.replace(simpleInsert, "-"), "")
     assert singleBackDeletionDifferenceOutput == [singleBackDeletionDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleStringWithSingleBackInsert, *singleBackDeletionDifferenceOutput) == simpleString
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_middle(simpleString, singleMiddleInsertIndices, singleMiddleDeletionDifference, simpleStringWithSingleMiddleInsert):
-    singleMiddleDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleMiddleInsertIndices)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_middle(simpleInsert, simpleString, singleMiddleInsertIndices, singleMiddleDeletionDifference, simpleStringWithSingleMiddleInsert):
+    singleMiddleDeletionDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", singleMiddleInsertIndices, simpleStringWithSingleMiddleInsert.replace(simpleInsert, "-"), "")
     assert singleMiddleDeletionDifferenceOutput == [singleMiddleDeletionDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleStringWithSingleMiddleInsert, *singleMiddleDeletionDifferenceOutput) == simpleString
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_front_and_back(simpleInsert, simpleStringWithSingleFrontInsert, singleFrontDeletionDifference, simpleStringWithFrontAndBackInsert, frontAndBackIndices):
-    frontAndBackDifferences = [singleFrontDeletionDifference, (len(simpleStringWithFrontAndBackInsert)-1, len(simpleStringWithFrontAndBackInsert), "")]
-    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", frontAndBackIndices)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_deletion_indices_in_front_and_back(simpleInsert, singleFrontDeletionDifference, singleBackDeletionDifference, frontAndBackIndices, simpleStringWithFrontAndBackInsert):
+    frontAndBackDifferences = [singleFrontDeletionDifference, singleBackDeletionDifference]
+    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("deletion", frontAndBackIndices, simpleStringWithFrontAndBackInsert.replace(simpleInsert, "-"), "")
     assert frontAndBackDifferencesOutput == frontAndBackDifferences
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_front(simpleString, singleFrontInsertIndices, simpleStringWithSingleFrontMutation, singleFrontMutationDifference):
-    singleFrontMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleFrontInsertIndices, simpleStringWithSingleFrontMutation)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_front(simpleInsert, simpleString, singleFrontInsertIndices, simpleStringWithSingleFrontMutation, singleFrontMutationDifference):
+    singleFrontMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleFrontInsertIndices, simpleStringWithSingleFrontMutation, simpleStringWithSingleFrontMutation)
     assert singleFrontMutationDifferenceOutput == [singleFrontMutationDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleFrontMutationDifferenceOutput) == simpleStringWithSingleFrontMutation
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_back(simpleString, singleBackMutationIndices, simpleStringWithSingleBackMutation, singleBackMutationDifference):
-    singleBackMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleBackMutationIndices, simpleStringWithSingleBackMutation)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_back(simpleInsert, simpleString, singleBackMutationIndices, simpleStringWithSingleBackMutation, singleBackMutationDifference):
+    singleBackMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleBackMutationIndices, simpleStringWithSingleBackMutation, simpleStringWithSingleBackMutation)
     assert singleBackMutationDifferenceOutput == [singleBackMutationDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleBackMutationDifferenceOutput) == simpleStringWithSingleBackMutation
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_middle(simpleString, singleMiddleInsertIndices, simpleStringWithSingleMiddleMutation, singleMiddleMutationDifference):
-    singleMiddleMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleMiddleInsertIndices, simpleStringWithSingleMiddleMutation)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_middle(simpleInsert, simpleString, singleMiddleInsertIndices, simpleStringWithSingleMiddleMutation, singleMiddleMutationDifference):
+    singleMiddleMutationDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleMiddleInsertIndices, simpleStringWithSingleMiddleMutation, simpleStringWithSingleMiddleMutation)
     assert singleMiddleMutationDifferenceOutput == [singleMiddleMutationDifference]
     assert consensusStrategyPairwiseFunctions.inject_difference_into_sequence(simpleString, *singleMiddleMutationDifferenceOutput) == simpleStringWithSingleMiddleMutation
 
-def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_front_and_back(simpleInsert, simpleStringWithSingleFrontInsert, singleFrontMutationDifference, simpleStringWithFrontAndBackInsert, frontAndBackIndices):
-    frontAndBackDifferences = [singleFrontMutationDifference, (len(simpleStringWithFrontAndBackInsert)-1, len(simpleStringWithFrontAndBackInsert), simpleInsert)]
-    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", frontAndBackIndices, simpleStringWithFrontAndBackInsert)
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_mutation_indices_in_front_and_back(simpleInsert, simpleString, singleFrontMutationDifference, singleBackMutationDifference, simpleStringWithFrontAndBackInsert, singleFrontInsertIndices, singleBackMutationIndices):
+    simpleStringWithFrontAndBackMutation = simpleStringWithFrontAndBackInsert[:2] + simpleStringWithFrontAndBackInsert[4:]
+    frontAndBackMutationIndices = singleFrontInsertIndices + singleBackMutationIndices
+    frontAndBackDifferences = [singleFrontMutationDifference, singleBackMutationDifference]
+    frontAndBackDifferencesOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", frontAndBackMutationIndices, simpleStringWithFrontAndBackMutation, simpleStringWithFrontAndBackMutation)
     assert frontAndBackDifferencesOutput == frontAndBackDifferences
+
+def test__consensus_strategy_pairwise_functions__identify_differences_from_indices__for_insertion_in_front_and_mutation_back(simpleInsert, simpleString, singleBackMutationDifference, simpleStringWithFrontAndBackInsert, singleBackMutationIndices):
+    otherInsert = "S"
+    simpleStringWithFrontInsertAndBackMutation = otherInsert + simpleStringWithFrontAndBackInsert[1:2] + simpleStringWithFrontAndBackInsert[3:]
+    singleBackMutationWithFrontInsertIndices = [[singleBackMutationIndices[0][0]+1]]
+    singleBackMutationWithFrontInsertDifference = [(len(simpleString)-1, len(simpleString), simpleInsert)]
+    singleBackMutationWithFrontInsertDifferenceOutput = consensusStrategyPairwiseFunctions.identify_differences_from_indices("mutation", singleBackMutationWithFrontInsertIndices, simpleStringWithFrontInsertAndBackMutation.replace(otherInsert, "-"), simpleStringWithFrontInsertAndBackMutation)
+    assert singleBackMutationWithFrontInsertDifferenceOutput == singleBackMutationWithFrontInsertDifference
