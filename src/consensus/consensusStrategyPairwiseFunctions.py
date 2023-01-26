@@ -43,3 +43,8 @@ def format_mutation_difference_from_index(index, alignmentSequence):
     endIndex = index[-1] + 1
     insert = alignmentSequence[index[0]:index[-1]+1]
     return startIndex, endIndex, insert
+
+def inject_difference_into_sequence(sequence, difference):
+    startIndex, endIndex, insert = difference
+    alteredSequence = sequence[:startIndex] + insert + sequence[endIndex:]
+    return alteredSequence
