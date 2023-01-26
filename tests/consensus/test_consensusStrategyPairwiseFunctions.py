@@ -1,6 +1,6 @@
 import pytest
 import sys
-sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
+sys.path.insert(1, '../../src')
 from consensus import consensusStrategyPairwiseFunctions
 
 @pytest.fixture

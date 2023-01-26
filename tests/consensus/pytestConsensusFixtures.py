@@ -16,7 +16,7 @@ def generate_read_sequences(sequence):
     readSequences = []
     insertIndex = 20
     for i in range(1, 6):
-        readSequences.append(sequence[:insertIndex] + i*"A" + sequence[insertIndex:])
+        readSequences.append(sequence[:insertIndex] + i*"R" + sequence[insertIndex:])
     deleteIndex = 30
     for i in range(1, 6):
         readSequences.append(sequence[:deleteIndex] + sequence[deleteIndex + i:])

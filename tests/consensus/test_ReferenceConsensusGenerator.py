@@ -1,7 +1,7 @@
 import pytest
 import sys
 import pytestConsensusFixtures
-sys.path.insert(1, '/Users/calebcranney/Documents/Projects/JGEnglishLab/longread_umi_python/src')
+sys.path.insert(1, '../../src')
 from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 import random
 
