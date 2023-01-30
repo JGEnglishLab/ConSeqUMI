@@ -5,7 +5,7 @@ from Bio.SeqRecord import SeqRecord
 
 @pytest.fixture
 def simpleInsert():
-    return "R"
+    return "C"
 
 @pytest.fixture
 def simpleString():
@@ -18,8 +18,8 @@ def middleInsertIndex(simpleString):
 @pytest.fixture
 def consensusSequence(simpleInsert):
     random.seed(0)
-    consensusSequence = "".join(random.choices("ATGC", k=30))
-    repeatingInsert = "ATGC" * 10
+    consensusSequence = "".join(random.choices("ATG", k=50))
+    repeatingInsert = "ATG" * 50
     consensusSequence = consensusSequence[:15] + repeatingInsert + consensusSequence[15:]
     consensusSequence = consensusSequence[:30] + simpleInsert*6 + consensusSequence[36:]
     return consensusSequence
@@ -28,11 +28,11 @@ def generate_read_sequences(sequence):
     insertIndex, deleteIndex, mutateIndex = 20, 30, 40
     readSequences = []
     for i in range(1, 6):
-        readSequences.append(sequence[:insertIndex] + i*"R" + sequence[insertIndex:])
+        readSequences.append(sequence[:insertIndex] + i*"C" + sequence[insertIndex:])
     for i in range(1, 6):
         readSequences.append(sequence[:deleteIndex] + sequence[deleteIndex + i:])
     for i in range(1, 5):
-        readSequences.append(sequence[:mutateIndex] + i*"R" + sequence[mutateIndex + i:])
+        readSequences.append(sequence[:mutateIndex] + i*"C" + sequence[mutateIndex + i:])
     return readSequences
 
 @pytest.fixture
@@ -53,4 +53,10 @@ def readSequences(consensusSequence):
 
 @pytest.fixture
 def readSequenceRecords(readSequences):
-    return [SeqRecord(Seq(readSequences[i]), id=str(i)) for i in range(len(readSequences))]
+    seqRecords = []
+    for i in range(len(readSequences)):
+        sequence = Seq(readSequences[i])
+        id = str(i)
+        phred_quality = [40 if readSequences[i][j] != "C" else 10 for j in range(len(readSequences[i]))]
+        seqRecords.append(SeqRecord(sequence, id=id, letter_annotations={"phred_quality":phred_quality}))
+    return seqRecords

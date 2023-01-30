@@ -12,4 +12,5 @@ def consensusStrategyLamassemble():
     return ConsensusStrategyLamassemble.ConsensusStrategyLamassemble()
 
 def test__consensus_strategy_lamassemble__generate_consensus_sequence_from_biopython_records(consensusSequence, readSequenceRecords, consensusStrategyLamassemble):
-    pass
+    consensusSequenceOutput = consensusStrategyLamassemble.generate_consensus_sequence_from_biopython_records(readSequenceRecords)
+    assert consensusSequenceOutput == consensusSequence

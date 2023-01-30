@@ -8,7 +8,6 @@ srcPath = "/".join(srcPath) + "/src"
 sys.path.insert(1, srcPath)
 
 from consensus import ConsensusStrategyPairwise
-from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 
 @pytest.fixture
 def consensusStrategyPairwise():
@@ -88,8 +87,8 @@ def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score_and
     assert readSequenceDifferencesOutput == readSequenceDifferences
 
 def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopython_records(consensusSequence, readSequences, consensusStrategyPairwise, readSequenceRecords):
-    referenceConsensusGenerator = ReferenceConsensusGenerator()
-    referenceSequence = referenceConsensusGenerator.generate_consensus_sequence(readSequences)
+    halfwayIndex = len(consensusSequence)//2
+    referenceSequence = consensusSequence[:halfwayIndex] + consensusSequence[halfwayIndex+4:]
     consensusSequenceOutput = consensusStrategyPairwise.generate_consensus_sequence_from_biopython_records(readSequenceRecords)
     assert consensusSequenceOutput != referenceSequence
     assert consensusSequenceOutput == consensusSequence
