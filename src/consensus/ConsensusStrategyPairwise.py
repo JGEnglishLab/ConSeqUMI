@@ -18,7 +18,7 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
             alignedScores.append(alignments[0].score)
         return mean(alignedScores)
 
-    def find_all_differences_between_two_sequences(self, originalSequence, differentSequence):
+    def find_pairwise_score_and_all_differences_between_two_sequences(self, originalSequence, differentSequence):
         alignments = self.aligner.align(originalSequence, differentSequence)
         originalSequenceAlignment, indelIndicator, differentSequenceAlignment, _ = alignments[0].format().split("\n")
         differencesFromOriginal = []
@@ -31,8 +31,8 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         mutationIndices = find_in_string_indices_of_character(indelIndicator, ".")
         differencesFromOriginal.extend(identify_differences_from_indices("mutation", mutationIndices, originalSequenceAlignment, differentSequenceAlignment))
 
-        return differencesFromOriginal
+        return alignments[0].score, differencesFromOriginal
 
 
-    def generate_consensus_sequence_from_records(self, binRecords: list) -> str:
+    def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
         pass

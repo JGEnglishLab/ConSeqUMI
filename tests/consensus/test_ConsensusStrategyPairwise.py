@@ -47,40 +47,40 @@ def simpleStringWithThreeInserts(simpleInsert, simpleString, middleInsertIndex, 
     simpleStringWithThreeInserts = simpleInsert * stretchLength + simpleString[:middleInsertIndex] + simpleInsert + simpleString[middleInsertIndex:] + simpleInsert * stretchLength
     return simpleStringWithThreeInserts
 
-def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_inserts(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+def test__consensus_strategy_pairwise__find_pairwise_score_and_all_differences_between_two_sequences__finds_all_inserts(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
     insertionDifferences = [
         (0,0,simpleInsert*stretchLength),
         (middleInsertIndex, middleInsertIndex, simpleInsert),
         (len(simpleString), len(simpleString), simpleInsert*stretchLength),
     ]
-    insertionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleString, simpleStringWithThreeInserts)
+    _, insertionDifferencesOutput = consensusStrategyPairwise.find_pairwise_score_and_all_differences_between_two_sequences(simpleString, simpleStringWithThreeInserts)
     assert insertionDifferencesOutput == insertionDifferences
 
-def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_deletions(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+def test__consensus_strategy_pairwise__find_pairwise_score_and_all_differences_between_two_sequences__finds_all_deletions(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
     deletionDifferences = [
         (0,stretchLength,""),
         (middleInsertIndex+stretchLength, middleInsertIndex+stretchLength+len(simpleInsert), ""),
         (len(simpleStringWithThreeInserts)-stretchLength, len(simpleStringWithThreeInserts), ""),
     ]
-    deletionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleString)
+    _, deletionDifferencesOutput = consensusStrategyPairwise.find_pairwise_score_and_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleString)
     assert deletionDifferencesOutput == deletionDifferences
 
-def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_mutations(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+def test__consensus_strategy_pairwise__find_pairwise_score_and_all_differences_between_two_sequences__finds_all_mutations(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
     simpleStringWithThreeMutations = simpleInsert + simpleString[1:middleInsertIndex] + simpleInsert + simpleString[middleInsertIndex+1:-1] + simpleInsert
     mutationDifferences = [
         (0,1,simpleInsert),
         (middleInsertIndex, middleInsertIndex+len(simpleInsert), simpleInsert),
         (len(simpleString)-1, len(simpleString), simpleInsert),
     ]
-    mutationDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleString, simpleStringWithThreeMutations)
+    _, mutationDifferencesOutput = consensusStrategyPairwise.find_pairwise_score_and_all_differences_between_two_sequences(simpleString, simpleStringWithThreeMutations)
     assert mutationDifferencesOutput == mutationDifferences
 
-def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_deletions_after_insertion(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+def test__consensus_strategy_pairwise__find_pairwise_score_and_all_differences_between_two_sequences__finds_all_deletions_after_insertion(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
     simpleStringWithLongerFrontInsert = simpleInsert*(stretchLength+1) + simpleString
     deletionDifferences = [
         (0,0,simpleInsert),
         (middleInsertIndex+stretchLength, middleInsertIndex+stretchLength+len(simpleInsert), ""),
         (len(simpleStringWithThreeInserts)-stretchLength, len(simpleStringWithThreeInserts), ""),
     ]
-    deletionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleStringWithLongerFrontInsert)
+    _, deletionDifferencesOutput = consensusStrategyPairwise.find_pairwise_score_and_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleStringWithLongerFrontInsert)
     assert deletionDifferencesOutput == deletionDifferences
