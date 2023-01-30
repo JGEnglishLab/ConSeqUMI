@@ -10,16 +10,14 @@ sys.path.insert(1, srcPath)
 from consensus import ConsensusStrategyPairwise
 from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 
-
-def test__consensus_strategy_pairwise__initialization():
-    pairwise = ConsensusStrategyPairwise.ConsensusStrategyPairwise()
-    assert pairwise.aligner.mismatch_score == -1
-    assert pairwise.aligner.open_gap_score == -1
-    assert pairwise.aligner.extend_gap_score == -0.5
-
 @pytest.fixture
 def consensusStrategyPairwise():
     return ConsensusStrategyPairwise.ConsensusStrategyPairwise()
+
+def test__consensus_strategy_pairwise__initialization(consensusStrategyPairwise):
+    assert consensusStrategyPairwise.aligner.mismatch_score == -1
+    assert consensusStrategyPairwise.aligner.open_gap_score == -1
+    assert consensusStrategyPairwise.aligner.extend_gap_score == -0.5
 
 @pytest.fixture
 def stretchLength():
