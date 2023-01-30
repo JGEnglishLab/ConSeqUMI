@@ -11,16 +11,10 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         aligner.extend_gap_score = -0.5
         self.aligner = aligner
 
-    def find_average_pairwise_alignment_score(self, candidateSequence, readSequences):
-        alignedScores = []
-        for readSequence in readSequences:
-            alignments = self.aligner.align(candidateSequence, readSequence)
-            alignedScores.append(alignments[0].score)
-        return mean(alignedScores)
-
     def find_pairwise_score_and_all_differences_between_two_sequences(self, originalSequence, differentSequence):
         alignments = self.aligner.align(originalSequence, differentSequence)
-        originalSequenceAlignment, indelIndicator, differentSequenceAlignment, _ = alignments[0].format().split("\n")
+        alignment = alignments[0]
+        originalSequenceAlignment, indelIndicator, differentSequenceAlignment, _ = alignment.format().split("\n")
         differencesFromOriginal = []
         insertionIndices = find_in_string_indices_of_character(originalSequenceAlignment, "-")
         differencesFromOriginal.extend(identify_differences_from_indices("insertion", insertionIndices, originalSequenceAlignment, differentSequenceAlignment))
@@ -31,8 +25,16 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         mutationIndices = find_in_string_indices_of_character(indelIndicator, ".")
         differencesFromOriginal.extend(identify_differences_from_indices("mutation", mutationIndices, originalSequenceAlignment, differentSequenceAlignment))
 
-        return alignments[0].score, differencesFromOriginal
+        return alignment.score, differencesFromOriginal
 
+    def find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(self, candidateSequence, readSequences):
+        alignedScores = []
+        allReadSequenceDifferences = []
+        for readSequence in readSequences:
+            score, readSequenceDifferences = self.find_pairwise_score_and_all_differences_between_two_sequences(candidateSequence, readSequence)
+            alignedScores.append(score)
+            allReadSequenceDifferences.extend(readSequenceDifferences)
+        return mean(alignedScores), allReadSequenceDifferences
 
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
         pass

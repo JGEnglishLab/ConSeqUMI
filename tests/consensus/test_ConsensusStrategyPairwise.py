@@ -1,4 +1,4 @@
-from pytestConsensusFixtures import consensusSequence, readSequences, readSequenceRecords, simpleInsert, simpleString, middleInsertIndex
+from pytestConsensusFixtures import consensusSequence, readSequences, readSequenceRecords, simpleInsert, simpleString, middleInsertIndex, readSequenceDifferences
 import pytest
 import random
 import sys
@@ -19,24 +19,6 @@ def test__consensus_strategy_pairwise__initialization():
 @pytest.fixture
 def consensusStrategyPairwise():
     return ConsensusStrategyPairwise.ConsensusStrategyPairwise()
-
-def calculate_average_pairwise_alignment_score_for_tests(consensusSequence):
-    baseScore = len(consensusSequence)
-    initialErrorScore = baseScore - 1
-    allScores = []
-    insertionScores = [initialErrorScore-i*0.5 for i in range(5)]
-    deletionScores = [initialErrorScore-i*1.5-1 for i in range(5)]
-    mutationScores = [initialErrorScore-1 for i in range(5)]
-    allScores.extend(insertionScores)
-    allScores.extend(deletionScores)
-    allScores.extend(mutationScores)
-    return sum(allScores) / len(allScores)
-
-def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score(consensusSequence, readSequenceRecords, consensusStrategyPairwise):
-    readSequences = [str(readSequenceRecord.seq) for readSequenceRecord in readSequenceRecords]
-    averagePairwiseAlignmentScore = calculate_average_pairwise_alignment_score_for_tests(consensusSequence)
-    averagePairwiseAlignmentScoreOutput = consensusStrategyPairwise.find_average_pairwise_alignment_score(consensusSequence, readSequences)
-    assert averagePairwiseAlignmentScore == averagePairwiseAlignmentScoreOutput
 
 @pytest.fixture
 def stretchLength():
@@ -84,3 +66,24 @@ def test__consensus_strategy_pairwise__find_pairwise_score_and_all_differences_b
     ]
     _, deletionDifferencesOutput = consensusStrategyPairwise.find_pairwise_score_and_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleStringWithLongerFrontInsert)
     assert deletionDifferencesOutput == deletionDifferences
+
+def calculate_average_pairwise_alignment_score_for_tests(consensusSequence):
+    baseScore = len(consensusSequence)
+    initialErrorScore = baseScore - 1
+    allScores = []
+    insertionScores = [baseScore-i*0.5-1 for i in range(5)]
+    deletionScores = [baseScore-i*1.5-2 for i in range(5)]
+    mutationScores = [baseScore - i*2 for i in range(1,5)]
+    allScores.extend(insertionScores)
+    allScores.extend(deletionScores)
+    allScores.extend(mutationScores)
+    return sum(allScores) / len(allScores)
+
+def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences__finds_average_score(consensusSequence, readSequences, consensusStrategyPairwise):
+    averagePairwiseAlignmentScore = calculate_average_pairwise_alignment_score_for_tests(consensusSequence)
+    averagePairwiseAlignmentScoreOutput, _ = consensusStrategyPairwise.find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(consensusSequence, readSequences)
+    assert averagePairwiseAlignmentScore == averagePairwiseAlignmentScoreOutput
+
+def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences__finds_all_differences(consensusSequence, readSequences, consensusStrategyPairwise, readSequenceDifferences):
+    _,  readSequenceDifferencesOutput = consensusStrategyPairwise.find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(consensusSequence, readSequences)
+    assert readSequenceDifferencesOutput == readSequenceDifferences

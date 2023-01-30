@@ -16,25 +16,36 @@ def middleInsertIndex(simpleString):
     return len(simpleString) // 2
 
 @pytest.fixture
-def consensusSequence():
+def consensusSequence(simpleInsert):
     random.seed(0)
     consensusSequence = "".join(random.choices("ATGC", k=30))
     repeatingInsert = "ATGC" * 5
     consensusSequence = consensusSequence[:15] + repeatingInsert + consensusSequence[15:]
+    consensusSequence = consensusSequence[:30] + simpleInsert*6 + consensusSequence[36:]
     return consensusSequence
 
 def generate_read_sequences(sequence):
+    insertIndex, deleteIndex, mutateIndex = 20, 30, 40
     readSequences = []
-    insertIndex = 20
     for i in range(1, 6):
         readSequences.append(sequence[:insertIndex] + i*"R" + sequence[insertIndex:])
-    deleteIndex = 30
     for i in range(1, 6):
         readSequences.append(sequence[:deleteIndex] + sequence[deleteIndex + i:])
-    mutationIndex = 40
-    for i in range(5):
-        readSequences.append(sequence[:mutationIndex + i] + "R" + sequence[mutationIndex + i + 1:])
+    for i in range(1, 5):
+        readSequences.append(sequence[:mutateIndex] + i*"R" + sequence[mutateIndex + i:])
     return readSequences
+
+@pytest.fixture
+def readSequenceDifferences(simpleInsert):
+    differences = []
+    for i in range(1, 6):
+        differences.append((20, 20, simpleInsert*i))
+    for i in range(1, 6):
+        differences.append((30, 30+i, ""))
+    for i in range(1, 5):
+        differences.append((40, 40+i, simpleInsert*i))
+    return differences
+
 
 @pytest.fixture
 def readSequences(consensusSequence):

@@ -1,4 +1,6 @@
 import re
+from collections import Counter
+
 
 class ReferenceConsensusGenerator:
     def __init__(self, *args, **kwargs):
@@ -23,6 +25,7 @@ class ReferenceConsensusGenerator:
             if not precursorSearchResult: continue
             readSequenceNextCharacter = precursorSearchResult.group(0)[-1]
             allCharacters.append(readSequenceNextCharacter)
+        c = Counter(allCharacters)
         nextCharacter = max(set(allCharacters), key=allCharacters.count)
         return nextCharacter
 
