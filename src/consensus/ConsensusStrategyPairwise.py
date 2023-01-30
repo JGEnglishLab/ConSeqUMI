@@ -1,7 +1,10 @@
 from consensus.ConsensusStrategy import ConsensusStrategy
+from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
 from Bio.Align import PairwiseAligner
 from statistics import mean
-from consensus.consensusStrategyPairwiseFunctions import identify_differences_from_indices, find_in_string_indices_of_character
+from consensus.consensusStrategyPairwiseFunctions import identify_differences_from_indices, find_in_string_indices_of_character, inject_difference_into_sequence
+from collections import Counter
+import numpy as np
 
 class ConsensusStrategyPairwise(ConsensusStrategy):
     def __init__(self):
@@ -37,4 +40,16 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         return mean(alignedScores), allReadSequenceDifferences
 
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
-        pass
+        binSequences = [str(record.seq) for record in binRecords]
+        referenceConsensusGenerator = ReferenceConsensusGenerator()
+        referenceSequence = referenceConsensusGenerator.generate_consensus_sequence(binSequences)
+        bestScore = -np.inf
+        candidateSequence = referenceSequence[:]
+        currentScore, currentDifferences = self.find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(candidateSequence, binSequences)
+        while currentScore > bestScore:
+            mostCommonDifference = Counter(currentDifferences).most_common(1)[0][0]
+            nextSequence = inject_difference_into_sequence(candidateSequence, mostCommonDifference)
+            bestScore = currentScore
+            currentScore, currentDifferences = self.find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(nextSequence, binSequences)
+            if currentScore > bestScore: candidateSequence = nextSequence[:]
+        return candidateSequence

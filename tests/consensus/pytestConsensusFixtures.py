@@ -19,7 +19,7 @@ def middleInsertIndex(simpleString):
 def consensusSequence(simpleInsert):
     random.seed(0)
     consensusSequence = "".join(random.choices("ATGC", k=30))
-    repeatingInsert = "ATGC" * 5
+    repeatingInsert = "ATGC" * 10
     consensusSequence = consensusSequence[:15] + repeatingInsert + consensusSequence[15:]
     consensusSequence = consensusSequence[:30] + simpleInsert*6 + consensusSequence[36:]
     return consensusSequence
