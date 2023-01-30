@@ -74,3 +74,13 @@ def test__consensus_strategy_pairwise__find_all_differences_between_two_sequence
     ]
     mutationDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleString, simpleStringWithThreeMutations)
     assert mutationDifferencesOutput == mutationDifferences
+
+def test__consensus_strategy_pairwise__find_all_differences_between_two_sequences__finds_all_deletions_after_insertion(simpleInsert, simpleString, middleInsertIndex, stretchLength, simpleStringWithThreeInserts, consensusStrategyPairwise):
+    simpleStringWithLongerFrontInsert = simpleInsert*(stretchLength+1) + simpleString
+    deletionDifferences = [
+        (0,0,simpleInsert),
+        (middleInsertIndex+stretchLength, middleInsertIndex+stretchLength+len(simpleInsert), ""),
+        (len(simpleStringWithThreeInserts)-stretchLength, len(simpleStringWithThreeInserts), ""),
+    ]
+    deletionDifferencesOutput = consensusStrategyPairwise.find_all_differences_between_two_sequences(simpleStringWithThreeInserts, simpleStringWithLongerFrontInsert)
+    assert deletionDifferencesOutput == deletionDifferences
