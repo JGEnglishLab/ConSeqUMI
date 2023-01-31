@@ -5,7 +5,7 @@ srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src"
 sys.path.insert(1, srcPath)
 from umi.UmiExtractor import UmiExtractor
-from general import genomicFunctions
+from umi import umiExtractionFunctions
 from unittest.mock import Mock
 import re
 import random
@@ -136,7 +136,7 @@ def exampleForwardRecord(adapterSeqs, topUmi, bottomUmi, targetSequence):
             adapterSeqs["topBackAdapter"],
             targetSequence,
             adapterSeqs["bottomBackAdapter_reverseComplement"],
-            genomicFunctions.find_reverse_complement(bottomUmi),
+            umiExtractionFunctions.find_reverse_complement(bottomUmi),
             adapterSeqs["bottomFrontAdapter_reverseComplement"],
             fillerSeq2,
         ]

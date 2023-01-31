@@ -1,4 +1,4 @@
-from general import genomicFunctions
+from umi import umiExtractionFunctions
 from cutadapt.parser import FrontAdapter, BackAdapter, LinkedAdapter
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -15,7 +15,7 @@ class UmiExtractor:
             )
 
     def set_umi_pattern(self, umiPattern):
-        self.umiPattern = f'^{genomicFunctions.convert_IUPAC_to_regular_expression(umiPattern)}$'
+        self.umiPattern = f'^{umiExtractionFunctions.convert_IUPAC_to_regular_expression(umiPattern)}$'
 
     def create_linked_adapter(self, sequence1, sequence2, name):
         adapter1 = FrontAdapter(sequence1)
@@ -37,7 +37,7 @@ class UmiExtractor:
         bottomBackAdapterSeq,
     ):
         for seq in [topFrontAdapterSeq,topBackAdapterSeq,bottomFrontAdapterSeq,bottomBackAdapterSeq]:
-            if not genomicFunctions.is_only_standard_nucleotide(seq):
+            if not umiExtractionFunctions.is_only_standard_nucleotide(seq):
                 raise ValueError("Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)")
 
         self.topLinkedAdapter = self.create_linked_adapter(
@@ -52,7 +52,7 @@ class UmiExtractor:
         )
 
     def find_matches_of_adapters_in_sequence(self, sequence):
-        topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
+        topSequence, bottomSequence = umiExtractionFunctions.extract_top_and_bottom_of_sequence(sequence)
         topMatch = self.topLinkedAdapter.match_to(topSequence)
         bottomMatch = self.bottomLinkedAdapter.match_to(bottomSequence)
         return topMatch, bottomMatch
@@ -60,14 +60,14 @@ class UmiExtractor:
     def extract_umis_and_target_sequence_from_read(self, record):
         tempRecord = SeqRecord(record.seq,id=record.id)
         sequence = str(record.seq)
-        topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence)
+        topSequence, bottomSequence = umiExtractionFunctions.extract_top_and_bottom_of_sequence(sequence)
         topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence)
 
         if topMatch is None or bottomMatch is None:
             tempRecord = record.reverse_complement()
             tempRecord.id = record.id
-            sequence_reverseComplement = genomicFunctions.find_reverse_complement(sequence)
-            topSequence, bottomSequence = genomicFunctions.extract_top_and_bottom_of_sequence(sequence_reverseComplement)
+            sequence_reverseComplement = umiExtractionFunctions.find_reverse_complement(sequence)
+            topSequence, bottomSequence = umiExtractionFunctions.extract_top_and_bottom_of_sequence(sequence_reverseComplement)
             topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence_reverseComplement)
 
         if topMatch is None or bottomMatch is None:
@@ -84,7 +84,6 @@ class UmiExtractor:
         topUmis, bottomUmis, targetSequenceRecords = [], [], []
         for record in records:
             topUmi, bottomUmi, targetSequenceRecord = self.extract_umis_and_target_sequence_from_read(record)
-            #if not topUmi or not bottomUmi: continue
             topUmis.append(topUmi)
             bottomUmis.append(bottomUmi)
             targetSequenceRecords.append(targetSequenceRecord)
