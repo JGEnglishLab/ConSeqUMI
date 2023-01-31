@@ -1,6 +1,8 @@
 import pytest
 import random
 from umi import umi
+from pytestConsensusFixtures import consensusSequence, targetSequences, targetSequenceRecords, simpleInsert, simpleString, middleInsertIndex, targetSequenceDifferences
+
 
 
 

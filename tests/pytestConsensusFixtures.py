@@ -26,17 +26,17 @@ def consensusSequence(simpleInsert):
 
 def generate_read_sequences(sequence):
     insertIndex, deleteIndex, mutateIndex = 20, 30, 40
-    readSequences = []
+    targetSequences = []
     for i in range(1, 6):
-        readSequences.append(sequence[:insertIndex] + i*"C" + sequence[insertIndex:])
+        targetSequences.append(sequence[:insertIndex] + i*"C" + sequence[insertIndex:])
     for i in range(1, 6):
-        readSequences.append(sequence[:deleteIndex] + sequence[deleteIndex + i:])
+        targetSequences.append(sequence[:deleteIndex] + sequence[deleteIndex + i:])
     for i in range(1, 5):
-        readSequences.append(sequence[:mutateIndex] + i*"C" + sequence[mutateIndex + i:])
-    return readSequences
+        targetSequences.append(sequence[:mutateIndex] + i*"C" + sequence[mutateIndex + i:])
+    return targetSequences
 
 @pytest.fixture
-def readSequenceDifferences(simpleInsert):
+def targetSequenceDifferences(simpleInsert):
     differences = []
     for i in range(1, 6):
         differences.append((20, 20, simpleInsert*i))
@@ -48,15 +48,15 @@ def readSequenceDifferences(simpleInsert):
 
 
 @pytest.fixture
-def readSequences(consensusSequence):
+def targetSequences(consensusSequence):
     return generate_read_sequences(consensusSequence)
 
 @pytest.fixture
-def readSequenceRecords(readSequences):
+def targetSequenceRecords(targetSequences):
     seqRecords = []
-    for i in range(len(readSequences)):
-        sequence = Seq(readSequences[i])
+    for i in range(len(targetSequences)):
+        sequence = Seq(targetSequences[i])
         id = str(i)
-        phred_quality = [40 if readSequences[i][j] != "C" else 10 for j in range(len(readSequences[i]))]
+        phred_quality = [40 if targetSequences[i][j] != "C" else 10 for j in range(len(targetSequences[i]))]
         seqRecords.append(SeqRecord(sequence, id=id, letter_annotations={"phred_quality":phred_quality}))
     return seqRecords
