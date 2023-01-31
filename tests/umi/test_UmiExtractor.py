@@ -1,7 +1,6 @@
 import pytest
 from umi.UmiExtractor import UmiExtractor
 from umi import umiExtractionFunctions
-from unittest.mock import Mock
 import re
 import random
 from Bio.Seq import Seq
@@ -15,8 +14,8 @@ def umiPatternRegEx():
     return "^[ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT]$"
 
 @pytest.fixture
-def adapterSeqs():
-    adapterSeqs = {
+def adapterSequences():
+    adapterSequences = {
         "topFrontAdapter":"GAGTGTGGCTCTTCGGAT",
         "topBackAdapter":"CACCTTCGTGACTTCCCATT",
         "bottomFrontAdapter":"GTGGGACTGCTGATGACGACTGAT",
@@ -26,7 +25,7 @@ def adapterSeqs():
         "bottomFrontAdapter_reverseComplement":"ATCAGTCGTCATCAGCAGTCCCAC",
         "bottomBackAdapter_reverseComplement":"AAATGAGGAAATTGCATCGC",
     }
-    return adapterSeqs
+    return adapterSequences
 
 @pytest.fixture
 def umiExtractorBasic():
@@ -40,40 +39,40 @@ def test_umi_extractor_set_umi_pattern_with_nonEmpty_umi(umiExtractorBasic, umiP
     umiExtractorBasic.set_umi_pattern(umiPattern)
     assert umiExtractorBasic.umiPattern == umiPatternRegEx
 
-def test_umi_extractor_create_linked_adapter(umiExtractorBasic, adapterSeqs):
+def test_umi_extractor_create_linked_adapter(umiExtractorBasic, adapterSequences):
     testName = "adapterTest"
     linkedAdapter = umiExtractorBasic.create_linked_adapter(
-        adapterSeqs["topFrontAdapter"],
-        adapterSeqs["topBackAdapter"],
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
         name=testName,
     )
-    assert linkedAdapter.front_adapter.sequence == adapterSeqs["topFrontAdapter"]
-    assert linkedAdapter.back_adapter.sequence == adapterSeqs["topBackAdapter"]
+    assert linkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert linkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
     assert linkedAdapter.name == testName
 
-def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractorBasic, adapterSeqs):
+def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractorBasic, adapterSequences):
     umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
-        adapterSeqs["topFrontAdapter"],
-        adapterSeqs["topBackAdapter"],
-        adapterSeqs["bottomFrontAdapter"],
-        adapterSeqs["bottomBackAdapter"],
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomFrontAdapter"],
+        adapterSequences["bottomBackAdapter"],
     )
-    assert umiExtractorBasic.topLinkedAdapter.front_adapter.sequence == adapterSeqs["topFrontAdapter"]
-    assert umiExtractorBasic.topLinkedAdapter.back_adapter.sequence == adapterSeqs["topBackAdapter"]
+    assert umiExtractorBasic.topLinkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert umiExtractorBasic.topLinkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
     assert umiExtractorBasic.topLinkedAdapter.name == "top"
 
-    assert umiExtractorBasic.bottomLinkedAdapter.front_adapter.sequence == adapterSeqs["bottomFrontAdapter"]
-    assert umiExtractorBasic.bottomLinkedAdapter.back_adapter.sequence == adapterSeqs["bottomBackAdapter"]
+    assert umiExtractorBasic.bottomLinkedAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
+    assert umiExtractorBasic.bottomLinkedAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
     assert umiExtractorBasic.bottomLinkedAdapter.name == "bottom"
 
-def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSeqs):
+def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSequences):
     errorOutput = "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
     with pytest.raises(ValueError, match=re.escape(errorOutput)):
         umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
-            adapterSeqs["topFrontAdapter"] + "R",
-            adapterSeqs["topBackAdapter"],
-            adapterSeqs["bottomFrontAdapter"],
-            adapterSeqs["bottomBackAdapter"],
+            adapterSequences["topFrontAdapter"] + "R",
+            adapterSequences["topBackAdapter"],
+            adapterSequences["bottomFrontAdapter"],
+            adapterSequences["bottomBackAdapter"],
         )
 
 
@@ -81,29 +80,29 @@ def test_umi_extractor_initialization_with_umi_pattern(umiPattern, umiPatternReg
     umiExtractor = UmiExtractor(umiPattern=umiPattern)
     assert umiExtractor.umiPattern == umiPatternRegEx
 
-def test_umi_extractor_initialization_with_adapter_sequences(adapterSeqs):
+def test_umi_extractor_initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
-        topFrontAdapter=adapterSeqs["topFrontAdapter"],
-        topBackAdapter=adapterSeqs["topBackAdapter"],
-        bottomFrontAdapter=adapterSeqs["bottomFrontAdapter"],
-        bottomBackAdapter=adapterSeqs["bottomBackAdapter"],
+        topFrontAdapter=adapterSequences["topFrontAdapter"],
+        topBackAdapter=adapterSequences["topBackAdapter"],
+        bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
+        bottomBackAdapter=adapterSequences["bottomBackAdapter"],
     )
-    assert umiExtractor.topLinkedAdapter.front_adapter.sequence == adapterSeqs["topFrontAdapter"]
-    assert umiExtractor.topLinkedAdapter.back_adapter.sequence == adapterSeqs["topBackAdapter"]
+    assert umiExtractor.topLinkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert umiExtractor.topLinkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
     assert umiExtractor.topLinkedAdapter.name == "top"
 
-    assert umiExtractor.bottomLinkedAdapter.front_adapter.sequence == adapterSeqs["bottomFrontAdapter"]
-    assert umiExtractor.bottomLinkedAdapter.back_adapter.sequence == adapterSeqs["bottomBackAdapter"]
+    assert umiExtractor.bottomLinkedAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
+    assert umiExtractor.bottomLinkedAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
     assert umiExtractor.bottomLinkedAdapter.name == "bottom"
 
 @pytest.fixture
-def umiExtractor(umiPattern, adapterSeqs):
+def umiExtractor(umiPattern, adapterSequences):
     umiExtractor = UmiExtractor(
         umiPattern=umiPattern,
-        topFrontAdapter=adapterSeqs["topFrontAdapter"],
-        topBackAdapter=adapterSeqs["topBackAdapter"],
-        bottomFrontAdapter=adapterSeqs["bottomFrontAdapter"],
-        bottomBackAdapter=adapterSeqs["bottomBackAdapter"],
+        topFrontAdapter=adapterSequences["topFrontAdapter"],
+        topBackAdapter=adapterSequences["topBackAdapter"],
+        bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
+        bottomBackAdapter=adapterSequences["bottomBackAdapter"],
     )
     return umiExtractor
 
@@ -120,19 +119,19 @@ def topUmi(): return "ATATGTACTATTGTATAC"
 def bottomUmi(): return "CAATGTGTCGGCATAGGG"
 
 @pytest.fixture
-def exampleForwardRecord(adapterSeqs, topUmi, bottomUmi, targetSequence):
+def exampleForwardRecord(adapterSequences, topUmi, bottomUmi, targetSequence):
     fillerSeq1 = "A" * 110
     fillerSeq2 = "T" * 100
     exampleForwardSequence = "".join(
         [
             fillerSeq1,
-            adapterSeqs["topFrontAdapter"],
+            adapterSequences["topFrontAdapter"],
             topUmi,
-            adapterSeqs["topBackAdapter"],
+            adapterSequences["topBackAdapter"],
             targetSequence,
-            adapterSeqs["bottomBackAdapter_reverseComplement"],
+            adapterSequences["bottomBackAdapter_reverseComplement"],
             umiExtractionFunctions.find_reverse_complement(bottomUmi),
-            adapterSeqs["bottomFrontAdapter_reverseComplement"],
+            adapterSequences["bottomFrontAdapter_reverseComplement"],
             fillerSeq2,
         ]
     )

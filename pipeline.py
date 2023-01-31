@@ -238,7 +238,7 @@ def cluster_consensus_sequences(outputDir, consensusFile, binFiles):
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
-    subparsers = parser.add_subparsers(dest="command", help="CsoDIAq Functions")
+    subparsers = parser.add_subparsers(dest="command", help="ConSeq Functions")
     subparsers.add_parser(
         "gui",
         help="Launches the (optional) GUI application for using longread_umi_python.",
