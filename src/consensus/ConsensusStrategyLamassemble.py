@@ -1,4 +1,4 @@
-from consensus.ConsensusStrategy import ConsensusStrategy, convert_biopython_fastq_record_to_string
+from consensus.ConsensusStrategy import ConsensusStrategy
 import subprocess
 from Bio import SeqIO
 from io import StringIO
