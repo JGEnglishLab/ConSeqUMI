@@ -1,10 +1,5 @@
 import pytest
-import sys
-import os
 from pytestConsensusFixtures import simpleInsert, simpleString, middleInsertIndex
-srcPath = os.getcwd().split("/")[:-1]
-srcPath = "/".join(srcPath) + "/src"
-sys.path.insert(1, srcPath)
 from consensus import consensusStrategyPairwiseFunctions
 
 @pytest.fixture

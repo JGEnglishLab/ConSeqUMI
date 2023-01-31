@@ -1,9 +1,4 @@
 import pytest
-import sys
-import os
-srcPath = os.getcwd().split("/")[:-1]
-srcPath = "/".join(srcPath) + "/src"
-sys.path.insert(1, srcPath)
 from umi import umiExtractionFunctions
 import re
 
