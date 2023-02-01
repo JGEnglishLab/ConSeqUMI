@@ -118,6 +118,12 @@ def topUmi(): return "ATATGTACTATTGTATAC"
 @pytest.fixture
 def bottomUmi(): return "CAATGTGTCGGCATAGGG"
 
+def make_string_to_fastq_record(string, id):
+    sequence = Seq(string)
+    id = str(id)
+    phred_quality = [40 for j in range(len(string))]
+    return SeqRecord(sequence, id=id, letter_annotations={"phred_quality":phred_quality})
+
 @pytest.fixture
 def exampleForwardRecord(adapterSequences, topUmi, bottomUmi, targetSequence):
     fillerSeq1 = "A" * 110
@@ -135,11 +141,11 @@ def exampleForwardRecord(adapterSequences, topUmi, bottomUmi, targetSequence):
             fillerSeq2,
         ]
     )
-    return SeqRecord(Seq(exampleForwardSequence), id="forward")
+    return make_string_to_fastq_record(exampleForwardSequence, id="forward")
 
 @pytest.fixture
 def exampleReverseRecord(exampleForwardRecord):
-    return SeqRecord(exampleForwardRecord.seq.reverse_complement(), id="reverse")
+    return make_string_to_fastq_record(exampleForwardRecord.seq.reverse_complement(), id="reverse")
 
 def test_umi_extractor_find_matches_of_adapters_in_sequence(umiExtractor, exampleForwardRecord):
     sequence = str(exampleForwardRecord.seq)
