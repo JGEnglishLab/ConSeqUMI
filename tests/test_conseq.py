@@ -52,21 +52,27 @@ def umiArgs(files):
     umiArgs = [
         "umi",
         "-i",
-        files.inputDir.name,
+        files.inputDir.name + "/",
         "-o",
-        files.outputDir.name,
+        files.outputDir.name + "/",
         "-a",
         files.adapterFile.name,
     ]
     return umiArgs
 
+@pytest.fixture
+def outputDirectoryPattern():
+    return r"ConSeqUMI-\d{8}-\d{6}.*"
+
 def test__conseq__set_command_line_settings(parser): pass
 
-def test__conseq__set_command_line_settings__umi_command_succeeds(parser, umiArgs, exampleForwardRecord, exampleReverseRecord):
+def test__conseq__set_command_line_settings__umi_command_succeeds(parser, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern):
     args = vars(parser.parse_args(umiArgs))
     assert set([args["input"][0].seq, args["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
-    assert args["output"] == umiArgs[4]
+    assert re.match(umiArgs[4] + "/" + outputDirectoryPattern, args["output"])
+    assert os.path.isdir(args["output"])
     assert args["adapters"] == umiArgs[6]
+
 
 def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):
     nonExistentCommand = "nonExistentCommand"
@@ -101,10 +107,10 @@ def test__conseq__set_command_line_settings__umi_input_directory_fails_when_does
 
 def test__conseq__set_command_line_settings__umi_input_directory_fails_when_it_is_a_file_not_directory(parser, umiArgs):
     inputFile = NamedTemporaryFile(prefix="conseq_adapter_test_input_file_fail_")
-    umiArgsWithEmptyInput = umiArgs[:2] + [inputFile.name] + umiArgs[3:]
+    umiArgsWithInputFile = umiArgs[:2] + [inputFile.name] + umiArgs[3:]
     errorOutput = "The -i or --input argument must be a directory, not a file."
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
-        args = parser.parse_args(umiArgsWithEmptyInput)
+        args = parser.parse_args(umiArgsWithInputFile)
 
 def test__conseq__set_command_line_settings__umi_input_directory_fails_when_empty(parser, umiArgs):
     emptyInputDirectory = TemporaryDirectory(prefix="conseq_input_test_directory_empty_")
@@ -118,3 +124,28 @@ def test__conseq__set_command_line_settings__umi_input_directory_fails_when_cont
     errorOutput = "The -i or --input argument directory must only contain fastq files (.fq or .fastq)."
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgs)
+
+def test__conseq__set_command_line_settings__umi_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, umiArgs, outputDirectoryPattern):
+    outputTag = "outputTag"
+    umiArgs[4] = umiArgs[4] + outputTag
+    umiArgsWithNewOutputTag = umiArgs
+    args = vars(parser.parse_args(umiArgsWithNewOutputTag))
+    assert os.path.isdir(args["output"])
+    parentDirectoryPath = "/".join(args["output"].split("/")[:-1])
+    parentDirectoryContents = os.listdir(parentDirectoryPath)
+    assert len(parentDirectoryContents) == 1
+    assert re.match(outputTag + "_" + outputDirectoryPattern, parentDirectoryContents[0])
+
+def test__conseq__set_command_line_settings__umi_output_directory_fails_when_parent_directory_does_not_exist(parser, umiArgs):
+    falseOutputDirectory = "/this/path/does/not/exist"
+    umiArgsWithFalseOutput = umiArgs[:4] + [falseOutputDirectory] + umiArgs[5:]
+    errorOutput = "The -o or --output argument directory requires an existing parent directory."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithFalseOutput)
+
+def test__conseq__set_command_line_settings__umi_output_directory_fails_when_it_is_a_file_not_directory(parser, umiArgs):
+    outputFile = NamedTemporaryFile(prefix="conseq_adapter_test_output_file_fail_")
+    umiArgsWithOutputFile = umiArgs[:4] + [outputFile.name] + umiArgs[5:]
+    errorOutput = "The -o or --output argument must be a directory, not a file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithOutputFile)

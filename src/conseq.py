@@ -1,6 +1,7 @@
 import argparse
 import os
 from Bio import SeqIO
+import time
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
@@ -19,7 +20,7 @@ def set_command_line_settings():
     umiParser.add_argument(
         "-o",
         "--output",
-        type=str,
+        type=OutputDirectory(),
         required=True,
         help="Path for folder output. Folder should not currently exist.",
     )
@@ -52,3 +53,22 @@ class InputDirectory():
             else:
                 records.extend([record for record in SeqIO.parse(name + file, "fastq")])
         return records
+
+def generate_output_name():
+    return "ConSeqUMI" + time.strftime("-%Y%m%d-%H%M%S")
+
+class OutputDirectory():
+
+    def __call__(self, name):
+        if os.path.isfile(name):
+            raise argparse.ArgumentTypeError("The -o or --output argument must be a directory, not a file.")
+        if name[-1] != "/": name += "/"
+        parentDirectoryPath = "/".join(name.split("/")[:-2])
+        if not os.path.isdir(parentDirectoryPath):
+            raise argparse.ArgumentTypeError("The -o or --output argument directory requires an existing parent directory.")
+        if not os.path.isdir(name):
+            name = name[:-1] + "_" + generate_output_name()
+        if os.path.isdir(name):
+            name += "/" + generate_output_name()
+        os.mkdir(name)
+        return name
