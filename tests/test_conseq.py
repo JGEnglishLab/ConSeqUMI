@@ -31,12 +31,20 @@ def parser():
     return parser
 
 @pytest.fixture
-def files(exampleForwardRecord, exampleReverseRecord):
+def files(exampleForwardRecord, exampleReverseRecord, adapterSequences):
     class fileObj:
         def __init__(self):
             self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_")
             self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_")
             self.adapterFile = NamedTemporaryFile(prefix="conseq_adapter_test_file_", suffix=".txt")
+            adapters = [
+                adapterSequences["topFrontAdapter"],
+                adapterSequences["topBackAdapter"],
+                adapterSequences["bottomFrontAdapter"],
+                adapterSequences["bottomBackAdapter"],
+            ]
+            with open(self.adapterFile.name, 'w') as f:
+                f.write('\n'.join(adapters))
             self.inputForwardFastq = NamedTemporaryFile(prefix="conseq_adapter_test_forward_file_", dir=self.inputDir.name, suffix=".fastq", delete=False)
             with open(self.inputForwardFastq.name, "w") as output_handle:
                 SeqIO.write([exampleForwardRecord], output_handle, "fastq")
@@ -66,12 +74,18 @@ def outputDirectoryPattern():
 
 def test__conseq__set_command_line_settings(parser): pass
 
-def test__conseq__set_command_line_settings__umi_command_succeeds(parser, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern):
+def test__conseq__set_command_line_settings__umi_command_succeeds(parser, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
     args = vars(parser.parse_args(umiArgs))
     assert set([args["input"][0].seq, args["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
     assert re.match(umiArgs[4] + "/" + outputDirectoryPattern, args["output"])
     assert os.path.isdir(args["output"])
-    assert args["adapters"] == umiArgs[6]
+    adapters = [
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomFrontAdapter"],
+        adapterSequences["bottomBackAdapter"],
+    ]
+    assert args["adapters"] == adapters
 
 
 def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):
@@ -121,7 +135,7 @@ def test__conseq__set_command_line_settings__umi_input_directory_fails_when_empt
 
 def test__conseq__set_command_line_settings__umi_input_directory_fails_when_contains_non_fastq_file(parser, umiArgs):
     inputDummyFile = NamedTemporaryFile(prefix="conseq_adapter_test_dummy_", dir=umiArgs[2], suffix=".txt", delete=False)
-    errorOutput = "The -i or --input argument directory must only contain fastq files (.fq or .fastq)."
+    errorOutput = f"The -i or --input argument directory must only contain fastq files (.fq or .fastq). Offending file: {inputDummyFile.name.split('/')[-1]}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgs)
 
@@ -149,3 +163,52 @@ def test__conseq__set_command_line_settings__umi_output_directory_fails_when_it_
     errorOutput = "The -o or --output argument must be a directory, not a file."
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithOutputFile)
+
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_is_not_an_existing_file(parser, umiArgs):
+    falseAdapterFile = "/this/path/does/not/exist/adapters.txt"
+    umiArgs[6] = falseAdapterFile
+    umiArgsWithFalseAdapterFile = umiArgs
+    errorOutput = "The -a or --adapters argument must be an existing file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithFalseAdapterFile)
+
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_file_is_not_txt_file(parser, umiArgs):
+    nonTxtFile = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_not_text_fail_", suffix=".nottxt")
+    umiArgs[6] = nonTxtFile.name
+    umiArgsWithNonTxtAdapterFile = umiArgs
+    errorOutput = "The -a or --adapters argument must be a text (.txt) file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithNonTxtAdapterFile)
+
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_contains_more_than_4_lines(parser, umiArgs, adapterSequences):
+    adapterFileWithFiveLines = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_extra_line_fail_", suffix=".txt")
+    adapters = [
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomFrontAdapter"],
+        adapterSequences["bottomBackAdapter"],
+        "AAAAAAAAAAAAA",
+    ]
+    with open(adapterFileWithFiveLines.name, 'w') as f:
+        f.write('\n'.join(adapters))
+    umiArgs[6] = adapterFileWithFiveLines.name
+    umiArgsWithAdapterFileWithFiveLines = umiArgs
+    errorOutput = f"The -a or --adapters argument file must contain exactly 4 adapters. Your file contains: {len(adapters)}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithAdapterFileWithFiveLines)
+
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_contains_an_adapter_with_non_nucleotide_characters(parser, umiArgs, adapterSequences):
+    adapterFileWithNonNucleotideAdapter = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_non_nuc_fail_", suffix=".txt")
+    adapters = [
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomFrontAdapter"],
+        adapterSequences["bottomBackAdapter"] + "R",
+    ]
+    with open(adapterFileWithNonNucleotideAdapter.name, 'w') as f:
+        f.write('\n'.join(adapters))
+    umiArgs[6] = adapterFileWithNonNucleotideAdapter.name
+    umiArgsWithAdapterFileWithNonNucleotideAdapter = umiArgs
+    errorOutput = "The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithAdapterFileWithNonNucleotideAdapter)
