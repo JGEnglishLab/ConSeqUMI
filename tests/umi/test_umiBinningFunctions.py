@@ -1,6 +1,9 @@
 import pytest
 from umi import umiBinningFunctions
 import pandas as pd
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from unittest.mock import Mock
 
 @pytest.fixture
 def topUmiToReadIndices():
@@ -65,18 +68,32 @@ def test_umi_binning_functions_identify_chimera_indices(allUmiPairStructure, chi
     chimeraIndicesOutput = umiBinningFunctions.identify_chimera_indices(topUmis, bottomUmis)
     assert chimeraIndicesOutput == chimeraIndices
 
-@pytest.fixture
-def pairedUmiToReadIndices():
-    pairedUmiToReadIndices = {
-        "AAAATTTTCCCCGGGG":{1,2,3,4,5,6},
-        "TTTTAAAAGGGGCCCC":{16,17,18,19,20},
-        "AATTAATTCCGGCCGG":{13,14,15},
-    }
-    return pairedUmiToReadIndices
 
-def test_umi_binning_functions_remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_indices_dict(allUmiPairStructure, chimeraIndices, pairedUmiToReadIndices):
-    pairedUmiToReadIndicesOutput = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_indices_dict(*allUmiPairStructure, chimeraIndices)
-    assert pairedUmiToReadIndicesOutput == pairedUmiToReadIndices
+
+def test_umi_binning_functions_remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(allUmiPairStructure, chimeraIndices):
+    targetSequence = "AAA"
+    phred_quality = [40 for j in range(len(targetSequence))]
+    recordsInput = [SeqRecord(Seq(targetSequence),id=str(i), letter_annotations={"phred_quality":phred_quality}) for i in range(1,21)]
+    recordsOutput = recordsInput[:]
+    binNumbers = [
+        [1,2,3,4,5,6],
+        [16,17,18,19,20],
+        [13,14,15],
+    ]
+    for i in binNumbers[0]:
+        recordsOutput[i-1].description = f"Top UMI: AAAATTTT; Bottom UMI: CCCCGGGG; read number: {i}"
+    for i in binNumbers[1]:
+        recordsOutput[i-1].description = f"Top UMI: TTTTAAAA; Bottom UMI: GGGGCCCC; read number: {i}"
+    for i in binNumbers[2]:
+        recordsOutput[i-1].description = f"Top UMI: AATTAATT, Bottom UMI: CCGGCCGG; read number: {i}"
+
+    pairedUmiToReadRecords = {
+        ("AAAATTTT","CCCCGGGG"):[recordsOutput[i-1] for i in binNumbers[0]],
+        ("TTTTAAAA","GGGGCCCC"):[recordsOutput[i-1] for i in binNumbers[1]],
+        ("AATTAATT","CCGGCCGG"):[recordsOutput[i-1] for i in binNumbers[2]],
+    }
+    pairedUmiToReadRecordsOutput = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(*allUmiPairStructure, chimeraIndices, recordsInput)
+    assert pairedUmiToReadRecordsOutput == pairedUmiToReadRecords
 
 def test_umi_binning_functions_compile_chimera_data_analysis_data_frame(allUmiPairStructure, chimeraIndices):
     topUmis, bottomUmis, readIndices = allUmiPairStructure

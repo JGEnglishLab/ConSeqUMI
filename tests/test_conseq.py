@@ -5,15 +5,9 @@ import re
 from unittest.mock import Mock
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from Bio import SeqIO
-
-import sys
 import os
-srcPath = os.getcwd().split("/")[:-1]
-srcPath = "/".join(srcPath) + "/src"
-sys.path.insert(1, srcPath)
-testsPath = os.getcwd().split("/")[:-1]
-testsPath = "/".join(testsPath) + "/tests"
-sys.path.insert(1, testsPath)
+
+import test_
 import conseq
 from umi.test_UmiExtractor import exampleForwardRecord, exampleReverseRecord, adapterSequences, topUmi, bottomUmi, targetSequence
 
@@ -69,23 +63,26 @@ def umiArgs(files):
     return umiArgs
 
 @pytest.fixture
+def parsedUmiArgs(parser, umiArgs):
+    return vars(parser.parse_args(umiArgs))
+
+@pytest.fixture
 def outputDirectoryPattern():
     return r"ConSeqUMI-\d{8}-\d{6}.*"
 
 def test__conseq__set_command_line_settings(parser): pass
 
-def test__conseq__set_command_line_settings__umi_command_succeeds(parser, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
-    args = vars(parser.parse_args(umiArgs))
-    assert set([args["input"][0].seq, args["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
-    assert re.match(umiArgs[4] + "/" + outputDirectoryPattern, args["output"])
-    assert os.path.isdir(args["output"])
+def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
+    assert set([parsedUmiArgs["input"][0].seq, parsedUmiArgs["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
+    assert re.match(umiArgs[4] + "/" + outputDirectoryPattern, parsedUmiArgs["output"])
+    assert os.path.isdir(parsedUmiArgs["output"])
     adapters = [
         adapterSequences["topFrontAdapter"],
         adapterSequences["topBackAdapter"],
         adapterSequences["bottomFrontAdapter"],
         adapterSequences["bottomBackAdapter"],
     ]
-    assert args["adapters"] == adapters
+    assert parsedUmiArgs["adapters"] == adapters
 
 
 def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):

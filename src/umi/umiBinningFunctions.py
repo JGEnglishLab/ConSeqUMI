@@ -32,12 +32,24 @@ def identify_chimera_indices(topUmis, bottomUmis):
             previouslyIdentifiedBottomUmis.add(bottomUmi)
     return chimeraIndices
 
-def remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_indices_dict(topUmis, bottomUmis, readIndices, chimeraIndices):
+def remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(topUmis, bottomUmis, readIndices, chimeraIndices, targetRecords):
     topUmis, bottomUmis, readIndices = [
         np.delete(np.array(x), (chimeraIndices)) for x in [topUmis, bottomUmis, readIndices]
     ]
-    pairedUmiToReadIndices = {topUmis[i]+bottomUmis[i]:readIndices[i] for i in range(len(topUmis))}
-    return pairedUmiToReadIndices
+    readRecords = []
+    for i in range(len(readIndices)):
+        binnedRecords = []
+        topUmi = topUmis[i]
+        bottomUmi = bottomUmis[i]
+        binnedIndices = readIndices[i]
+        for j in sorted(binnedIndices):
+            record = targetRecords[j-1]
+            record.description = f"Top UMI: {topUmi}, Bottom UMI: {bottomUmi}; read number: {j}"
+            binnedRecords.append(record)
+        readRecords.append(binnedRecords)
+
+    pairedUmiToReadRecords = {(topUmis[i],bottomUmis[i]):readRecords[i] for i in range(len(topUmis))}
+    return pairedUmiToReadRecords
 
 def compile_chimera_data_analysis_data_frame(topUmis, bottomUmis, readIndices, chimeraIndices):
     data = []

@@ -1,4 +1,5 @@
 import pytest
+import test__umi
 from umi import umiExtractionFunctions
 import re
 

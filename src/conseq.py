@@ -3,6 +3,11 @@ import os
 from Bio import SeqIO
 import time
 
+def main():
+
+    parser = set_command_line_settings()
+    args = vars(parser.parse_args())
+
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
     commandParser = parser.add_subparsers(dest="command", help="ConSeq Functions")
@@ -29,7 +34,7 @@ def set_command_line_settings():
         "--adapters",
         type=AdapterFile(),
         required=True,
-        help="A text file with f, F, r, R adapters listed. Defaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively.",
+        help="A text file with f, F, r, R adapters listed in order.",
     )
 
     return parser
@@ -92,3 +97,6 @@ class AdapterFile():
             raise argparse.ArgumentTypeError("The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.")
 
         return adapters
+
+if __name__ == "__main__":
+    main()
