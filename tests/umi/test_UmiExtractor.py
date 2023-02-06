@@ -1,6 +1,6 @@
 import pytest
 import importlib
-import umi.test__umi
+import test__umi
 from umi.UmiExtractor import UmiExtractor
 from umi import umiExtractionFunctions
 import re

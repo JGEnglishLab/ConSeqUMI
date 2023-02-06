@@ -52,7 +52,7 @@ def allUmiPairStructure():
     ]
     return [topUmis, bottomUmis, readIndices]
 
-def test_umi_binning_functions_pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToReadIndices, allUmiPairStructure):
+def test__umi_binning_functions__pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToReadIndices, allUmiPairStructure):
     topUmis, bottomUmis, readIndices = allUmiPairStructure
     topUmisOutput, bottomUmisOutput, readIndicesOutput = umiBinningFunctions.pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToReadIndices)
     assert topUmis == topUmisOutput
@@ -63,14 +63,19 @@ def test_umi_binning_functions_pair_top_and_bottom_umi_by_matching_reads(topUmiT
 def chimeraIndices():
     return [2, 4, 5]
 
-def test_umi_binning_functions_identify_chimera_indices(allUmiPairStructure, chimeraIndices):
+@pytest.fixture
+def umiExtractionCorrectOutput():
+    return ["AAAATTTT"], ["CCCCGGGG"], [SeqRecord(Seq("AAA"),id="correctOutput")]
+
+def test__umi_binning_functions__identify_indices_of_reads_missing_key_values__identifies_when_adapter_not_found():
+    pass
+
+def test__umi_binning_functions__identify_chimera_indices(allUmiPairStructure, chimeraIndices):
     topUmis, bottomUmis, readIndices = allUmiPairStructure
     chimeraIndicesOutput = umiBinningFunctions.identify_chimera_indices(topUmis, bottomUmis)
     assert chimeraIndicesOutput == chimeraIndices
 
-
-
-def test_umi_binning_functions_remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(allUmiPairStructure, chimeraIndices):
+def test__umi_binning_functions__remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(allUmiPairStructure, chimeraIndices):
     targetSequence = "AAA"
     phred_quality = [40 for j in range(len(targetSequence))]
     recordsInput = [SeqRecord(Seq(targetSequence),id=str(i), letter_annotations={"phred_quality":phred_quality}) for i in range(1,21)]
@@ -95,7 +100,7 @@ def test_umi_binning_functions_remove_chimeras_from_umi_pairs_and_return_paired_
     pairedUmiToReadRecordsOutput = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(*allUmiPairStructure, chimeraIndices, recordsInput)
     assert pairedUmiToReadRecordsOutput == pairedUmiToReadRecords
 
-def test_umi_binning_functions_compile_chimera_data_analysis_data_frame(allUmiPairStructure, chimeraIndices):
+def test__umi_binning_functions__compile_chimera_data_analysis_data_frame(allUmiPairStructure, chimeraIndices):
     topUmis, bottomUmis, readIndices = allUmiPairStructure
     readIndicesString = ["/".join([str(index) for index in sorted(readIndexSet)]) for readIndexSet in readIndices]
     readIndicesLength = [len(readIndexSet) for readIndexSet in readIndices]
