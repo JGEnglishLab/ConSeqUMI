@@ -6,20 +6,29 @@ from config import SCOMMAND
 from umi.UmiExtractor import UmiExtractor
 from umi import umiBinningFunctions
 from Bio import SeqIO
+from Printer import Printer
+import pandas as pd
 
 def main(args):
-
+    printer = Printer()
     umiExtractor = UmiExtractor()
+    printer("setting top and bottom linked adapters")
     umiExtractor.set_universal_top_and_bottom_linked_adapters(*args["adapters"])
+    printer("extract umis and target sequences from all records")
     rawUmisAndTargetSequences = umiExtractor.extract_umis_and_target_sequences_from_all_records(args["input"])
+    printer("identify and remove reads that are missing key values")
     errorMarkers = umiBinningFunctions.identify_reads_that_are_missing_key_values(*rawUmisAndTargetSequences)
     errorIndices = [i for i in range(len(errorMarkers)) if 1 in errorMarkers[i]]
     topRawUmis, bottomRawUmis, targetSequences = umiBinningFunctions.remove_indices_from_related_lists(rawUmisAndTargetSequences, errorIndices)
+    printer("run starcode")
     topUmiToReadIndices = starcode(topRawUmis)
     bottomUmiToReadIndices = starcode(bottomRawUmis)
+    printer("pair top and bottom umi starcode results by matching reads")
     starcodeTopUmis, starcodeBottomUmis, readIndices = umiBinningFunctions.pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToReadIndices)
+    printer("identify and remove chimeras")
     chimeraIndices = umiBinningFunctions.identify_chimera_indices(starcodeTopUmis, starcodeBottomUmis)
     pairedUmiToReadRecords = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(starcodeTopUmis, starcodeBottomUmis, readIndices, chimeraIndices, targetSequences)
+    printer("create and fill 'bins' folder with target sequences binned by umi pairing")
     binPath = args["output"] + "bins/"
     os.mkdir(binPath)
     count = 0
@@ -28,6 +37,16 @@ def main(args):
         with open(binPath + f"targetSequenceBin{count}.fastq", "w") as output_handle:
             SeqIO.write(binnedRecords, output_handle, "fastq")
         count += 1
+    printer("create and fill 'data_analysis' folder with dropped read and chimera analysis files")
+    dataAnalysisPath = args["output"] + "data_analysis/"
+    os.mkdir(dataAnalysisPath)
+    chimeraDataFrame = umiBinningFunctions.compile_chimera_data_analysis_data_frame(starcodeTopUmis, starcodeBottomUmis, readIndices, chimeraIndices)
+    chimeraDataFrame.to_csv(dataAnalysisPath + "chimera_summary.csv", index=False)
+    readErrorDataFrame = pd.DataFrame(errorMarkers, columns = ["Adapter not found", "Top UMI not found", "Bottom UMI not found", "Target Sequence not found"])
+    sequenceIds = [sequence.id for sequence in targetSequences]
+    readErrorDataFrame.insert(0,"Read ID",sequenceIds)
+    readErrorDataFrame.to_csv(dataAnalysisPath + "read_error_summary.csv", index=False)
+
 
 
 

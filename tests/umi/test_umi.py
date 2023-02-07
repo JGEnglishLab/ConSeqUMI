@@ -32,6 +32,17 @@ def test__umi__main(args, topUmi, bottomUmi, exampleForwardRecord, exampleRevers
     assert len(targetReverseRecordOutput) == 200
     assert targetReverseRecordOutput.letter_annotations["phred_quality"] == [40 for _ in range(200)]
 
+    dataAnalysisPath = args["output"] + "data_analysis/"
+    assert os.path.isdir(dataAnalysisPath)
+    files = sorted(os.listdir(dataAnalysisPath))
+    assert len(files) == 2
+    assert files[0] == "chimera_summary.csv"
+    assert files[1] == "read_error_summary.csv"
+    chimeraOutput = pd.read_csv(dataAnalysisPath + "chimera_summary.csv")
+    assert list(chimeraOutput.columns) == ["top UMI", "bottom UMI", "Number of Reads", "Read Identifiers", "Not Chimera",]
+    readErrorOutput = pd.read_csv(dataAnalysisPath + "read_error_summary.csv")
+    assert list(readErrorOutput.columns) == ["Read ID","Adapter not found", "Top UMI not found", "Bottom UMI not found", "Target Sequence not found"]
+
 def test__umi__starcode():
     originalUmis = [
         "AAAAAAAAA",
