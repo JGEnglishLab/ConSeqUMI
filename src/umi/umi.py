@@ -23,7 +23,7 @@ def main(args):
     binPath = args["output"] + "bins/"
     os.mkdir(binPath)
     count = 0
-    for umis in sorted(pairedUmiToReadRecords, key=lambda k: len(pairedUmiToReadRecords[umis]), reverse=True):
+    for umis in sorted(pairedUmiToReadRecords, key=lambda k: len(pairedUmiToReadRecords[k]), reverse=True):
         binnedRecords = pairedUmiToReadRecords[umis]
         with open(binPath + f"targetSequenceBin{count}.fastq", "w") as output_handle:
             SeqIO.write(binnedRecords, output_handle, "fastq")

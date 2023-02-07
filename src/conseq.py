@@ -56,7 +56,7 @@ class InputDirectory():
             if file.split('.')[-1] not in self.allowedFileTypes:
                 raise argparse.ArgumentTypeError(f"The -i or --input argument directory must only contain fastq files (.fq or .fastq). Offending file: {file}")
             else:
-                records.extend([record for record in SeqIO.parse(name + file, "fastq")])
+                records.extend(list(SeqIO.parse(name + file, "fastq")))
         return records
 
 def generate_output_name():

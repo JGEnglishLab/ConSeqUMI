@@ -168,19 +168,21 @@ def test__umi_extractor__find_matches_of_adapters_in_sequence_when_no_match_foun
     assert bottomMatchError is None
 
 
-def test__umi_extractor__extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord)
     assert topUmiOutput == topUmi
     assert bottomUmiOutput == bottomUmi
     assert str(targetSequenceRecordOutput.seq) == targetSequence
     assert targetSequenceRecordOutput.id == exampleForwardRecord.id
+    assert targetSequenceRecordOutput.letter_annotations == exampleForwardRecord[:len(targetSequence)].letter_annotations
 
-def test__umi_extractor__extract_umis_and_target_sequence_from_record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
+def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleReverseRecord)
     assert topUmiOutput == topUmi
     assert bottomUmiOutput == bottomUmi
     assert str(targetSequenceRecordOutput.seq) == targetSequence
     assert targetSequenceRecordOutput.id == exampleReverseRecord.id
+    assert targetSequenceRecordOutput.letter_annotations == exampleReverseRecord[:len(targetSequence)].letter_annotations
 
 @pytest.fixture
 def exampleForwardRecord_withTopUmiNotFound(exampleForwardRecord):

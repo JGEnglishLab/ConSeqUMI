@@ -3,7 +3,6 @@ from umi import umiBinningFunctions
 import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from unittest.mock import Mock
 
 @pytest.fixture
 def topUmiToReadIndices():

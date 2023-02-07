@@ -46,7 +46,6 @@ def files(exampleForwardRecord, exampleReverseRecord, adapterSequences):
             self.inputReverseFastq = NamedTemporaryFile(prefix="conseq_adapter_test_reverse_file_", dir=self.inputDir.name, suffix=".fastq", delete=False)
             with open(self.inputReverseFastq.name, "w") as output_handle:
                 SeqIO.write([exampleReverseRecord], output_handle, "fastq")
-
     return fileObj()
 
 @pytest.fixture
@@ -70,7 +69,7 @@ def parsedUmiArgs(parser, umiArgs):
 def outputDirectoryPattern():
     return r"ConSeqUMI-\d{8}-\d{6}.*"
 
-def test__conseq__set_command_line_settings(parser): pass
+def test__conseq__set_command_line_settings(parsedUmiArgs): pass
 
 def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
     assert set([parsedUmiArgs["input"][0].seq, parsedUmiArgs["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])

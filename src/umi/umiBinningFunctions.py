@@ -51,7 +51,12 @@ def identify_chimera_indices(topUmis, bottomUmis):
     return chimeraIndices
 
 def remove_indices_from_related_lists(listOfLists, removeIndices):
-    return [np.delete(np.array(x), (removeIndices)) for x in listOfLists]
+    editedLists = []
+    for l in listOfLists:
+        editedList = [ele for idx, ele in enumerate(l) if idx not in removeIndices]
+        editedLists.append(editedList)
+    return editedLists
+    #return [np.delete(np.array(x), (removeIndices)) for x in listOfLists]
 
 def remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(topUmis, bottomUmis, readIndices, chimeraIndices, targetRecords):
     topUmis, bottomUmis, readIndices = remove_indices_from_related_lists([topUmis, bottomUmis, readIndices], chimeraIndices)

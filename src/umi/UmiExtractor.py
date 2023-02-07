@@ -58,7 +58,7 @@ class UmiExtractor:
         return topMatch, bottomMatch
 
     def extract_umis_and_target_sequence_from_read(self, record):
-        tempRecord = SeqRecord(record.seq,id=record.id)
+        tempRecord = record[:]
         sequence = str(record.seq)
         topSequence, bottomSequence = umiExtractionFunctions.extract_top_and_bottom_of_sequence(sequence)
         topMatch, bottomMatch = self.find_matches_of_adapters_in_sequence(sequence)
