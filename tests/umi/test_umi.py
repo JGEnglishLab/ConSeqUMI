@@ -14,7 +14,7 @@ def test__umi__main(args, topUmi, bottomUmi, exampleForwardRecord, exampleRevers
     binPath = args["output"] + "bins/"
     assert os.path.isdir(binPath)
     files = os.listdir(binPath)
-    #assert len(files) == 1
+    assert len(files) == 1
 
 def test__umi__starcode():
     originalUmis = [

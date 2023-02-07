@@ -18,6 +18,24 @@ def pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToRe
     topUmis, bottomUmis, matchingReadIndices = [list(x) for x in [topUmis, bottomUmis, matchingReadIndices]]
     return topUmis, bottomUmis, matchingReadIndices
 
+def identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords):
+    errorMarkers = []
+    numErrorTypes = 4
+    for i in range(len(topUmis)):
+        errors = [0 for _ in range(numErrorTypes)]
+        topUmi = topUmis[i]
+        bottomUmi = bottomUmis[i]
+        targetRecord = targetRecords[i]
+        if targetRecord.id=="adapter not found":
+            errors[0] = 1
+            errorMarkers.append(errors)
+            continue
+        if topUmi == "": errors[1] = 1
+        if bottomUmi == "": errors[2] = 1
+        if len(targetRecord) == 0: errors[3] = 1
+        errorMarkers.append(errors)
+    return errorMarkers
+
 def identify_chimera_indices(topUmis, bottomUmis):
     previouslyIdentifiedTopUmis = set()
     previouslyIdentifiedBottomUmis = set()
@@ -32,10 +50,11 @@ def identify_chimera_indices(topUmis, bottomUmis):
             previouslyIdentifiedBottomUmis.add(bottomUmi)
     return chimeraIndices
 
+def remove_indices_from_related_lists(listOfLists, removeIndices):
+    return [np.delete(np.array(x), (removeIndices)) for x in listOfLists]
+
 def remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(topUmis, bottomUmis, readIndices, chimeraIndices, targetRecords):
-    topUmis, bottomUmis, readIndices = [
-        np.delete(np.array(x), (chimeraIndices)) for x in [topUmis, bottomUmis, readIndices]
-    ]
+    topUmis, bottomUmis, readIndices = remove_indices_from_related_lists([topUmis, bottomUmis, readIndices], chimeraIndices)
     readRecords = []
     for i in range(len(readIndices)):
         binnedRecords = []

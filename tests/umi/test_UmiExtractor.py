@@ -33,15 +33,15 @@ def adapterSequences():
 def umiExtractorBasic():
     return UmiExtractor()
 
-def test_umi_extractor_set_umi_pattern_with_empty_umi(umiExtractorBasic):
+def test__umi_extractor__set_umi_pattern_with_empty_umi(umiExtractorBasic):
     umiExtractorBasic.set_umi_pattern("")
     assert umiExtractorBasic.umiPattern == "^$"
 
-def test_umi_extractor_set_umi_pattern_with_nonEmpty_umi(umiExtractorBasic, umiPattern, umiPatternRegEx):
+def test__umi_extractor__set_umi_pattern_with_nonEmpty_umi(umiExtractorBasic, umiPattern, umiPatternRegEx):
     umiExtractorBasic.set_umi_pattern(umiPattern)
     assert umiExtractorBasic.umiPattern == umiPatternRegEx
 
-def test_umi_extractor_create_linked_adapter(umiExtractorBasic, adapterSequences):
+def test__umi_extractor__create_linked_adapter(umiExtractorBasic, adapterSequences):
     testName = "adapterTest"
     linkedAdapter = umiExtractorBasic.create_linked_adapter(
         adapterSequences["topFrontAdapter"],
@@ -52,7 +52,7 @@ def test_umi_extractor_create_linked_adapter(umiExtractorBasic, adapterSequences
     assert linkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
     assert linkedAdapter.name == testName
 
-def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractorBasic, adapterSequences):
+def test__umi_extractor__set_universal_top_and_bottom_linked_adapters(umiExtractorBasic, adapterSequences):
     umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
         adapterSequences["topFrontAdapter"],
         adapterSequences["topBackAdapter"],
@@ -67,7 +67,7 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters(umiExtractor
     assert umiExtractorBasic.bottomLinkedAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
     assert umiExtractorBasic.bottomLinkedAdapter.name == "bottom"
 
-def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSequences):
+def test__umi_extractor__set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSequences):
     errorOutput = "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
     with pytest.raises(ValueError, match=re.escape(errorOutput)):
         umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
@@ -78,11 +78,11 @@ def test_umi_extractor_set_universal_top_and_bottom_linked_adapters_accounts_for
         )
 
 
-def test_umi_extractor_initialization_with_umi_pattern(umiPattern, umiPatternRegEx):
+def test__umi_extractor__initialization_with_umi_pattern(umiPattern, umiPatternRegEx):
     umiExtractor = UmiExtractor(umiPattern=umiPattern)
     assert umiExtractor.umiPattern == umiPatternRegEx
 
-def test_umi_extractor_initialization_with_adapter_sequences(adapterSequences):
+def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
         topFrontAdapter=adapterSequences["topFrontAdapter"],
         topBackAdapter=adapterSequences["topBackAdapter"],
@@ -149,13 +149,13 @@ def exampleForwardRecord(adapterSequences, topUmi, bottomUmi, targetSequence):
 def exampleReverseRecord(exampleForwardRecord):
     return make_string_to_fastq_record(exampleForwardRecord.seq.reverse_complement(), id="reverse")
 
-def test_umi_extractor_find_matches_of_adapters_in_sequence(umiExtractor, exampleForwardRecord):
+def test__umi_extractor__find_matches_of_adapters_in_sequence(umiExtractor, exampleForwardRecord):
     sequence = str(exampleForwardRecord.seq)
     topMatch, bottomMatch = umiExtractor.find_matches_of_adapters_in_sequence(sequence)
     assert topMatch is not None
     assert bottomMatch is not None
 
-def test_umi_extractor_find_matches_of_adapters_in_sequence_when_no_match_found(umiExtractor, exampleForwardRecord):
+def test__umi_extractor__find_matches_of_adapters_in_sequence_when_no_match_found(umiExtractor, exampleForwardRecord):
     sequence = str(exampleForwardRecord.seq)
     topErrorSequence = "A"*200 + sequence[200:]
     topMatchError, bottomMatch = umiExtractor.find_matches_of_adapters_in_sequence(topErrorSequence)
@@ -168,14 +168,14 @@ def test_umi_extractor_find_matches_of_adapters_in_sequence_when_no_match_found(
     assert bottomMatchError is None
 
 
-def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
+def test__umi_extractor__extract_umis_and_target_sequence_from_record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord)
     assert topUmiOutput == topUmi
     assert bottomUmiOutput == bottomUmi
     assert str(targetSequenceRecordOutput.seq) == targetSequence
     assert targetSequenceRecordOutput.id == exampleForwardRecord.id
 
-def test_umi_extractor_extract_umis_and_target_sequence_from_record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
+def test__umi_extractor__extract_umis_and_target_sequence_from_record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleReverseRecord)
     assert topUmiOutput == topUmi
     assert bottomUmiOutput == bottomUmi
@@ -196,20 +196,20 @@ def exampleForwardRecord_withBottomUmiNotFound(exampleForwardRecord):
     exampleForwardRecord_withBottomUmiNotFound = SeqRecord(Seq(exampleForwardSequence_withBottomUmiNotFound), id="forward Bottom error")
     return exampleForwardRecord_withBottomUmiNotFound
 
-def test_umi_extractor_extract_umis_and_target_sequence_from_record_errors_when_no_umi_found_in_top_or_bottom(umiExtractor, exampleForwardRecord_withTopUmiNotFound, exampleForwardRecord_withBottomUmiNotFound):
+def test__umi_extractor__extract_umis_and_target_sequence_from_record_errors_when_no_umi_found_in_top_or_bottom(umiExtractor, exampleForwardRecord_withTopUmiNotFound, exampleForwardRecord_withBottomUmiNotFound):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withTopUmiNotFound)
     assert topUmiOutput == ""
     assert bottomUmiOutput == ""
     assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "umi not found"
+    assert targetSequenceRecordOutput.id == "adapter not found"
 
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withBottomUmiNotFound)
     assert topUmiOutput == ""
     assert bottomUmiOutput == ""
     assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "umi not found"
+    assert targetSequenceRecordOutput.id == "adapter not found"
 
-def test_umi_extractor_extract_umis_and_target_sequences_from_all_records(umiExtractor, exampleForwardRecord, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
+def test__umi_extractor__extract_umis_and_target_sequences_from_all_records(umiExtractor, exampleForwardRecord, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
     topUmisOutput, bottomUmisOutput, targetSequenceRecordsOutput = umiExtractor.extract_umis_and_target_sequences_from_all_records([exampleForwardRecord, exampleReverseRecord])
     assert set(topUmisOutput) == {topUmi}
     assert set(bottomUmisOutput) == {bottomUmi}

@@ -65,15 +65,89 @@ def chimeraIndices():
 
 @pytest.fixture
 def umiExtractionCorrectOutput():
-    return ["AAAATTTT"], ["CCCCGGGG"], [SeqRecord(Seq("AAA"),id="correctOutput")]
+    return [["AAAATTTT"], ["CCCCGGGG"], [SeqRecord(Seq("AAA"),id="correctOutput")]]
 
-def test__umi_binning_functions__identify_indices_of_reads_missing_key_values__identifies_when_adapter_not_found():
-    pass
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_adapter_not_found(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("")
+    bottomUmis.append("")
+    targetRecords.append(SeqRecord(Seq(""),id="adapter not found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [1,0,0,0],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_top_umi_not_found(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("")
+    bottomUmis.append("AAA")
+    targetRecords.append(SeqRecord(Seq("AAA"),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,1,0,0],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_bottom_umi_not_found(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("AAA")
+    bottomUmis.append("")
+    targetRecords.append(SeqRecord(Seq("AAA"),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,0,1,0],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_target_sequence_not_found(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("AAA")
+    bottomUmis.append("AAA")
+    targetRecords.append(SeqRecord(Seq(""),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,0,0,1],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_umis_and_target_sequence_not_found(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("")
+    bottomUmis.append("")
+    targetRecords.append(SeqRecord(Seq(""),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,1,1,1],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
 
 def test__umi_binning_functions__identify_chimera_indices(allUmiPairStructure, chimeraIndices):
     topUmis, bottomUmis, readIndices = allUmiPairStructure
     chimeraIndicesOutput = umiBinningFunctions.identify_chimera_indices(topUmis, bottomUmis)
     assert chimeraIndicesOutput == chimeraIndices
+
+def test__umi_binning_functions__remove_indices_from_related_lists():
+    listOfLists = [
+        [0, 1, 2, 3],
+        [4, 5, 6, 7],
+        [8, 9, 10, 11],
+    ]
+    removeIndices = [0, 2, 3]
+    filteredLists = [
+        [1],
+        [5],
+        [9],
+    ]
+    filteredListsOutput = umiBinningFunctions.remove_indices_from_related_lists(listOfLists, removeIndices)
+    assert filteredListsOutput == filteredLists
+
+
 
 def test__umi_binning_functions__remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(allUmiPairStructure, chimeraIndices):
     targetSequence = "AAA"
