@@ -39,6 +39,15 @@ def test__cons__main(args, consFiles):
         descriptionStart = len(record.id)+1
         assert record.description[descriptionStart:descriptionStart + len(expectedDescriptionStarts[0])] in expectedDescriptionStarts
 
+def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
+    args["minimumReads"] = 20
+    consensus.main(args)
+    fileAndDir = os.listdir(consFiles.parentDir.name)
+    if fileAndDir[0].split(".")[-1] == "fasta": consFile = consFiles.parentDir.name + "/" + fileAndDir[0]
+    else: consFile = consFiles.parentDir.name + "/" + fileAndDir[1]
+    consensusRecords = list(SeqIO.parse(consFile, "fasta"))
+    assert len(consensusRecords) == 1
+
 def test__cons__generate_file_name(consensusAlgorithm, fileNamePattern):
     fileNameOutput = consensus.generate_file_name(consensusAlgorithm)
     assert re.match(fileNamePattern, fileNameOutput)
