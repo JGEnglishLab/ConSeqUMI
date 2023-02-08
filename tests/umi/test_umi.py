@@ -4,7 +4,7 @@ import os
 import pandas as pd
 from Bio import SeqIO
 
-import test__umi
+import umi.test__umi
 from umi import umi
 umi.SCOMMAND = ['starcode', '--seq-id', '-q']
 from umi.test_UmiExtractor import exampleForwardRecord, exampleReverseRecord, adapterSequences, topUmi, bottomUmi, targetSequence

@@ -141,7 +141,7 @@ def test__conseq__set_command_line_settings__umi_output_directory_parameter_has_
     umiArgsWithNewOutputTag = umiArgs
     args = vars(parser.parse_args(umiArgsWithNewOutputTag))
     assert os.path.isdir(args["output"])
-    parentDirectoryPath = "/".join(args["output"].split("/")[:-1])
+    parentDirectoryPath = "/".join(args["output"].split("/")[:-2])
     parentDirectoryContents = os.listdir(parentDirectoryPath)
     assert len(parentDirectoryContents) == 1
     assert re.match(outputTag + "_" + outputDirectoryPattern, parentDirectoryContents[0])

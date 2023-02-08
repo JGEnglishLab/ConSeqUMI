@@ -34,9 +34,10 @@ def main(args):
     binPath = args["output"] + "bins/"
     os.mkdir(binPath)
     count = 0
+    countLength = len(str(len(pairedUmiToReadRecords)))
     for umis in sorted(pairedUmiToReadRecords, key=lambda k: len(pairedUmiToReadRecords[k]), reverse=True):
         binnedRecords = pairedUmiToReadRecords[umis]
-        with open(binPath + f"targetSequenceBin{count}.fastq", "w") as output_handle:
+        with open(binPath + f"targetSequenceBin{str(count).zfill(countLength)}.fastq", "w") as output_handle:
             SeqIO.write(binnedRecords, output_handle, "fastq")
         count += 1
     printer("create and fill 'data_analysis' folder with dropped read and chimera analysis files")
@@ -46,7 +47,7 @@ def main(args):
     sequenceIds = [sequence.id for sequence in rawUmisAndTargetSequences[2]]
     readErrorDataFrame.insert(0,"Read ID",sequenceIds)
     readErrorDataFrame.to_csv(dataAnalysisPath + "read_error_summary.csv", index=False)
-
+    printer("UMI extraction and binning complete")
 
 
 
