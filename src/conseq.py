@@ -39,6 +39,32 @@ def set_command_line_settings():
         required=True,
         help="A text file with f, F, r, R adapters listed in order.",
     )
+    consParser = commandParser.add_parser(
+        "cons",
+        help="Finds a consensus sequence for each fastq file in a given directory and writes them to a single output fasta file.",
+    )
+    consParser.add_argument(
+        "-i",
+        "--input",
+        type=InputDirectory(),
+        required=True,
+        help="Path to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
+    )
+    consParser.add_argument(
+        "-c",
+        "--consensusAlgorithm",
+        type=ConsensusAlgorithmText(),
+        default="pairwise",
+        help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
+    )
+    consParser.add_argument(
+        "-min",
+        "--minimumReads",
+        type=MinimumReadsInt(),
+        default=50,
+        help="Minimum number of cluster reads required to generate a consensus sequence. Default is 50.",
+    )
+
 
     return parser
 
@@ -100,6 +126,25 @@ class AdapterFile():
             raise argparse.ArgumentTypeError("The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C.")
 
         return adapters
+
+class ConsensusAlgorithmText():
+    def __init__(self):
+        self.validConsensusArgorithms = set(["pairwise","lamassemble"])
+
+    def __call__(self, name):
+        if name not in self.validConsensusArgorithms:
+            raise argparse.ArgumentTypeError(f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {name}")
+        return name
+
+class MinimumReadsInt():
+    def __call__(self, name):
+        try:
+            min = int(name)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"The -min or --minimumReads argument must be an integer. Offending value: {name}")
+        if min < 1:
+            raise argparse.ArgumentTypeError(f"The -min or --minimumReads argument must be greater than or equal to 1. Offending value: {name}")
+        return min
 
 if __name__ == "__main__":
     main()
