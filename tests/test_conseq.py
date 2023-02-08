@@ -219,11 +219,16 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_cont
 def consFiles(targetSequenceRecords):
     class fileObj:
         def __init__(self):
-            self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_")
+            self.parentDir = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
+            self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_", dir=self.parentDir.name)
 
-            self.targetSequenceFastq = NamedTemporaryFile(prefix="conseq_adapter_test_target_sequence_file_", dir=self.inputDir.name, suffix=".fastq", delete=False)
-            with open(self.targetSequenceFastq.name, "w") as output_handle:
+            self.targetSequenceFastq1 = NamedTemporaryFile(prefix="conseq_test_target_sequence_file1_", dir=self.inputDir.name, suffix=".fastq", delete=False)
+            with open(self.targetSequenceFastq1.name, "w") as output_handle:
                 SeqIO.write(targetSequenceRecords, output_handle, "fastq")
+
+            self.targetSequenceFastq2 = NamedTemporaryFile(prefix="conseq_test_target_sequence_file2_", dir=self.inputDir.name, suffix=".fastq", delete=False)
+            with open(self.targetSequenceFastq2.name, "w") as output_handle:
+                SeqIO.write(targetSequenceRecords + targetSequenceRecords, output_handle, "fastq")
     return fileObj()
 
 
@@ -238,21 +243,23 @@ def consArgs(consFiles):
 
 @pytest.fixture
 def parsedConsArgs(parser, consArgs):
+    consArgs += ["-min", "10"]
     return vars(parser.parse_args(consArgs))
 
-def test__conseq__set_command_line_settings__succeeds_with_cons_args(parsedConsArgs): pass
+def test__conseq__set_command_line_settings__cons_succeeds_with_cons_args(parsedConsArgs): pass
 
-def test__conseq__set_command_line_settings__defaults_set_correctly(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_defaults_set_correctly(parser, consArgs):
     args = vars(parser.parse_args(consArgs))
+    assert len(args["input"]) == 2
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["minimumReads"] == 50
 
-def test__conseq__set_command_line_settings__succeeds_when_consensusAlgorithm_is_pairwise(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorithm_is_pairwise(parser, consArgs):
     consArgs += ["-c", "pairwise"]
     args = vars(parser.parse_args(consArgs))
     assert args["consensusAlgorithm"] == "pairwise"
 
-def test__conseq__set_command_line_settings__succeeds_when_consensusAlgorithm_is_lamassemble(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorithm_is_lamassemble(parser, consArgs):
     consArgs += ["-c", "lamassemble"]
     args = vars(parser.parse_args(consArgs))
     assert args["consensusAlgorithm"] == "lamassemble"
@@ -264,25 +271,25 @@ def test__conseq__set_command_line_settings__succeeds_when_consensusAlgorithm_is
     assert args["consensusAlgorithm"] == "medaka"
 '''
 
-def test__conseq__set_command_line_settings__fails_when_consensusAlgorithm_is_not_recognized(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_fails_when_consensusAlgorithm_is_not_recognized(parser, consArgs):
     errorValue = "unidentified"
     consArgs += ["-c", errorValue]
     errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
-def test__conseq__set_command_line_settings__accepts_minimumReads(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_accepts_minimumReads(parser, consArgs):
     consArgs += ["-min", "10"]
     args = parser.parse_args(consArgs)
 
-def test__conseq__set_command_line_settings__fails_when_minimumReads_is_not_an_int(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_not_an_int(parser, consArgs):
     errorValue = "-10.1"
     consArgs += ["-min", errorValue]
     errorOutput = f"The -min or --minimumReads argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
-def test__conseq__set_command_line_settings__fails_when_minimumReads_is_negative(parser, consArgs):
+def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_negative(parser, consArgs):
     errorValue = "-10"
     consArgs += ["-min", errorValue]
     errorOutput = f"The -min or --minimumReads argument must be greater than or equal to 1. Offending value: {errorValue}"

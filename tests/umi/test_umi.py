@@ -75,8 +75,5 @@ def test__umi__starcode():
     umiToReadIndicesDictOutput = umi.starcode(umiText)
     assert umiToReadIndicesDictOutput == umiToReadIndicesDict
 
-#os.listdir(
-#os.path.isfile(name)
-
 
 

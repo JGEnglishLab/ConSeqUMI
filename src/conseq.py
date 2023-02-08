@@ -21,7 +21,7 @@ def set_command_line_settings():
     umiParser.add_argument(
         "-i",
         "--input",
-        type=InputDirectory(),
+        type=InputDirectory("umi"),
         required=True,
         help="Path to folder that only contains input Nanopore read fastq files.",
     )
@@ -46,7 +46,7 @@ def set_command_line_settings():
     consParser.add_argument(
         "-i",
         "--input",
-        type=InputDirectory(),
+        type=InputDirectory("cons"),
         required=True,
         help="Path to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
     )
@@ -69,8 +69,10 @@ def set_command_line_settings():
     return parser
 
 class InputDirectory():
-    def __init__(self):
+    def __init__(self, command):
         self.allowedFileTypes = set(["fastq","fq"])
+        self.command = command
+
     def __call__(self, name):
         if os.path.isfile(name):
             raise argparse.ArgumentTypeError("The -i or --input argument must be a directory, not a file.")
@@ -80,13 +82,19 @@ class InputDirectory():
         files = os.listdir(name)
         if len(files) == 0:
             raise argparse.ArgumentTypeError("The -i or --input argument directory must not be empty.")
-        records = []
         for file in files:
             if file.split('.')[-1] not in self.allowedFileTypes:
                 raise argparse.ArgumentTypeError(f"The -i or --input argument directory must only contain fastq files (.fq or .fastq). Offending file: {file}")
-            else:
+        if self.command=="umi":
+            records = []
+            for file in files:
                 records.extend(list(SeqIO.parse(name + file, "fastq")))
-        return records
+            return records
+        elif self.command=="cons":
+            records = {}
+            for file in files:
+                records[name + file] = list(SeqIO.parse(name + file, "fastq"))
+            return records
 
 def generate_output_name():
     return "ConSeqUMI" + time.strftime("-%Y%m%d-%H%M%S") + "/"
