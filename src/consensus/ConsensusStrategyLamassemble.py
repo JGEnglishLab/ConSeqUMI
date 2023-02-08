@@ -3,12 +3,11 @@ import subprocess
 from Bio import SeqIO
 from io import StringIO
 import tempfile
+from consensus.config import LCOMMAND
 
 class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
 
-        lamassembleCommandLine = "lamassemble dependencies_download/promethion.mat --end -g60 -m 40"
-        LCOMMAND = lamassembleCommandLine.split()
         with tempfile.NamedTemporaryFile(suffix=".fastq") as fp:
             with open(fp.name, "w") as output_handle:
                 SeqIO.write(binRecords, output_handle, "fastq")

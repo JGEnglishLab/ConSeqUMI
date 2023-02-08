@@ -3,13 +3,15 @@ import os
 from Bio import SeqIO
 import time
 from umi import umi
-
+from consensus import consensus
 def main():
 
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
     if args["command"] == "umi":
         umi.main(args)
+    if args["command"] == "cons":
+        consensus.main(args)
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
@@ -72,7 +74,6 @@ class InputDirectory():
     def __init__(self, command):
         self.allowedFileTypes = set(["fastq","fq"])
         self.command = command
-
     def __call__(self, name):
         if os.path.isfile(name):
             raise argparse.ArgumentTypeError("The -i or --input argument must be a directory, not a file.")

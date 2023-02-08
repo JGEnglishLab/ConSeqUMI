@@ -8,7 +8,8 @@ import time
 def main(args):
     printer = Printer()
     context = ConsensusContext(args["consensusAlgorithm"])
-    pathsSortedByLength = sorted(args["input"], key=lambda k: len(args["input"][k]), reverse=True)
+    pathsSortedByLength = sorted(args["input"])
+    pathsSortedByLength = sorted(pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True)
     consensusFilePath = "/".join(pathsSortedByLength[0].split("/")[:-2]) + "/" + generate_file_name(args["consensusAlgorithm"])
     printer("beginning consensus sequence generation")
     with open(consensusFilePath, "w") as output_handle:
