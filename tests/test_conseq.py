@@ -5,9 +5,14 @@ import re
 from unittest.mock import Mock
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from Bio import SeqIO
+import sys
 import os
-
-import test_
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
+testsPath = os.getcwd().split("/")[:-1]
+testsPath = "/".join(testsPath) + "/tests"
+sys.path.insert(1, testsPath)
 import conseq
 from umi.test_UmiExtractor import exampleForwardRecord, exampleReverseRecord, adapterSequences, topUmi, bottomUmi, targetSequence
 
@@ -25,7 +30,7 @@ def parser():
     return parser
 
 @pytest.fixture
-def files(exampleForwardRecord, exampleReverseRecord, adapterSequences):
+def umiFiles(exampleForwardRecord, exampleReverseRecord, adapterSequences):
     class fileObj:
         def __init__(self):
             self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_")
@@ -49,15 +54,15 @@ def files(exampleForwardRecord, exampleReverseRecord, adapterSequences):
     return fileObj()
 
 @pytest.fixture
-def umiArgs(files):
+def umiArgs(umiFiles):
     umiArgs = [
         "umi",
         "-i",
-        files.inputDir.name + "/",
+        umiFiles.inputDir.name + "/",
         "-o",
-        files.outputDir.name + "/",
+        umiFiles.outputDir.name + "/",
         "-a",
-        files.adapterFile.name,
+        umiFiles.adapterFile.name,
     ]
     return umiArgs
 
@@ -69,7 +74,7 @@ def parsedUmiArgs(parser, umiArgs):
 def outputDirectoryPattern():
     return r"ConSeqUMI-\d{8}-\d{6}.*"
 
-def test__conseq__set_command_line_settings(parsedUmiArgs): pass
+def test__conseq__set_command_line_settings__succeeds_with_umi_args(parsedUmiArgs): pass
 
 def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
     assert set([parsedUmiArgs["input"][0].seq, parsedUmiArgs["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
@@ -90,7 +95,7 @@ def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args([nonExistentCommand])
 
-def test__conseq__set_command_line_settings__umi_fails_when_does_not_include_input_directory(parser, files, umiArgs):
+def test__conseq__set_command_line_settings__umi_fails_when_does_not_include_input_directory(parser, umiArgs):
     umiArgsWithoutInput = [umiArgs[0]] + umiArgs[3:]
     errorOutput = "the following arguments are required: -i/--input"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
@@ -208,3 +213,16 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_cont
     errorOutput = "The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C."
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithAdapterFileWithNonNucleotideAdapter)
+
+@pytest.fixture
+def consArgs():
+    consArgs = [
+        "cons",
+    ]
+    return consArgs
+
+@pytest.fixture
+def parsedConsArgs(parser, consArgs):
+    return vars(parser.parse_args(consArgs))
+
+#def test__conseq__set_command_line_settings__succeeds_with_cons_args(parsedConsArgs): pass

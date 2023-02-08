@@ -4,11 +4,18 @@ import os
 import pandas as pd
 from Bio import SeqIO
 
-import umi.test__umi
+import sys
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
+testsPath = os.getcwd().split("/")[:-1]
+testsPath = "/".join(testsPath) + "/tests"
+sys.path.insert(1, testsPath)
 from umi import umi
 umi.SCOMMAND = ['starcode', '--seq-id', '-q']
 from umi.test_UmiExtractor import exampleForwardRecord, exampleReverseRecord, adapterSequences, topUmi, bottomUmi, targetSequence
-from test_conseq import parser, umiArgs, files
+from test_conseq import parser, umiArgs, umiFiles
 from test_conseq import parsedUmiArgs as args
 
 def test__umi__main(args, topUmi, bottomUmi, exampleForwardRecord, exampleReverseRecord):

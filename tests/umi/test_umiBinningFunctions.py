@@ -1,8 +1,17 @@
 import pytest
-from umi import umiBinningFunctions
 import pandas as pd
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
+import sys
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
+testsPath = os.getcwd().split("/")[:-1]
+testsPath = "/".join(testsPath) + "/tests"
+sys.path.insert(1, testsPath)
+from umi import umiBinningFunctions
+
 
 @pytest.fixture
 def topUmiToReadIndices():

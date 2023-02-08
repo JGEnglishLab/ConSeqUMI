@@ -1,7 +1,15 @@
 import pytest
+import random
+import sys
+import os
+srcPath = os.getcwd().split("/")[:-1]
+srcPath = "/".join(srcPath) + "/src"
+sys.path.insert(1, srcPath)
+testsPath = os.getcwd().split("/")[:-1]
+testsPath = "/".join(testsPath) + "/tests"
+sys.path.insert(1, testsPath)
 import pytestConsensusFixtures
 from consensus.ReferenceConsensusGenerator import ReferenceConsensusGenerator
-import random
 
 def test_reference_consensus_generator_initializer():
     bufferLength = 10
