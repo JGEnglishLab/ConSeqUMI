@@ -21,8 +21,10 @@ def main(args):
     errorIndices = [i for i in range(len(errorMarkers)) if 1 in errorMarkers[i]]
     topRawUmis, bottomRawUmis, targetSequences = umiBinningFunctions.remove_indices_from_related_lists(rawUmisAndTargetSequences, errorIndices)
     printer("run starcode")
-    topUmiToReadIndices = starcode(topRawUmis)
-    bottomUmiToReadIndices = starcode(bottomRawUmis)
+    dataAnalysisPath = args["output"] + "data_analysis/"
+    os.mkdir(dataAnalysisPath)
+    topUmiToReadIndices = starcode(topRawUmis, dataAnalysisPath + "starcode_output_for_top_umis.csv")
+    bottomUmiToReadIndices = starcode(bottomRawUmis, dataAnalysisPath + "starcode_output_for_bottom_umis.csv")
     printer("pair top and bottom umi starcode results by matching reads")
     starcodeTopUmis, starcodeBottomUmis, readIndices = umiBinningFunctions.pair_top_and_bottom_umi_by_matching_reads(topUmiToReadIndices, bottomUmiToReadIndices)
     printer("identify and remove chimeras")
@@ -38,12 +40,10 @@ def main(args):
             SeqIO.write(binnedRecords, output_handle, "fastq")
         count += 1
     printer("create and fill 'data_analysis' folder with dropped read and chimera analysis files")
-    dataAnalysisPath = args["output"] + "data_analysis/"
-    os.mkdir(dataAnalysisPath)
     chimeraDataFrame = umiBinningFunctions.compile_chimera_data_analysis_data_frame(starcodeTopUmis, starcodeBottomUmis, readIndices, chimeraIndices)
-    chimeraDataFrame.to_csv(dataAnalysisPath + "chimera_summary.csv", index=False)
+    chimeraDataFrame.to_csv(dataAnalysisPath + "chimera_summary_of_starcode_matches.csv", index=False)
     readErrorDataFrame = pd.DataFrame(errorMarkers, columns = ["Adapter not found", "Top UMI not found", "Bottom UMI not found", "Target Sequence not found"])
-    sequenceIds = [sequence.id for sequence in targetSequences]
+    sequenceIds = [sequence.id for sequence in rawUmisAndTargetSequences[2]]
     readErrorDataFrame.insert(0,"Read ID",sequenceIds)
     readErrorDataFrame.to_csv(dataAnalysisPath + "read_error_summary.csv", index=False)
 
@@ -51,7 +51,7 @@ def main(args):
 
 
 
-def starcode(umis):
+def starcode(umis, file = None):
     umisAsTextFileString = "\n".join(umis)
     child = subprocess.Popen(
         SCOMMAND,
@@ -62,6 +62,7 @@ def starcode(umis):
     child_out = child.communicate()[0].decode("utf8")
     starcodeOutput = pd.read_csv(StringIO(child_out), sep="\t", header=None)
     starcodeOutput.columns = ["umi","count","readIndices"]
+    if file: starcodeOutput.to_csv(file, index=False)
     child.stdin.close()
     umiToReadIndicesDict = starcodeOutput.set_index("umi").to_dict()["readIndices"]
     for umi, readIndices in umiToReadIndicesDict.items():

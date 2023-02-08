@@ -35,10 +35,12 @@ def test__umi__main(args, topUmi, bottomUmi, exampleForwardRecord, exampleRevers
     dataAnalysisPath = args["output"] + "data_analysis/"
     assert os.path.isdir(dataAnalysisPath)
     files = sorted(os.listdir(dataAnalysisPath))
-    assert len(files) == 2
-    assert files[0] == "chimera_summary.csv"
-    assert files[1] == "read_error_summary.csv"
-    chimeraOutput = pd.read_csv(dataAnalysisPath + "chimera_summary.csv")
+    assert len(files) == 4
+    assert os.path.isfile(dataAnalysisPath + "starcode_output_for_top_umis.csv")
+    assert os.path.isfile(dataAnalysisPath + "starcode_output_for_bottom_umis.csv")
+    assert os.path.isfile(dataAnalysisPath + "chimera_summary_of_starcode_matches.csv")
+    assert os.path.isfile(dataAnalysisPath + "read_error_summary.csv")
+    chimeraOutput = pd.read_csv(dataAnalysisPath + "chimera_summary_of_starcode_matches.csv")
     assert list(chimeraOutput.columns) == ["top UMI", "bottom UMI", "Number of Reads", "Read Identifiers", "Not Chimera",]
     readErrorOutput = pd.read_csv(dataAnalysisPath + "read_error_summary.csv")
     assert list(readErrorOutput.columns) == ["Read ID","Adapter not found", "Top UMI not found", "Bottom UMI not found", "Target Sequence not found"]

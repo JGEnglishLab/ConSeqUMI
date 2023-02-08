@@ -51,9 +51,13 @@ def identify_chimera_indices(topUmis, bottomUmis):
     return chimeraIndices
 
 def remove_indices_from_related_lists(listOfLists, removeIndices):
+    removeIndicesSet = set(removeIndices)
     editedLists = []
     for l in listOfLists:
-        editedList = [ele for idx, ele in enumerate(l) if idx not in removeIndices]
+        editedList = []
+        for idx, ele in enumerate(l):
+            if idx not in removeIndicesSet:
+                editedList.append(ele)
         editedLists.append(editedList)
     return editedLists
     #return [np.delete(np.array(x), (removeIndices)) for x in listOfLists]

@@ -2,11 +2,14 @@ import argparse
 import os
 from Bio import SeqIO
 import time
+from umi import umi
 
 def main():
 
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
+    if args["command"] == "umi":
+        umi.main(args)
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
@@ -60,7 +63,7 @@ class InputDirectory():
         return records
 
 def generate_output_name():
-    return "ConSeqUMI" + time.strftime("-%Y%m%d-%H%M%S")
+    return "ConSeqUMI" + time.strftime("-%Y%m%d-%H%M%S") + "/"
 
 class OutputDirectory():
     def __call__(self, name):
