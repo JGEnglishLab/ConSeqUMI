@@ -13,7 +13,6 @@ testsPath = os.getcwd().split("/")[:-1]
 testsPath = "/".join(testsPath) + "/tests"
 sys.path.insert(1, testsPath)
 from umi import umi
-umi.SCOMMAND = ['starcode', '--seq-id', '-q']
 from umi.test_UmiExtractor import exampleForwardRecord, exampleReverseRecord, adapterSequences, topUmi, bottomUmi, targetSequence
 from test_conseq import parser, umiArgs, umiFiles
 from test_conseq import parsedUmiArgs as args

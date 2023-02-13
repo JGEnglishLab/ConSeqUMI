@@ -26,7 +26,7 @@ def identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecord
         topUmi = topUmis[i]
         bottomUmi = bottomUmis[i]
         targetRecord = targetRecords[i]
-        if targetRecord.id=="adapter not found":
+        if targetRecord.name=="adapter not found":
             errors[0] = 1
             errorMarkers.append(errors)
             continue

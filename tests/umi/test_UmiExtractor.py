@@ -210,13 +210,13 @@ def test__umi_extractor__extract_umis_and_target_sequence_from_record_errors_whe
     assert topUmiOutput == ""
     assert bottomUmiOutput == ""
     assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "adapter not found"
+    assert targetSequenceRecordOutput.name == "adapter not found"
 
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord_withBottomUmiNotFound)
     assert topUmiOutput == ""
     assert bottomUmiOutput == ""
     assert str(targetSequenceRecordOutput.seq) == ""
-    assert targetSequenceRecordOutput.id == "adapter not found"
+    assert targetSequenceRecordOutput.name == "adapter not found"
 
 def test__umi_extractor__extract_umis_and_target_sequences_from_all_records(umiExtractor, exampleForwardRecord, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
     topUmisOutput, bottomUmisOutput, targetSequenceRecordsOutput = umiExtractor.extract_umis_and_target_sequences_from_all_records([exampleForwardRecord, exampleReverseRecord])

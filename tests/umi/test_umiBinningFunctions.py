@@ -79,7 +79,7 @@ def test__umi_binning_functions__identify_reads_that_are_missing_key_values__ide
     topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
     topUmis.append("")
     bottomUmis.append("")
-    targetRecords.append(SeqRecord(Seq(""),id="adapter not found"))
+    targetRecords.append(SeqRecord(Seq(""),name="adapter not found", id="some id"))
     errorMarkers = [
         [0,0,0,0],
         [1,0,0,0],
