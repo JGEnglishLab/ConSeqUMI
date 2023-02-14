@@ -3,7 +3,7 @@ import os
 from Bio import SeqIO
 import time
 from umi import umi
-from consensus import consensus
+from consensus import consensus, benchmark
 
 def main():
 
@@ -13,6 +13,8 @@ def main():
         umi.main(args)
     if args["command"] == "cons":
         consensus.main(args)
+    if args["command"] == "benchmark":
+        benchmark.main(args)
 
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")

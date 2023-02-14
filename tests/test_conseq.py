@@ -340,6 +340,8 @@ def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(pa
     assert len(args["input"]) == 14
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["reference"] == ""
+    assert args["intervals"] == 10
+    assert args["iterations"] == 100
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_input_file(parser, benchmarkArgs):
     benchmarkArgsWithoutInput = [benchmarkArgs[0]] + benchmarkArgs[3:]

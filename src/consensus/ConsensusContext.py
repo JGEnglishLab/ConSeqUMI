@@ -20,3 +20,7 @@ class ConsensusContext:
 
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
         return self._strategy.generate_consensus_sequence_from_biopython_records(binRecords)
+
+    def benchmark_sequence_generator(self, referenceSequence: str, binRecords: list, intervals: int, iterations: int):
+        for returnValue in self._strategy.benchmark_sequence_generator(referenceSequence, binRecords, intervals, iterations):
+            yield returnValue
