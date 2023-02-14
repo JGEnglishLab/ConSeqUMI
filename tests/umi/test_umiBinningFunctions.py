@@ -90,8 +90,20 @@ def test__umi_binning_functions__identify_reads_that_are_missing_key_values__ide
 def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_top_umi_not_found(umiExtractionCorrectOutput):
     topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
     topUmis.append("")
-    bottomUmis.append("AAA")
-    targetRecords.append(SeqRecord(Seq("AAA"),id="all adapters found"))
+    bottomUmis.append("AAAAAAAA")
+    targetRecords.append(SeqRecord(Seq("AAAAAAAA"),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,1,0,0],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_top_umi_too_short(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("AAAAAAA")
+    bottomUmis.append("AAAAAAAA")
+    targetRecords.append(SeqRecord(Seq("AAAAAAAA"),id="all adapters found"))
     errorMarkers = [
         [0,0,0,0],
         [0,1,0,0],
@@ -101,9 +113,21 @@ def test__umi_binning_functions__identify_reads_that_are_missing_key_values__ide
 
 def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_bottom_umi_not_found(umiExtractionCorrectOutput):
     topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
-    topUmis.append("AAA")
+    topUmis.append("AAAAAAAA")
     bottomUmis.append("")
-    targetRecords.append(SeqRecord(Seq("AAA"),id="all adapters found"))
+    targetRecords.append(SeqRecord(Seq("AAAAAAAA"),id="all adapters found"))
+    errorMarkers = [
+        [0,0,0,0],
+        [0,0,1,0],
+    ]
+    errorMarkersOutput = umiBinningFunctions.identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecords)
+    assert errorMarkersOutput == errorMarkers
+
+def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_bottom_umi_too_short(umiExtractionCorrectOutput):
+    topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
+    topUmis.append("AAAAAAAA")
+    bottomUmis.append("AAAAAAA")
+    targetRecords.append(SeqRecord(Seq("AAAAAAAA"),id="all adapters found"))
     errorMarkers = [
         [0,0,0,0],
         [0,0,1,0],
@@ -113,8 +137,8 @@ def test__umi_binning_functions__identify_reads_that_are_missing_key_values__ide
 
 def test__umi_binning_functions__identify_reads_that_are_missing_key_values__identifies_when_target_sequence_not_found(umiExtractionCorrectOutput):
     topUmis, bottomUmis, targetRecords = umiExtractionCorrectOutput
-    topUmis.append("AAA")
-    bottomUmis.append("AAA")
+    topUmis.append("AAAAAAAA")
+    bottomUmis.append("AAAAAAAA")
     targetRecords.append(SeqRecord(Seq(""),id="all adapters found"))
     errorMarkers = [
         [0,0,0,0],

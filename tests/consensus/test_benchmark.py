@@ -1,3 +1,5 @@
+import os
+import sys
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src"
 sys.path.insert(1, srcPath)
