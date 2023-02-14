@@ -18,8 +18,8 @@ class UmiExtractor:
         self.umiPattern = f'^{umiExtractionFunctions.convert_IUPAC_to_regular_expression(umiPattern)}$'
 
     def create_linked_adapter(self, sequence1, sequence2, name):
-        adapter1 = FrontAdapter(sequence1)
-        adapter2 = BackAdapter(sequence2)
+        adapter1 = FrontAdapter(sequence1, max_errors=0.2, min_overlap=11)
+        adapter2 = BackAdapter(sequence2, max_errors=0.2, min_overlap=11)
         linkedAdapter = LinkedAdapter(
             adapter1,
             adapter2,

@@ -30,8 +30,8 @@ def identify_reads_that_are_missing_key_values(topUmis, bottomUmis, targetRecord
             errors[0] = 1
             errorMarkers.append(errors)
             continue
-        if topUmi == "": errors[1] = 1
-        if bottomUmi == "": errors[2] = 1
+        if len(topUmi) < 8: errors[1] = 1
+        if len(bottomUmi) < 8: errors[2] = 1
         if len(targetRecord) == 0: errors[3] = 1
         errorMarkers.append(errors)
     return errorMarkers

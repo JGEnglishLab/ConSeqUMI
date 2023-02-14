@@ -11,6 +11,7 @@ import pandas as pd
 
 def main(args):
     printer = Printer()
+    print(args["output"])
     umiExtractor = UmiExtractor()
     printer("setting top and bottom linked adapters")
     umiExtractor.set_universal_top_and_bottom_linked_adapters(*args["adapters"])
