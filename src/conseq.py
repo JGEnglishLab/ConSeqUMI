@@ -63,7 +63,7 @@ def set_command_line_settings():
     consParser.add_argument(
         "-min",
         "--minimumReads",
-        type=MinimumReadsInt(),
+        type=ConseqInt("minimumReads"),
         default=50,
         help="Minimum number of cluster reads required to generate a consensus sequence. Default is 50.",
     )
@@ -74,9 +74,9 @@ def set_command_line_settings():
     benchmarkParser.add_argument(
         "-i",
         "--input",
-        type=InputFile(),
+        type=InputFile("input"),
         required=True,
-        help="Path to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
+        help="Path to a fastq file. Note that the fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
     )
     benchmarkParser.add_argument(
         "-o",
@@ -92,7 +92,27 @@ def set_command_line_settings():
         default="pairwise",
         help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
     )
-
+    benchmarkParser.add_argument(
+        "-r",
+        "--reference",
+        type=InputFile("reference"),
+        default="",
+        help="Path to a reference fasta file. The reads in the input file should create a consensus that matches the reference. If no file is provided, the reference consensus sequence will be generated using all of the input reads before benchmarking."
+    )
+    benchmarkParser.add_argument(
+        "-int",
+        "--intervals",
+        type=ConseqInt("intervals"),
+        default=10,
+        help="Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc.",
+    )
+    benchmarkParser.add_argument(
+        "-iter",
+        "--iterations",
+        type=ConseqInt("iterations"),
+        default=100,
+        help="Number of iterations that occur at each interval. Default is 100. For example, at default, the program will generate a consensus sequence 100 times from randomly selecting 10 sequences, then 100 times for 20 sequences etc.",
+    )
     return parser
 
 class InputDirectory():
@@ -170,28 +190,42 @@ class ConsensusAlgorithmText():
             raise argparse.ArgumentTypeError(f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {name}")
         return name
 
-class MinimumReadsInt():
+class ConseqInt():
+    def __init__(self, type):
+        if type=="minimumReads":
+            self.type="minimumReads"
+            self.conciseType="min"
+        elif type == "intervals":
+            self.type = "intervals"
+            self.conciseType = "int"
+        elif type == "iterations":
+            self.type = "iterations"
+            self.conciseType = "iter"
+
     def __call__(self, name):
         try:
             min = int(name)
         except ValueError:
-            raise argparse.ArgumentTypeError(f"The -min or --minimumReads argument must be an integer. Offending value: {name}")
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be an integer. Offending value: {name}")
         if min < 1:
-            raise argparse.ArgumentTypeError(f"The -min or --minimumReads argument must be greater than or equal to 1. Offending value: {name}")
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be greater than or equal to 1. Offending value: {name}")
         return min
 
 class InputFile():
-    def __init__(self):
-        self.allowedFileTypes = set(["fastq","fq"])
+    def __init__(self, type):
+        if type == "input": self.allowedFileTypes = ["fastq","fq"]; self.conciseType = "i"
+        elif type == "reference": self.allowedFileTypes = ["fasta","fa"]; self.conciseType = "r"
+        self.type = type
 
     def __call__(self, name):
+        if self.type=="reference" and name=="": return name
         if os.path.isdir(name):
-            raise argparse.ArgumentTypeError("The -i or --input argument must be a file, not a directory.")
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be a file, not a directory.")
         if not os.path.isfile(name):
-            raise argparse.ArgumentTypeError("The -i or --input argument must be an existing file.")
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be an existing file.")
         if name.split('.')[-1] not in self.allowedFileTypes:
-            raise argparse.ArgumentTypeError("The -i or --input argument file can only be a fastq file (.fq or .fastq).")
-        return list(SeqIO.parse(name, "fastq"))
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument file can only be a {self.allowedFileTypes[0]} file (.{self.allowedFileTypes[1]} or .{self.allowedFileTypes[0]}).")
+        return list(SeqIO.parse(name, self.allowedFileTypes[0]))
 
 
 if __name__ == "__main__":

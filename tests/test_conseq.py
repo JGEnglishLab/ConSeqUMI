@@ -281,8 +281,10 @@ def test__conseq__set_command_line_settings__cons_fails_when_consensusAlgorithm_
         args = parser.parse_args(consArgs)
 
 def test__conseq__set_command_line_settings__cons_accepts_minimumReads(parser, consArgs):
-    consArgs += ["-min", "10"]
-    args = parser.parse_args(consArgs)
+    consArgs += ["-min", "12"]
+    args = vars(parser.parse_args(consArgs))
+    assert args["minimumReads"] == 12
+
 
 def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_not_an_int(parser, consArgs):
     errorValue = "-10.1"
@@ -328,15 +330,16 @@ def benchmarkArgs(benchmarkFiles):
 
 @pytest.fixture
 def parsedBenchmarkArgs(parser, benchmarkArgs, benchmarkFiles):
-#    #benchmarkArgs += ["-r", benchmarkFiles.referenceFile.name]
-    return vars(parser.parse_args(benchmarkArgs))
+    pass
 
-def test__conseq__set_command_line_settings__benchmark_succeeds_with_benchmark_args(parsedBenchmarkArgs): pass
+def test__conseq__set_command_line_settings__benchmark_succeeds_with_benchmark_args(parser, benchmarkArgs):
+    parser.parse_args(benchmarkArgs)
 
 def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(parser, benchmarkArgs):
     args = vars(parser.parse_args(benchmarkArgs))
     assert len(args["input"]) == 14
     assert args["consensusAlgorithm"] == "pairwise"
+    assert args["reference"] == ""
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_input_file(parser, benchmarkArgs):
     benchmarkArgsWithoutInput = [benchmarkArgs[0]] + benchmarkArgs[3:]
@@ -344,7 +347,7 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_inclu
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgsWithoutInput)
 
-def test__conseq__set_command_line_settings__benchmark_input_directory_fails_when_it_is_a_directory_not_file(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_input_file_fails_when_it_is_a_directory_not_file(parser, benchmarkArgs):
     inputDirectory = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
     benchmarkArgsWithInputDirectory = benchmarkArgs[:2] + [inputDirectory.name] + benchmarkArgs[3:]
     errorOutput = "The -i or --input argument must be a file, not a directory."
@@ -358,7 +361,7 @@ def test__conseq__set_command_line_settings__benchmark_input_file_fails_when_doe
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgsWithFalseInput)
 
-def test__conseq__set_command_line_settings__benchmark_input_directory_fails_when_contains_non_fastq_file(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_input_file_fails_when_contains_non_fastq_file(parser, benchmarkArgs):
     inputTextFile = NamedTemporaryFile(prefix="conseq_adapter_test_dummy_", suffix=".txt")
     benchmarkArgsWithInputTextFile = benchmarkArgs[:2] + [inputTextFile.name] + benchmarkArgs[3:]
     errorOutput = "The -i or --input argument file can only be a fastq file (.fq or .fastq)."
@@ -410,3 +413,68 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_consensusAlgor
     errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__benchmark_reference_file_succeeds_when_provided(parser, benchmarkArgs, benchmarkFiles):
+    benchmarkArgsWithReference = benchmarkArgs + ["-r", benchmarkFiles.referenceFile.name]
+    args = parser.parse_args(benchmarkArgsWithReference)
+
+def test__conseq__set_command_line_settings__benchmark_reference_file_fails_when_it_is_a_directory_not_file(parser, benchmarkArgs):
+    inputDirectory = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
+    benchmarkArgsWithInputDirectory = benchmarkArgs + ["-r", inputDirectory.name]
+    errorOutput = "The -r or --reference argument must be a file, not a directory."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithInputDirectory)
+
+def test__conseq__set_command_line_settings__benchmark_reference_file_fails_when_does_not_exist(parser, benchmarkArgs):
+    falseReferenceFile = "/this/path/does/not/exist.fasta"
+    benchmarkArgsWithFalseReference = benchmarkArgs + ["-r", falseReferenceFile]
+    errorOutput = "The -r or --reference argument must be an existing file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithFalseReference)
+
+def test__conseq__set_command_line_settings__benchmark_reference_file_fails_when_contains_non_fasta_file(parser, benchmarkArgs):
+    referenceFastqFile = NamedTemporaryFile(prefix="conseq_adapter_test_dummy_", suffix=".fastq")
+    benchmarkArgsWithReferenceFastqFile = benchmarkArgs + ["-r", referenceFastqFile.name]
+    errorOutput = "The -r or --reference argument file can only be a fasta file (.fa or .fasta)."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args( benchmarkArgsWithReferenceFastqFile)
+
+def test__conseq__set_command_line_settings__benchmark_accepts_intervals(parser, benchmarkArgs):
+    benchmarkArgs += ["-int", "15"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["intervals"] == 15
+
+def test__conseq__set_command_line_settings__cons_fails_when_intervals_is_not_an_int(parser, benchmarkArgs):
+    errorValue = "-10.1"
+    benchmarkArgs += ["-int", errorValue]
+    errorOutput = f"The -int or --intervals argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__cons_fails_when_intervals_is_negative(parser, benchmarkArgs):
+    errorValue = "-10"
+    benchmarkArgs += ["-int", errorValue]
+    errorOutput = f"The -int or --intervals argument must be greater than or equal to 1. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__benchmark_accepts_iterations(parser, benchmarkArgs):
+    benchmarkArgs += ["-iter", "15"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["iterations"] == 15
+
+def test__conseq__set_command_line_settings__cons_fails_when_iterations_is_not_an_int(parser, benchmarkArgs):
+    errorValue = "-10.1"
+    benchmarkArgs += ["-iter", errorValue]
+    errorOutput = f"The -iter or --iterations argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__cons_fails_when_iterations_is_negative(parser, benchmarkArgs):
+    errorValue = "-10"
+    benchmarkArgs += ["-iter", errorValue]
+    errorOutput = f"The -iter or --iterations argument must be greater than or equal to 1. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
+
+
