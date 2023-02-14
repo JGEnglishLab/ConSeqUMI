@@ -7,7 +7,6 @@ from consensus.config import LCOMMAND
 
 class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
-
         with tempfile.NamedTemporaryFile(suffix=".fastq") as fp:
             with open(fp.name, "w") as output_handle:
                 SeqIO.write(binRecords, output_handle, "fastq")

@@ -1,5 +1,6 @@
 import pytest
 import random
+from Levenshtein import distance
 import sys
 import os
 srcPath = os.getcwd().split("/")[:-1]
@@ -94,3 +95,37 @@ def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopytho
     consensusSequenceOutput = consensusStrategyPairwise.generate_consensus_sequence_from_biopython_records(targetSequenceRecords)
     assert consensusSequenceOutput != referenceSequence
     assert consensusSequenceOutput == consensusSequence
+
+def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopython_records__works_when_all_target_sequences_are_the_same(consensusStrategyPairwise, targetSequenceRecords):
+    identicalTargetSequenceRecords = [targetSequenceRecords[0] for _ in range(10)]
+    expectedSequence = str(targetSequenceRecords[0].seq)
+    expectedSequenceOutput = consensusStrategyPairwise.generate_consensus_sequence_from_biopython_records(identicalTargetSequenceRecords)
+    assert expectedSequenceOutput == expectedSequence
+
+def test__consensus_strategy_pairwise__benchmark_sequence_generator(consensusStrategyPairwise, consensusSequence, targetSequenceRecords):
+    intervals = 10
+    iterations = 2
+    rows = [
+        ["1","0",consensusSequence,"tempSequence","distance","14"],
+        ["1","1",consensusSequence,"tempSequence","distance","14"],
+        ["10","0",consensusSequence,"tempSequence","distance","14"],
+        ["10","1",consensusSequence,"tempSequence","distance","14"],
+    ]
+    rowsOutput = [row for row in consensusStrategyPairwise.benchmark_sequence_generator(consensusSequence, targetSequenceRecords, intervals, iterations)]
+
+    assert len(rowsOutput) == len(rows)
+    for i in range(len(rows)):
+        row = rows[i]
+        rowOutput = rowsOutput[i]
+        assert rowOutput[:3] == row[:3]
+        assert distance(rowOutput[2],rowOutput[3]) == int(rowOutput[4])
+        assert rowOutput[-1] == row[-1]
+
+def test__consensus_strategy_pairwise__benchmark_sequence_generator__max_number_of_intervals_is_100(consensusStrategyPairwise, consensusSequence, targetSequenceRecords):
+    intervals = 1
+    iterations = 1
+    numberOfRecords = 101
+    inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
+    rowsOutput = [row for row in consensusStrategyPairwise.benchmark_sequence_generator(consensusSequence, inputRecords, intervals, iterations)]
+    assert len(rowsOutput) == 100
+

@@ -4,6 +4,8 @@ import argparse
 import re
 from unittest.mock import Mock
 from tempfile import TemporaryDirectory, NamedTemporaryFile
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import sys
 import os
@@ -92,7 +94,7 @@ def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs,
 
 def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):
     nonExistentCommand = "nonExistentCommand"
-    errorOutput = f"argument command: invalid choice: '{nonExistentCommand}' (choose from 'umi', 'cons')"
+    errorOutput = f"argument command: invalid choice: '{nonExistentCommand}' (choose from 'umi', 'cons', 'benchmark')"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args([nonExistentCommand])
 
@@ -296,4 +298,115 @@ def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_neg
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
+@pytest.fixture
+def benchmarkFiles(consensusSequence, targetSequenceRecords):
+    class fileObj:
+        def __init__(self):
+            self.parentDir = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
+            self.inputFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fastq", delete=False)
+            self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_", dir=self.parentDir.name)
+            self.referenceFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fasta", delete=False)
 
+            with open(self.inputFile.name, "w") as output_handle:
+                SeqIO.write(targetSequenceRecords, output_handle, "fastq")
+
+            with open(self.referenceFile.name, "w") as output_handle:
+                consensusSequenceRecord = SeqRecord(Seq(consensusSequence), id="consensus")
+                SeqIO.write([consensusSequenceRecord], output_handle, "fasta")
+    return fileObj()
+
+@pytest.fixture
+def benchmarkArgs(benchmarkFiles):
+    benchmarkArgs = [
+        "benchmark",
+        "-i",
+        benchmarkFiles.inputFile.name,
+        "-o",
+        benchmarkFiles.outputDir.name,
+    ]
+    return benchmarkArgs
+
+@pytest.fixture
+def parsedBenchmarkArgs(parser, benchmarkArgs, benchmarkFiles):
+#    #benchmarkArgs += ["-r", benchmarkFiles.referenceFile.name]
+    return vars(parser.parse_args(benchmarkArgs))
+
+def test__conseq__set_command_line_settings__benchmark_succeeds_with_benchmark_args(parsedBenchmarkArgs): pass
+
+def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(parser, benchmarkArgs):
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert len(args["input"]) == 14
+    assert args["consensusAlgorithm"] == "pairwise"
+
+def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_input_file(parser, benchmarkArgs):
+    benchmarkArgsWithoutInput = [benchmarkArgs[0]] + benchmarkArgs[3:]
+    errorOutput = "the following arguments are required: -i/--input"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithoutInput)
+
+def test__conseq__set_command_line_settings__benchmark_input_directory_fails_when_it_is_a_directory_not_file(parser, benchmarkArgs):
+    inputDirectory = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
+    benchmarkArgsWithInputDirectory = benchmarkArgs[:2] + [inputDirectory.name] + benchmarkArgs[3:]
+    errorOutput = "The -i or --input argument must be a file, not a directory."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithInputDirectory)
+
+def test__conseq__set_command_line_settings__benchmark_input_file_fails_when_does_not_exist(parser, benchmarkArgs):
+    falseInputFile = "/this/path/does/not/exist.fastq"
+    benchmarkArgsWithFalseInput = benchmarkArgs[:2] + [falseInputFile] + benchmarkArgs[3:]
+    errorOutput = "The -i or --input argument must be an existing file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithFalseInput)
+
+def test__conseq__set_command_line_settings__benchmark_input_directory_fails_when_contains_non_fastq_file(parser, benchmarkArgs):
+    inputTextFile = NamedTemporaryFile(prefix="conseq_adapter_test_dummy_", suffix=".txt")
+    benchmarkArgsWithInputTextFile = benchmarkArgs[:2] + [inputTextFile.name] + benchmarkArgs[3:]
+    errorOutput = "The -i or --input argument file can only be a fastq file (.fq or .fastq)."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithInputTextFile)
+
+def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_output_directory(parser, benchmarkArgs):
+    benchmarkArgsWithoutInput = benchmarkArgs[:3] + benchmarkArgs[5:]
+    errorOutput = "the following arguments are required: -o/--output"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithoutInput)
+
+def test__conseq__set_command_line_settings__benchmark_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, benchmarkArgs, outputDirectoryPattern):
+    outputTag = "outputTag"
+    benchmarkArgs[4] = benchmarkArgs[4] + "/" + outputTag
+    benchmarkArgsWithNewOutputTag = benchmarkArgs
+    args = vars(parser.parse_args(benchmarkArgsWithNewOutputTag))
+    assert os.path.isdir(args["output"])
+    outputWithoutPath = args["output"].split("/")[-2]
+    assert re.match(outputTag + "_" + outputDirectoryPattern, outputWithoutPath)
+
+def test__conseq__set_command_line_settings__benchmark_output_directory_fails_when_parent_directory_does_not_exist(parser, benchmarkArgs):
+    falseOutputDirectory = "/this/path/does/not/exist"
+    benchmarkArgsWithFalseOutput = benchmarkArgs[:4] + [falseOutputDirectory] + benchmarkArgs[5:]
+    errorOutput = "The -o or --output argument directory requires an existing parent directory."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithFalseOutput)
+
+def test__conseq__set_command_line_settings__benchmark_output_directory_fails_when_it_is_a_file_not_directory(parser, benchmarkArgs):
+    outputFile = NamedTemporaryFile(prefix="conseq_adapter_test_output_file_fail_")
+    benchmarkArgsWithOutputFile = benchmarkArgs[:4] + [outputFile.name] + benchmarkArgs[5:]
+    errorOutput = "The -o or --output argument must be a directory, not a file."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgsWithOutputFile)
+
+def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAlgorithm_is_pairwise(parser, benchmarkArgs):
+    benchmarkArgs += ["-c", "pairwise"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["consensusAlgorithm"] == "pairwise"
+
+def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAlgorithm_is_lamassemble(parser, benchmarkArgs):
+    benchmarkArgs += ["-c", "lamassemble"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["consensusAlgorithm"] == "lamassemble"
+
+def test__conseq__set_command_line_settings__benchmark_fails_when_consensusAlgorithm_is_not_recognized(parser, benchmarkArgs):
+    errorValue = "unidentified"
+    benchmarkArgs += ["-c", errorValue]
+    errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)

@@ -4,6 +4,7 @@ from Bio import SeqIO
 import time
 from umi import umi
 from consensus import consensus
+
 def main():
 
     parser = set_command_line_settings()
@@ -66,7 +67,31 @@ def set_command_line_settings():
         default=50,
         help="Minimum number of cluster reads required to generate a consensus sequence. Default is 50.",
     )
-
+    benchmarkParser = commandParser.add_parser(
+        "benchmark",
+        help="Creates a benchmarking data analysis file for evaluating the accuracy of a provided consensus sequence algorithm when applied to a given input fastq file.",
+    )
+    benchmarkParser.add_argument(
+        "-i",
+        "--input",
+        type=InputFile(),
+        required=True,
+        help="Path to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
+    )
+    benchmarkParser.add_argument(
+        "-o",
+        "--output",
+        type=OutputDirectory(),
+        required=True,
+        help="Path for folder output. Folder should not currently exist.",
+    )
+    benchmarkParser.add_argument(
+        "-c",
+        "--consensusAlgorithm",
+        type=ConsensusAlgorithmText(),
+        default="pairwise",
+        help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
+    )
 
     return parser
 
@@ -154,6 +179,20 @@ class MinimumReadsInt():
         if min < 1:
             raise argparse.ArgumentTypeError(f"The -min or --minimumReads argument must be greater than or equal to 1. Offending value: {name}")
         return min
+
+class InputFile():
+    def __init__(self):
+        self.allowedFileTypes = set(["fastq","fq"])
+
+    def __call__(self, name):
+        if os.path.isdir(name):
+            raise argparse.ArgumentTypeError("The -i or --input argument must be a file, not a directory.")
+        if not os.path.isfile(name):
+            raise argparse.ArgumentTypeError("The -i or --input argument must be an existing file.")
+        if name.split('.')[-1] not in self.allowedFileTypes:
+            raise argparse.ArgumentTypeError("The -i or --input argument file can only be a fastq file (.fq or .fastq).")
+        return list(SeqIO.parse(name, "fastq"))
+
 
 if __name__ == "__main__":
     main()

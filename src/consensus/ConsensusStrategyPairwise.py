@@ -47,6 +47,7 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         candidateSequence = referenceSequence[:]
         currentScore, currentDifferences = self.find_average_pairwise_alignment_score_and_all_differences_between_candidate_sequence_and_binned_sequences(candidateSequence, binSequences)
         while currentScore > bestScore:
+            if len(currentDifferences) == 0: return candidateSequence
             mostCommonDifference = Counter(currentDifferences).most_common(1)[0][0]
             nextSequence = inject_difference_into_sequence(candidateSequence, mostCommonDifference)
             bestScore = currentScore
