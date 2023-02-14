@@ -33,7 +33,7 @@ def set_command_line_settings():
     umiParser.add_argument(
         "-o",
         "--output",
-        type=OutputDirectory(),
+        type=OutputDirectory("umi"),
         required=True,
         help="Path for folder output. Folder should not currently exist.",
     )
@@ -54,6 +54,13 @@ def set_command_line_settings():
         type=InputDirectory("cons"),
         required=True,
         help="Path to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
+    )
+    consParser.add_argument(
+        "-o",
+        "--output",
+        type=OutputDirectory("consensus"),
+        required=True,
+        help="Path for folder output. The folder will be created with a time stamp.",
     )
     consParser.add_argument(
         "-c",
@@ -83,7 +90,7 @@ def set_command_line_settings():
     benchmarkParser.add_argument(
         "-o",
         "--output",
-        type=OutputDirectory(),
+        type=OutputDirectory("benchmark"),
         required=True,
         help="Path for folder output. Folder should not currently exist.",
     )
@@ -144,10 +151,13 @@ class InputDirectory():
                 records[name + file] = list(SeqIO.parse(name + file, "fastq"))
             return records
 
-def generate_output_name():
-    return "ConSeqUMI" + time.strftime("-%Y%m%d-%H%M%S") + "/"
+def generate_output_name(consensusAlgorithm):
+    return "ConSeqUMI-" + consensusAlgorithm + time.strftime("-%Y%m%d-%H%M%S") + "/"
 
 class OutputDirectory():
+    def __init__(self, consensusAlgorithm):
+        self.consensusAlgorithm = consensusAlgorithm
+
     def __call__(self, name):
         if os.path.isfile(name):
             raise argparse.ArgumentTypeError("The -o or --output argument must be a directory, not a file.")
@@ -156,9 +166,9 @@ class OutputDirectory():
         if not os.path.isdir(parentDirectoryPath):
             raise argparse.ArgumentTypeError("The -o or --output argument directory requires an existing parent directory.")
         if not os.path.isdir(name):
-            name = name[:-1] + "_" + generate_output_name()
+            name = name[:-1] + "_" + generate_output_name(self.consensusAlgorithm)
         if os.path.isdir(name):
-            name += "/" + generate_output_name()
+            name += "/" + generate_output_name(self.consensusAlgorithm)
         os.mkdir(name)
         return name
 

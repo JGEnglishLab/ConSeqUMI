@@ -36,8 +36,9 @@ def parser():
 def umiFiles(exampleForwardRecord, exampleReverseRecord, adapterSequences):
     class fileObj:
         def __init__(self):
-            self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_")
-            self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_")
+            self.parentDir = TemporaryDirectory(prefix="conseq_input_test_directory_")
+            self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_", dir=self.parentDir.name)
+            self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_", dir=self.parentDir.name)
             self.adapterFile = NamedTemporaryFile(prefix="conseq_adapter_test_file_", suffix=".txt")
             adapters = [
                 adapterSequences["topFrontAdapter"],
@@ -75,13 +76,26 @@ def parsedUmiArgs(parser, umiArgs):
 
 @pytest.fixture
 def outputDirectoryPattern():
-    return r"ConSeqUMI-\d{8}-\d{6}.*"
+    return r"\d{8}-\d{6}.*"
+
+@pytest.fixture
+def umiOutputDirectoryPattern(outputDirectoryPattern):
+    return "ConSeqUMI-umi-" + outputDirectoryPattern
+
+@pytest.fixture
+def consensusOutputDirectoryPattern(outputDirectoryPattern):
+    return "ConSeqUMI-consensus-" + outputDirectoryPattern
+
+@pytest.fixture
+def benchmarkOutputDirectoryPattern(outputDirectoryPattern):
+    return "ConSeqUMI-benchmark-" + outputDirectoryPattern
+
 
 def test__conseq__set_command_line_settings__succeeds_with_umi_args(parsedUmiArgs): pass
 
-def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs, umiArgs, exampleForwardRecord, exampleReverseRecord, outputDirectoryPattern, adapterSequences):
+def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs, umiArgs, exampleForwardRecord, exampleReverseRecord, umiOutputDirectoryPattern, adapterSequences):
     assert set([parsedUmiArgs["input"][0].seq, parsedUmiArgs["input"][1].seq]) == set([exampleForwardRecord.seq, exampleReverseRecord.seq])
-    assert re.match(umiArgs[4] + "/" + outputDirectoryPattern, parsedUmiArgs["output"])
+    assert re.match(umiArgs[4] + "/" + umiOutputDirectoryPattern, parsedUmiArgs["output"])
     assert os.path.isdir(parsedUmiArgs["output"])
     adapters = [
         adapterSequences["topFrontAdapter"],
@@ -143,7 +157,7 @@ def test__conseq__set_command_line_settings__umi_input_directory_fails_when_cont
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgs)
 
-def test__conseq__set_command_line_settings__umi_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, umiArgs, outputDirectoryPattern):
+def test__conseq__set_command_line_settings__umi_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, umiArgs, umiOutputDirectoryPattern):
     outputTag = "outputTag"
     umiArgs[4] = umiArgs[4] + outputTag
     umiArgsWithNewOutputTag = umiArgs
@@ -152,7 +166,7 @@ def test__conseq__set_command_line_settings__umi_output_directory_parameter_has_
     parentDirectoryPath = "/".join(args["output"].split("/")[:-2])
     parentDirectoryContents = os.listdir(parentDirectoryPath)
     assert len(parentDirectoryContents) == 1
-    assert re.match(outputTag + "_" + outputDirectoryPattern, parentDirectoryContents[0])
+    assert re.match(outputTag + "_" + umiOutputDirectoryPattern, parentDirectoryContents[0])
 
 def test__conseq__set_command_line_settings__umi_output_directory_fails_when_parent_directory_does_not_exist(parser, umiArgs):
     falseOutputDirectory = "/this/path/does/not/exist"
@@ -222,6 +236,7 @@ def consFiles(targetSequenceRecords):
     class fileObj:
         def __init__(self):
             self.parentDir = TemporaryDirectory(prefix="conseq_cons_test_parent_directory_")
+            self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_", dir=self.parentDir.name)
             self.inputDir = TemporaryDirectory(prefix="conseq_input_test_directory_", dir=self.parentDir.name)
 
             self.targetSequenceFastq1 = NamedTemporaryFile(prefix="conseq_test_target_sequence_file1_", dir=self.inputDir.name, suffix=".fastq", delete=False)
@@ -240,6 +255,8 @@ def consArgs(consFiles):
         "cons",
         "-i",
         consFiles.inputDir.name + "/",
+        "-o",
+        consFiles.outputDir.name
     ]
     return consArgs
 
@@ -255,6 +272,15 @@ def test__conseq__set_command_line_settings__cons_defaults_set_correctly(parser,
     assert len(args["input"]) == 2
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["minimumReads"] == 50
+
+def test__conseq__set_command_line_settings__consensus_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, consArgs, consensusOutputDirectoryPattern):
+    outputTag = "outputTag"
+    consArgs[4] = consArgs[4] + outputTag
+    consArgsWithNewOutputTag = consArgs
+    args = vars(parser.parse_args(consArgsWithNewOutputTag))
+    assert os.path.isdir(args["output"])
+    outputDirectoryName = args["output"].split("/")[-2]
+    assert re.match(".*" + outputTag + "_" + consensusOutputDirectoryPattern, outputDirectoryName)
 
 def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorithm_is_pairwise(parser, consArgs):
     consArgs += ["-c", "pairwise"]
@@ -308,7 +334,7 @@ def benchmarkFiles(consensusSequence, targetSequenceRecords):
             self.inputFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fastq", delete=False)
             self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_", dir=self.parentDir.name)
             self.referenceFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fasta", delete=False)
-
+            print(self.parentDir.name)
             with open(self.inputFile.name, "w") as output_handle:
                 SeqIO.write(targetSequenceRecords, output_handle, "fastq")
 
@@ -376,14 +402,14 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_inclu
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgsWithoutInput)
 
-def test__conseq__set_command_line_settings__benchmark_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, benchmarkArgs, outputDirectoryPattern):
+def test__conseq__set_command_line_settings__benchmark_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(parser, benchmarkArgs, benchmarkOutputDirectoryPattern):
     outputTag = "outputTag"
-    benchmarkArgs[4] = benchmarkArgs[4] + "/" + outputTag
+    benchmarkArgs[4] = benchmarkArgs[4] + outputTag
     benchmarkArgsWithNewOutputTag = benchmarkArgs
     args = vars(parser.parse_args(benchmarkArgsWithNewOutputTag))
     assert os.path.isdir(args["output"])
-    outputWithoutPath = args["output"].split("/")[-2]
-    assert re.match(outputTag + "_" + outputDirectoryPattern, outputWithoutPath)
+    outputDirectoryName = args["output"].split("/")[-2]
+    assert re.match(".*" + outputTag + "_" + benchmarkOutputDirectoryPattern, outputDirectoryName)
 
 def test__conseq__set_command_line_settings__benchmark_output_directory_fails_when_parent_directory_does_not_exist(parser, benchmarkArgs):
     falseOutputDirectory = "/this/path/does/not/exist"
@@ -446,14 +472,14 @@ def test__conseq__set_command_line_settings__benchmark_accepts_intervals(parser,
     args = vars(parser.parse_args(benchmarkArgs))
     assert args["intervals"] == 15
 
-def test__conseq__set_command_line_settings__cons_fails_when_intervals_is_not_an_int(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_fails_when_intervals_is_not_an_int(parser, benchmarkArgs):
     errorValue = "-10.1"
     benchmarkArgs += ["-int", errorValue]
     errorOutput = f"The -int or --intervals argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
 
-def test__conseq__set_command_line_settings__cons_fails_when_intervals_is_negative(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_fails_when_intervals_is_negative(parser, benchmarkArgs):
     errorValue = "-10"
     benchmarkArgs += ["-int", errorValue]
     errorOutput = f"The -int or --intervals argument must be greater than or equal to 1. Offending value: {errorValue}"
@@ -465,14 +491,14 @@ def test__conseq__set_command_line_settings__benchmark_accepts_iterations(parser
     args = vars(parser.parse_args(benchmarkArgs))
     assert args["iterations"] == 15
 
-def test__conseq__set_command_line_settings__cons_fails_when_iterations_is_not_an_int(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_fails_when_iterations_is_not_an_int(parser, benchmarkArgs):
     errorValue = "-10.1"
     benchmarkArgs += ["-iter", errorValue]
     errorOutput = f"The -iter or --iterations argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
 
-def test__conseq__set_command_line_settings__cons_fails_when_iterations_is_negative(parser, benchmarkArgs):
+def test__conseq__set_command_line_settings__benchmark_fails_when_iterations_is_negative(parser, benchmarkArgs):
     errorValue = "-10"
     benchmarkArgs += ["-iter", errorValue]
     errorOutput = f"The -iter or --iterations argument must be greater than or equal to 1. Offending value: {errorValue}"

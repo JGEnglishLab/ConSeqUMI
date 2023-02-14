@@ -26,10 +26,9 @@ def fileNamePattern(consensusAlgorithm):
 
 def test__cons__main(args, consFiles):
     consensus.main(args)
-    fileAndDir = os.listdir(consFiles.parentDir.name)
-    assert len(fileAndDir) == 2
-    if fileAndDir[0].split(".")[-1] == "fasta": consFile = consFiles.parentDir.name + "/" + fileAndDir[0]
-    else: consFile = consFiles.parentDir.name + "/" + fileAndDir[1]
+    file = os.listdir(args["output"])
+    assert len(file) == 1
+    consFile = args["output"] + file[0]
     expectedDescriptionStarts = [
         "Number of Target Sequences used to generate this consensus: 14",
         "Number of Target Sequences used to generate this consensus: 28",
@@ -42,9 +41,8 @@ def test__cons__main(args, consFiles):
 def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     args["minimumReads"] = 20
     consensus.main(args)
-    fileAndDir = os.listdir(consFiles.parentDir.name)
-    if fileAndDir[0].split(".")[-1] == "fasta": consFile = consFiles.parentDir.name + "/" + fileAndDir[0]
-    else: consFile = consFiles.parentDir.name + "/" + fileAndDir[1]
+    file = os.listdir(args["output"])
+    consFile = args["output"] + file[0]
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     assert len(consensusRecords) == 1
 
