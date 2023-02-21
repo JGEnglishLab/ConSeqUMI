@@ -3,6 +3,9 @@ import random
 import os
 import pandas as pd
 from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+import re
 
 import sys
 import os
@@ -50,6 +53,14 @@ def test__umi__main(args, topUmi, bottomUmi, exampleForwardRecord, exampleRevers
     assert list(chimeraOutput.columns) == ["top UMI", "bottom UMI", "Number of Reads", "Read Identifiers", "Not Chimera",]
     readErrorOutput = pd.read_csv(dataAnalysisPath + "read_error_summary.csv")
     assert list(readErrorOutput.columns) == ["Read ID","Adapter not found", "Top UMI not found", "Bottom UMI not found", "Target Sequence not found"]
+
+def test__umi__main_fails_when_no_umis_found(args):
+    badRecords = [SeqRecord(Seq("A"*200),id=str(i)) for i in range(10)]
+    args["input"] = badRecords
+    errorOutput = "All provided reads were rejected because no UMIs or target sequences were identified. Please see the 'data_analysis/read_error_summary.csv' file in the output for information on why all reads were rejected."
+    with pytest.raises(RuntimeError, match=re.escape(errorOutput)):
+        umi.main(args)
+
 
 def test__umi__starcode():
     originalUmis = [

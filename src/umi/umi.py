@@ -11,7 +11,6 @@ import pandas as pd
 
 def main(args):
     printer = Printer()
-    print(args["output"])
     umiExtractor = UmiExtractor()
     printer("setting top and bottom linked adapters")
     umiExtractor.set_universal_top_and_bottom_linked_adapters(*args["adapters"])
@@ -28,6 +27,7 @@ def main(args):
     sequenceIds = [sequence.id for sequence in rawUmisAndTargetSequences[2]]
     readErrorDataFrame.insert(0,"Read ID",sequenceIds)
     readErrorDataFrame.to_csv(dataAnalysisPath + "read_error_summary.csv", index=False)
+    if len(topRawUmis) == 0: raise RuntimeError("All provided reads were rejected because no UMIs or target sequences were identified. Please see the 'data_analysis/read_error_summary.csv' file in the output for information on why all reads were rejected.")
     printer("run starcode")
     topUmiToReadIndices = starcode(topRawUmis, dataAnalysisPath + "starcode_output_for_top_umis.csv")
     bottomUmiToReadIndices = starcode(bottomRawUmis, dataAnalysisPath + "starcode_output_for_bottom_umis.csv")
