@@ -66,13 +66,13 @@ def test__umi_extractor__set_universal_top_and_bottom_linked_adapters(umiExtract
         adapterSequences["bottomFrontAdapter"],
         adapterSequences["bottomBackAdapter"],
     )
-    assert umiExtractorBasic.topLinkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
-    assert umiExtractorBasic.topLinkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
-    assert umiExtractorBasic.topLinkedAdapter.name == "top"
+    assert umiExtractorBasic.topAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert umiExtractorBasic.topAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
+    assert umiExtractorBasic.topAdapter.name == "top"
 
-    assert umiExtractorBasic.bottomLinkedAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
-    assert umiExtractorBasic.bottomLinkedAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
-    assert umiExtractorBasic.bottomLinkedAdapter.name == "bottom"
+    assert umiExtractorBasic.bottomAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
+    assert umiExtractorBasic.bottomAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
+    assert umiExtractorBasic.bottomAdapter.name == "bottom"
 
 def test__umi_extractor__set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(umiExtractorBasic, adapterSequences):
     errorOutput = "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
@@ -96,13 +96,13 @@ def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences)
         bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
         bottomBackAdapter=adapterSequences["bottomBackAdapter"],
     )
-    assert umiExtractor.topLinkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
-    assert umiExtractor.topLinkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
-    assert umiExtractor.topLinkedAdapter.name == "top"
+    assert umiExtractor.topAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert umiExtractor.topAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
+    assert umiExtractor.topAdapter.name == "top"
 
-    assert umiExtractor.bottomLinkedAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
-    assert umiExtractor.bottomLinkedAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
-    assert umiExtractor.bottomLinkedAdapter.name == "bottom"
+    assert umiExtractor.bottomAdapter.front_adapter.sequence == adapterSequences["bottomFrontAdapter"]
+    assert umiExtractor.bottomAdapter.back_adapter.sequence == adapterSequences["bottomBackAdapter"]
+    assert umiExtractor.bottomAdapter.name == "bottom"
 
 @pytest.fixture
 def umiExtractor(umiPattern, adapterSequences):
@@ -173,7 +173,6 @@ def test__umi_extractor__find_matches_of_adapters_in_sequence_when_no_match_foun
     topMatch, bottomMatchError = umiExtractor.find_matches_of_adapters_in_sequence(bottomErrorSequence)
     assert topMatch is not None
     assert bottomMatchError is None
-
 
 def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_forward_sequence(umiExtractor, exampleForwardRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleForwardRecord)

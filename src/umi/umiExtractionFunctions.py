@@ -1,4 +1,5 @@
 from Bio.Seq import Seq
+from cutadapt.adapters import LinkedMatch
 
 
 def convert_IUPAC_to_regular_expression(nucleotides):
@@ -43,3 +44,8 @@ def extract_top_and_bottom_of_sequence(sequence):
     topSequence = sequence[:seqExtractionLength]
     bottomSequence_reverseComplement = find_reverse_complement(sequence[-seqExtractionLength:])
     return topSequence, bottomSequence_reverseComplement
+
+def extract_previously_identified_umi_from_read(match, sequence):
+    if isinstance(match, LinkedMatch):
+        return match.trimmed(sequence)
+
