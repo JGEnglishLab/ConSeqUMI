@@ -85,5 +85,11 @@ def test__umi__starcode():
     umiToReadIndicesDictOutput = umi.starcode(umiText)
     assert umiToReadIndicesDictOutput == umiToReadIndicesDict
 
+def test__umi__starcode_does_not_fail_when_only_one_instance_of_umi_found():
+    umiText = "AAAAAAAAA"
+    umiTextOutput = umi.starcode([umiText])
+    assert len(umiTextOutput) == 1
+    assert umiTextOutput[umiText] == set([1])
+
 
 

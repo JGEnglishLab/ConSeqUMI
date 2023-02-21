@@ -12,6 +12,7 @@ import pandas as pd
 def main(args):
     printer = Printer()
     umiExtractor = UmiExtractor()
+    print("output folder: " + args["output"])
     printer("setting top and bottom linked adapters")
     umiExtractor.set_universal_top_and_bottom_linked_adapters(*args["adapters"])
     printer("extract umis and target sequences from all records")
@@ -69,7 +70,8 @@ def starcode(umis, file = None):
     child.stdin.close()
     umiToReadIndicesDict = starcodeOutput.set_index("umi").to_dict()["readIndices"]
     for umi, readIndices in umiToReadIndicesDict.items():
-        indices = readIndices.split(",")
+        if isinstance(readIndices, str): indices = readIndices.split(",")
+        else: indices = [readIndices]
         indices = {int(i) for i in indices}
         umiToReadIndicesDict[umi] = indices
     return umiToReadIndicesDict
