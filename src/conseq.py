@@ -11,8 +11,6 @@ def main():
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
     if args["command"] == "umi":
-        if len(args["adapters"]) == 2 and not args["umiLength"]:
-            raise argparse.ArgumentTypeError("The -u or --umiLength value is required if the -a or --adapters argument contains 2 adapters.")
         umi.main(args)
     if args["command"] == "cons":
         consensus.main(args)
@@ -51,7 +49,8 @@ def set_command_line_settings():
         "-u",
         "--umiLength",
         type=ConseqInt("umiLength"),
-        help="The expected length of any UMI found, minimum 10. Argument is required when only 2 adapters are provided.",
+        default=0,
+        help="The expected length of any UMI found, minimum 10. Providing this option loosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found.",
     )
     consParser = commandParser.add_parser(
         "cons",
@@ -193,8 +192,8 @@ class AdapterFile():
             raise argparse.ArgumentTypeError("The -a or --adapters argument must be a text (.txt) file.")
         with open(name, "r") as adapterFile:
             adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
-        if len(adapters) != 4 and len(adapters) != 2:
-            raise argparse.ArgumentTypeError(f"The -a or --adapters argument file must contain exactly 2 or 4 adapters. Your file contains: {len(adapters)}")
+        if len(adapters) != 4:
+            raise argparse.ArgumentTypeError(f"The -a or --adapters argument file must contain exactly 4 adapters. Your file contains: {len(adapters)}")
         allAdapterNucleotides = []
         for adapter in adapters: allAdapterNucleotides.extend([*adapter])
         if len(set(allAdapterNucleotides) - self.allowedNucleotides) > 0:
@@ -233,7 +232,7 @@ class ConseqInt():
             nameInt = int(name)
         except ValueError:
             raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be an integer. Offending value: {name}")
-        if nameInt < self.minValue:
+        if nameInt < self.minValue and not (self.type=="umiLength" and nameInt==0):
             raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be greater than or equal to {self.minValue}. Offending value: {name}")
         return nameInt
 

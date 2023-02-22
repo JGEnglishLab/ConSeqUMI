@@ -58,21 +58,41 @@ def test__umi_extraction_functions__extract_top_and_bottom_of_sequence():
     assert topSeqOutput == topSeq
     assert bottomSeqOutput == bottomSeq_reverseComplement
 
-def test__umi_extraction_functions__extract_previously_identified_umi_from_read():
+def test__umi_extraction_functions__find_index_at_end_of_back_adapter__with_front_adapter():
     frontAdapterSequence = "ATCGATCG"
-    backAdapterSequence = "AATTAATT"
+    backAdapterSequence = "AAAATTTT"
+    umi = "C"*20
+    sequenceWithFrontAdapter = "G"*10 + frontAdapterSequence + umi + backAdapterSequence + "G"*10
     frontAdapter = FrontAdapter(frontAdapterSequence, max_errors=0.2, min_overlap=11)
     backAdapter = BackAdapter(backAdapterSequence, max_errors=0.2, min_overlap=11)
     linkedAdapter = LinkedAdapter(
         frontAdapter,
         backAdapter,
-        name="test_name",
+        name="test",
         front_required=True,
         back_required=True,
     )
-    umi = "GGGGGGGGGGGGGGG"
-    sequence = "C"*10 + frontAdapterSequence + umi + backAdapterSequence + "C"*10
-    match = linkedAdapter.match_to(sequence)
-    assert match
-    umiOutput = umiExtractionFunctions.extract_previously_identified_umi_from_read(match, sequence)
-    assert umiOutput == umi
+    match = linkedAdapter.match_to(sequenceWithFrontAdapter)
+    indexAtEndOfBackAdapter = len(sequenceWithFrontAdapter) - 10
+    indexAtEndOfBackAdapterOutput = umiExtractionFunctions.find_index_at_end_of_back_adapter(match)
+    assert indexAtEndOfBackAdapter == indexAtEndOfBackAdapterOutput
+
+def test__umi_extraction_functions__find_index_at_end_of_back_adapter__with_front_adapter():
+    frontAdapterSequence = "ATCGATCG"
+    backAdapterSequence = "AAAATTTT"
+    umi = "C"*20
+    sequenceWithoutFrontAdapter = "G"*10 + umi + backAdapterSequence + "G"*10
+    frontAdapter = FrontAdapter(frontAdapterSequence, max_errors=0.2, min_overlap=11)
+    backAdapter = BackAdapter(backAdapterSequence, max_errors=0.2, min_overlap=11)
+    linkedAdapter = LinkedAdapter(
+        frontAdapter,
+        backAdapter,
+        name="test",
+        front_required=False,
+        back_required=True,
+    )
+    match = linkedAdapter.match_to(sequenceWithoutFrontAdapter)
+
+    indexAtEndOfBackAdapter = len(sequenceWithoutFrontAdapter) - 10
+    indexAtEndOfBackAdapterOutput = umiExtractionFunctions.find_index_at_end_of_back_adapter(match)
+    assert indexAtEndOfBackAdapter == indexAtEndOfBackAdapterOutput

@@ -43,6 +43,20 @@ def test__umi_extractor__create_linked_adapter(umiExtractorBasic, adapterSequenc
     assert linkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
     assert linkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
     assert linkedAdapter.name == testName
+    assert linkedAdapter.front_required
+
+def test__umi_extractor__create_linked_adapter_with_umi_length(adapterSequences):
+    umiExtractorWithUmiLength = UmiExtractor(umiLength=18)
+    testName = "adapterTest"
+    linkedAdapter = umiExtractorWithUmiLength.create_linked_adapter(
+        adapterSequences["topFrontAdapter"],
+        adapterSequences["topBackAdapter"],
+        name=testName,
+    )
+    assert linkedAdapter.front_adapter.sequence == adapterSequences["topFrontAdapter"]
+    assert linkedAdapter.back_adapter.sequence == adapterSequences["topBackAdapter"]
+    assert linkedAdapter.name == testName
+    assert not linkedAdapter.front_required
 
 def test__umi_extractor__set_universal_top_and_bottom_linked_adapters(umiExtractorBasic, adapterSequences):
     umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
@@ -71,6 +85,7 @@ def test__umi_extractor__set_universal_top_and_bottom_linked_adapters_accounts_f
 
 def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
+        umiLength=0,
         topFrontAdapter=adapterSequences["topFrontAdapter"],
         topBackAdapter=adapterSequences["topBackAdapter"],
         bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
@@ -87,6 +102,17 @@ def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences)
 @pytest.fixture
 def umiExtractor(adapterSequences):
     umiExtractor = UmiExtractor(
+        topFrontAdapter=adapterSequences["topFrontAdapter"],
+        topBackAdapter=adapterSequences["topBackAdapter"],
+        bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
+        bottomBackAdapter=adapterSequences["bottomBackAdapter"],
+    )
+    return umiExtractor
+
+@pytest.fixture
+def umiExtractorWithUmiLength(topUmi, adapterSequences):
+    umiExtractor = UmiExtractor(
+        umiLength=len(topUmi),
         topFrontAdapter=adapterSequences["topFrontAdapter"],
         topBackAdapter=adapterSequences["topBackAdapter"],
         bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
@@ -161,6 +187,24 @@ def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_f
     assert targetSequenceRecordOutput.id == exampleForwardRecord.id
     assert targetSequenceRecordOutput.letter_annotations == exampleForwardRecord[:len(targetSequence)].letter_annotations
 
+def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_forward_sequence_when_top_front_adapter_not_found(umiExtractorWithUmiLength, exampleForwardRecord, topUmi, bottomUmi, targetSequence, adapterSequences):
+    exampleForwardRecordWithNoTopFrontAdapter = exampleForwardRecord[:110] + exampleForwardRecord[110+len(adapterSequences["topFrontAdapter"]):]
+    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractorWithUmiLength.extract_umis_and_target_sequence_from_read(exampleForwardRecordWithNoTopFrontAdapter)
+    assert topUmiOutput == topUmi
+    assert bottomUmiOutput == bottomUmi
+    assert str(targetSequenceRecordOutput.seq) == targetSequence
+    assert targetSequenceRecordOutput.id == exampleForwardRecord.id
+    assert targetSequenceRecordOutput.letter_annotations == exampleForwardRecordWithNoTopFrontAdapter[:len(targetSequence)].letter_annotations
+
+def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_forward_sequence_when_bottom_front_adapter_not_found(umiExtractorWithUmiLength, exampleForwardRecord, topUmi, bottomUmi, targetSequence, adapterSequences):
+    exampleForwardRecordWithNoBottomFrontAdapter = exampleForwardRecord[:-100-len(adapterSequences["bottomFrontAdapter"])] + exampleForwardRecord[-100:]
+    topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractorWithUmiLength.extract_umis_and_target_sequence_from_read(exampleForwardRecordWithNoBottomFrontAdapter)
+    assert topUmiOutput == topUmi
+    assert bottomUmiOutput == bottomUmi
+    assert str(targetSequenceRecordOutput.seq) == targetSequence
+    assert targetSequenceRecordOutput.id == exampleForwardRecord.id
+    assert targetSequenceRecordOutput.letter_annotations == exampleForwardRecordWithNoBottomFrontAdapter[:len(targetSequence)].letter_annotations
+
 def test__umi_extractor__extract_umis_and_target_sequence_from_read__record_of_reverse_sequence(umiExtractor, exampleReverseRecord, topUmi, bottomUmi, targetSequence):
     topUmiOutput, bottomUmiOutput, targetSequenceRecordOutput = umiExtractor.extract_umis_and_target_sequence_from_read(exampleReverseRecord)
     assert topUmiOutput == topUmi
@@ -204,3 +248,38 @@ def test__umi_extractor__extract_umis_and_target_sequences_from_all_records(umiE
     assert str(targetSequenceRecordsOutput[1].seq) == targetSequence
     assert targetSequenceRecordsOutput[0].id == exampleForwardRecord.id
     assert targetSequenceRecordsOutput[1].id == exampleReverseRecord.id
+
+def test__umi_extraction_functions__extract_previously_identified_umi_from_read_with_no_umi_length(umiExtractor, adapterSequences):
+    umi = "GGGGGGGGGGGGGGG"
+    sequenceWithFrontAdapter = "C"*10 + adapterSequences["topFrontAdapter"] + umi + adapterSequences["topBackAdapter"] + "C"*10
+    sequenceWithoutFrontAdapter = "C"*10 + umi + adapterSequences["topBackAdapter"] + "C"*10
+
+    matchWithFrontAdapter = umiExtractor.topAdapter.match_to(sequenceWithFrontAdapter)
+    assert matchWithFrontAdapter
+    umiOutput = umiExtractor.extract_previously_identified_umi_from_read(matchWithFrontAdapter, sequenceWithFrontAdapter)
+    assert umiOutput == umi
+
+    matchWithoutFrontAdapter = umiExtractor.topAdapter.match_to(sequenceWithoutFrontAdapter)
+    assert not matchWithoutFrontAdapter
+
+def test__umi_extraction_functions__extract_previously_identified_umi_from_read_with_umi_length(topUmi, umiExtractorWithUmiLength, adapterSequences):
+    sequenceWithoutFrontAdapter = "C"*10 + topUmi + adapterSequences["topBackAdapter"] + "C"*10
+    matchWithoutFrontAdapter = umiExtractor.topAdapter.match_to(sequenceWithoutFrontAdapter)
+    assert matchWithoutFrontAdapter
+    umiOutput = umiExtractorWithUmiLength.extract_previously_identified_umi_from_read(matchWithoutFrontAdapter, sequenceWithoutFrontAdapter)
+    assert umiOutput == umi
+
+def test__umi_extraction_functions__extract_previously_identified_umi_from_read_with_umi_length(adapterSequences):
+    umi = "G"*5
+    umiExtractor = UmiExtractor(
+        umiLength=len(umi)*2,
+        topFrontAdapter=adapterSequences["topFrontAdapter"],
+        topBackAdapter=adapterSequences["topBackAdapter"],
+        bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
+        bottomBackAdapter=adapterSequences["bottomBackAdapter"],
+    )
+    sequenceWithoutFrontAdapter = umi + adapterSequences["topBackAdapter"] + "C"*10
+    matchWithoutFrontAdapter = umiExtractor.topAdapter.match_to(sequenceWithoutFrontAdapter)
+    assert matchWithoutFrontAdapter
+    umiOutput = umiExtractor.extract_previously_identified_umi_from_read(matchWithoutFrontAdapter, sequenceWithoutFrontAdapter)
+    assert umiOutput == umi

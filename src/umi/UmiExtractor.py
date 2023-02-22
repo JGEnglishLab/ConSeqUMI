@@ -5,6 +5,7 @@ from Bio.SeqRecord import SeqRecord
 
 class UmiExtractor:
     def __init__(self, *args, **kwargs):
+        self.umiLength = kwargs.get('umiLength',0)
         if {'topFrontAdapter','topBackAdapter','bottomFrontAdapter','bottomBackAdapter'}.issubset(set(kwargs)):
             self.set_universal_top_and_bottom_linked_adapters(
                 kwargs.get('topFrontAdapter',''),
@@ -20,7 +21,7 @@ class UmiExtractor:
             frontAdapter,
             backAdapter,
             name=name,
-            front_required=True,
+            front_required=not bool(self.umiLength),
             back_required=True,
         )
         return linkedAdapter
@@ -69,10 +70,10 @@ class UmiExtractor:
         if topMatch is None or bottomMatch is None:
             return "","",SeqRecord(Seq(""),name="adapter not found", id=record.id)
 
-        topUmi = umiExtractionFunctions.extract_previously_identified_umi_from_read(topMatch, topSequence)
-        bottomUmi = umiExtractionFunctions.extract_previously_identified_umi_from_read(bottomMatch, bottomSequence)
-        targetSeqStartIndex = topMatch.front_match.rstop + topMatch.back_match.rstop
-        targetSeqEndIndex = bottomMatch.front_match.rstop + bottomMatch.back_match.rstop
+        topUmi = self.extract_previously_identified_umi_from_read(topMatch, topSequence)
+        bottomUmi = self.extract_previously_identified_umi_from_read(bottomMatch, bottomSequence)
+        targetSeqStartIndex = umiExtractionFunctions.find_index_at_end_of_back_adapter(topMatch)
+        targetSeqEndIndex = umiExtractionFunctions.find_index_at_end_of_back_adapter(bottomMatch)
         targetSequenceRecord = tempRecord[targetSeqStartIndex:-targetSeqEndIndex]
         return topUmi, bottomUmi, targetSequenceRecord
 
@@ -84,3 +85,10 @@ class UmiExtractor:
             bottomUmis.append(bottomUmi)
             targetSequenceRecords.append(targetSequenceRecord)
         return topUmis, bottomUmis, targetSequenceRecords
+
+    def extract_previously_identified_umi_from_read(self, match, sequence):
+        umi = match.trimmed(sequence)
+        if self.umiLength:
+            umi = umi[-self.umiLength:]
+        return umi
+

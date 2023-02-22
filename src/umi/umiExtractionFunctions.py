@@ -45,7 +45,11 @@ def extract_top_and_bottom_of_sequence(sequence):
     bottomSequence_reverseComplement = find_reverse_complement(sequence[-seqExtractionLength:])
     return topSequence, bottomSequence_reverseComplement
 
-def extract_previously_identified_umi_from_read(match, sequence):
-    if isinstance(match, LinkedMatch):
-        return match.trimmed(sequence)
+def find_index_at_end_of_back_adapter(match):
+    if match.front_match:
+        return match.front_match.rstop + match.back_match.rstop
+    else:
+        return match.back_match.rstop
+
+
 
