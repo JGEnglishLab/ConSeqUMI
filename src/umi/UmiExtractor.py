@@ -5,7 +5,6 @@ from Bio.SeqRecord import SeqRecord
 
 class UmiExtractor:
     def __init__(self, *args, **kwargs):
-        self.set_umi_pattern(kwargs.get('umiPattern',''))
         if {'topFrontAdapter','topBackAdapter','bottomFrontAdapter','bottomBackAdapter'}.issubset(set(kwargs)):
             self.set_universal_top_and_bottom_linked_adapters(
                 kwargs.get('topFrontAdapter',''),
@@ -13,9 +12,6 @@ class UmiExtractor:
                 kwargs.get('bottomFrontAdapter',''),
                 kwargs.get('bottomBackAdapter',''),
             )
-
-    def set_umi_pattern(self, umiPattern):
-        self.umiPattern = f'^{umiExtractionFunctions.convert_IUPAC_to_regular_expression(umiPattern)}$'
 
     def create_linked_adapter(self, frontAdapterSequence, backAdapterSequence, name):
         frontAdapter = FrontAdapter(frontAdapterSequence, max_errors=0.2, min_overlap=11)

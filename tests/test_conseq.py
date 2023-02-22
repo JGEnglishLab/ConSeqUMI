@@ -182,6 +182,55 @@ def test__conseq__set_command_line_settings__umi_output_directory_fails_when_it_
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithOutputFile)
 
+def test__conseq__set_command_line_settings__umi_accepts_umiLength(parser, umiArgs):
+    umiArgs += ["-u", "10"]
+    args = vars(parser.parse_args(umiArgs))
+    assert args["umiLength"] == 10
+
+def test__conseq__set_command_line_settings__umi_fails_when_umiLength_is_not_an_int(parser, umiArgs):
+    errorValue = "-10.1"
+    umiArgs += ["-u", errorValue]
+    errorOutput = f"The -u or --umiLength argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgs)
+
+def test__conseq__set_command_line_settings__umi_fails_when_umiLength_is_negative(parser, umiArgs):
+    errorValue = "9"
+    umiArgs += ["-u", errorValue]
+    errorOutput = f"The -u or --umiLength argument must be greater than or equal to 10. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgs)
+
+def test__conseq__set_command_line_settings__umi_adapter_file_succeeds_when_there_are_only_2_adapters_and_umi_length_provided(parser, umiArgs, adapterSequences):
+    adapterFileWithTwoLines = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_2_line_success_", suffix=".txt")
+    adapters = [
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomBackAdapter"],
+    ]
+    with open(adapterFileWithTwoLines.name, 'w') as f:
+        f.write('\n'.join(adapters))
+    umiArgs[6] = adapterFileWithTwoLines.name
+    umiArgsWithAdapterFileWithTwoLines = umiArgs + ["-u", "10"]
+    args = vars(parser.parse_args(umiArgsWithAdapterFileWithTwoLines))
+    assert args["umiLength"] == 10
+
+'''
+# Note: I have not found a way to make this test work nicely. It is not connected to how this error is throw in the program.
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_there_are_only_2_adapters_and_umi_length_not_provided(parser, umiArgs, adapterSequences):
+    adapterFileWithTwoLines = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_2_line_success_", suffix=".txt")
+    adapters = [
+        adapterSequences["topBackAdapter"],
+        adapterSequences["bottomBackAdapter"],
+    ]
+    with open(adapterFileWithTwoLines.name, 'w') as f:
+        f.write('\n'.join(adapters))
+    umiArgs[6] = adapterFileWithTwoLines.name
+    umiArgsWithAdapterFileWithTwoLines = umiArgs
+    errorOutput = "The -u or --umiLength value is required if the -a or --adapters argument contains 2 adapters."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(umiArgsWithAdapterFileWithTwoLines)
+'''
+
 def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_is_not_an_existing_file(parser, umiArgs):
     falseAdapterFile = "/this/path/does/not/exist/adapters.txt"
     umiArgs[6] = falseAdapterFile
@@ -198,7 +247,7 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_file_is
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithNonTxtAdapterFile)
 
-def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_contains_more_than_4_lines(parser, umiArgs, adapterSequences):
+def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_does_not_have_two_or_four_lines(parser, umiArgs, adapterSequences):
     adapterFileWithFiveLines = NamedTemporaryFile(prefix="conseq_adapter_test_adapter_file_extra_line_fail_", suffix=".txt")
     adapters = [
         adapterSequences["topFrontAdapter"],
@@ -211,7 +260,7 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_cont
         f.write('\n'.join(adapters))
     umiArgs[6] = adapterFileWithFiveLines.name
     umiArgsWithAdapterFileWithFiveLines = umiArgs
-    errorOutput = f"The -a or --adapters argument file must contain exactly 4 adapters. Your file contains: {len(adapters)}"
+    errorOutput = f"The -a or --adapters argument file must contain exactly 2 or 4 adapters. Your file contains: {len(adapters)}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithAdapterFileWithFiveLines)
 
@@ -334,7 +383,6 @@ def benchmarkFiles(consensusSequence, targetSequenceRecords):
             self.inputFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fastq", delete=False)
             self.outputDir = TemporaryDirectory(prefix="conseq_output_test_directory_", dir=self.parentDir.name)
             self.referenceFile = NamedTemporaryFile(prefix="conseq_test_reference_sequence_file_", dir=self.parentDir.name, suffix=".fasta", delete=False)
-            print(self.parentDir.name)
             with open(self.inputFile.name, "w") as output_handle:
                 SeqIO.write(targetSequenceRecords, output_handle, "fastq")
 

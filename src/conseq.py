@@ -4,12 +4,15 @@ from Bio import SeqIO
 import time
 from umi import umi
 from consensus import consensus, benchmark
+from copy import deepcopy
 
 def main():
 
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
     if args["command"] == "umi":
+        if len(args["adapters"]) == 2 and not args["umiLength"]:
+            raise argparse.ArgumentTypeError("The -u or --umiLength value is required if the -a or --adapters argument contains 2 adapters.")
         umi.main(args)
     if args["command"] == "cons":
         consensus.main(args)
@@ -43,6 +46,12 @@ def set_command_line_settings():
         type=AdapterFile(),
         required=True,
         help="A text file with f, F, r, R adapters listed in order.",
+    )
+    umiParser.add_argument(
+        "-u",
+        "--umiLength",
+        type=ConseqInt("umiLength"),
+        help="The expected length of any UMI found, minimum 10. Argument is required when only 2 adapters are provided.",
     )
     consParser = commandParser.add_parser(
         "cons",
@@ -184,8 +193,8 @@ class AdapterFile():
             raise argparse.ArgumentTypeError("The -a or --adapters argument must be a text (.txt) file.")
         with open(name, "r") as adapterFile:
             adapters = [adapter.rstrip() for adapter in adapterFile.readlines()]
-        if len(adapters) != 4:
-            raise argparse.ArgumentTypeError(f"The -a or --adapters argument file must contain exactly 4 adapters. Your file contains: {len(adapters)}")
+        if len(adapters) != 4 and len(adapters) != 2:
+            raise argparse.ArgumentTypeError(f"The -a or --adapters argument file must contain exactly 2 or 4 adapters. Your file contains: {len(adapters)}")
         allAdapterNucleotides = []
         for adapter in adapters: allAdapterNucleotides.extend([*adapter])
         if len(set(allAdapterNucleotides) - self.allowedNucleotides) > 0:
@@ -204,6 +213,7 @@ class ConsensusAlgorithmText():
 
 class ConseqInt():
     def __init__(self, type):
+        self.minValue = 1
         if type=="minimumReads":
             self.type="minimumReads"
             self.conciseType="min"
@@ -213,15 +223,19 @@ class ConseqInt():
         elif type == "iterations":
             self.type = "iterations"
             self.conciseType = "iter"
+        elif type == "umiLength":
+            self.minValue = 10
+            self.type = "umiLength"
+            self.conciseType = "u"
 
     def __call__(self, name):
         try:
-            min = int(name)
+            nameInt = int(name)
         except ValueError:
             raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be an integer. Offending value: {name}")
-        if min < 1:
-            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be greater than or equal to 1. Offending value: {name}")
-        return min
+        if nameInt < self.minValue:
+            raise argparse.ArgumentTypeError(f"The -{self.conciseType} or --{self.type} argument must be greater than or equal to {self.minValue}. Offending value: {name}")
+        return nameInt
 
 class InputFile():
     def __init__(self, type):

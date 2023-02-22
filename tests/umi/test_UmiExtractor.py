@@ -16,13 +16,6 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 @pytest.fixture
-def umiPattern():
-    return "NNNYRNNNYRNNNYRNNNNNNYRNNNYRNNNYRNNN"
-@pytest.fixture
-def umiPatternRegEx():
-    return "^[ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT][CT][AG][ACGT][ACGT][ACGT]$"
-
-@pytest.fixture
 def adapterSequences():
     adapterSequences = {
         "topFrontAdapter":"GAGTGTGGCTCTTCGGAT",
@@ -39,14 +32,6 @@ def adapterSequences():
 @pytest.fixture
 def umiExtractorBasic():
     return UmiExtractor()
-
-def test__umi_extractor__set_umi_pattern_with_empty_umi(umiExtractorBasic):
-    umiExtractorBasic.set_umi_pattern("")
-    assert umiExtractorBasic.umiPattern == "^$"
-
-def test__umi_extractor__set_umi_pattern_with_nonEmpty_umi(umiExtractorBasic, umiPattern, umiPatternRegEx):
-    umiExtractorBasic.set_umi_pattern(umiPattern)
-    assert umiExtractorBasic.umiPattern == umiPatternRegEx
 
 def test__umi_extractor__create_linked_adapter(umiExtractorBasic, adapterSequences):
     testName = "adapterTest"
@@ -84,11 +69,6 @@ def test__umi_extractor__set_universal_top_and_bottom_linked_adapters_accounts_f
             adapterSequences["bottomBackAdapter"],
         )
 
-
-def test__umi_extractor__initialization_with_umi_pattern(umiPattern, umiPatternRegEx):
-    umiExtractor = UmiExtractor(umiPattern=umiPattern)
-    assert umiExtractor.umiPattern == umiPatternRegEx
-
 def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
         topFrontAdapter=adapterSequences["topFrontAdapter"],
@@ -105,9 +85,8 @@ def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences)
     assert umiExtractor.bottomAdapter.name == "bottom"
 
 @pytest.fixture
-def umiExtractor(umiPattern, adapterSequences):
+def umiExtractor(adapterSequences):
     umiExtractor = UmiExtractor(
-        umiPattern=umiPattern,
         topFrontAdapter=adapterSequences["topFrontAdapter"],
         topBackAdapter=adapterSequences["topBackAdapter"],
         bottomFrontAdapter=adapterSequences["bottomFrontAdapter"],
