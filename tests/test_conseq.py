@@ -33,6 +33,19 @@ def parser():
     return parser
 
 @pytest.fixture
+def guiArgs():
+    return ["gui"]
+
+def test__conseq__set_command_line_settings__succeeds_with_gui(parser):
+    args = vars(parser.parse_args(["gui"]))
+    assert args["command"] == "gui"
+
+def test__conseq__set_command_line_settings__succeeds_with_nothing(parser):
+    args = vars(parser.parse_args([]))
+    assert not args["command"]
+
+
+@pytest.fixture
 def umiFiles(exampleForwardRecord, exampleReverseRecord, adapterSequences):
     class fileObj:
         def __init__(self):
@@ -112,7 +125,7 @@ def test__conseq__set_command_line_settings__umi_command_succeeds(parsedUmiArgs,
 
 def test__conseq__set_command_line_settings__unrecognized_command_fails(parser):
     nonExistentCommand = "nonExistentCommand"
-    errorOutput = f"argument command: invalid choice: '{nonExistentCommand}' (choose from 'umi', 'cons', 'benchmark')"
+    errorOutput = f"argument command: invalid choice: '{nonExistentCommand}' (choose from 'gui', 'umi', 'cons', 'benchmark')"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args([nonExistentCommand])
 

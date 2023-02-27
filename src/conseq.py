@@ -3,6 +3,7 @@ import os
 from Bio import SeqIO
 import time
 from umi import umi
+from gui import gui
 from consensus import consensus, benchmark
 from copy import deepcopy
 
@@ -10,6 +11,8 @@ def main():
 
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
+    if args["command"] == "gui" or not args["command"]:
+        gui.main()
     if args["command"] == "umi":
         umi.main(args)
     if args["command"] == "cons":
@@ -20,6 +23,10 @@ def main():
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
     commandParser = parser.add_subparsers(dest="command", help="ConSeq Functions")
+    guiParser = commandParser.add_parser(
+        "gui",
+        help="Starts the program GUI.",
+    )
     umiParser = commandParser.add_parser(
         "umi",
         help="Extracts UMIs and target sequences from .fastq files",
