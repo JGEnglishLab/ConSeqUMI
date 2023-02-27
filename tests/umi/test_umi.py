@@ -6,6 +6,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 import re
+from shutil import which
 
 import sys
 import os
@@ -61,6 +62,8 @@ def test__umi__main_fails_when_no_umis_found(args):
     with pytest.raises(RuntimeError, match=re.escape(errorOutput)):
         umi.main(args)
 
+def test__umi__starcode_is_executable():
+    assert which("starcode")
 
 def test__umi__starcode():
     originalUmis = [
