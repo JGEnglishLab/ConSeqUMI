@@ -26,4 +26,8 @@ class TableWindow(QWidget):
         self.tab2 = TabWindow()
         self.tab3 = TabWindow()
         self.tabs.addTab(self.tab1,'Dummy Tab 1')
+        self.tabs.addTab(self.tab2,'Dummy Tab 2')
+        self.tabs.addTab(self.tab3,'Dummy Tab 3')
+        self.layout.addWidget(self.tabs)
+        self.setLayout(self.layout)
 

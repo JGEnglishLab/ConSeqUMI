@@ -11,7 +11,7 @@ def main(args):
     pathsSortedByLength = sorted(args["input"])
     pathsSortedByLength = sorted(pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True)
     consensusFilePath = args["output"] + generate_file_name(args["consensusAlgorithm"])
-    print(consensusFilePath)
+    print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
     with open(consensusFilePath, "w") as output_handle:
         for path in pathsSortedByLength:

@@ -2,8 +2,13 @@ from timeit import default_timer as timer
 import time
 
 class Printer():
-    def __init__(self):
-        self.startTime = timer()
+    _singletonInstance = None
+
+    def __new__(self):
+        if not self._singletonInstance:
+            self._singletonInstance = super(Printer, self).__new__(self)
+            self.startTime = timer()
+        return self._singletonInstance
 
     def __call__(self, printText):
         readableCurrentTime = self.determine_time_since_start_in_human_readable_format(timer())

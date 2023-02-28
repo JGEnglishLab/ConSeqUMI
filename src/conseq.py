@@ -6,13 +6,16 @@ from umi import umi
 from gui import gui
 from consensus import consensus, benchmark
 from copy import deepcopy
+from Printer import Printer
 
 def main():
-
+    printer = Printer()
+    printer("parsing and loading arguments")
     parser = set_command_line_settings()
     args = vars(parser.parse_args())
     if args["command"] == "gui" or not args["command"]:
         gui.main()
+    printer(f"output directory: {args['output']}")
     if args["command"] == "umi":
         umi.main(args)
     if args["command"] == "cons":

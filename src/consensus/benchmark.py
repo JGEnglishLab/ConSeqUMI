@@ -9,6 +9,7 @@ from Bio import SeqIO
 def main(args):
     inputFile = args["output"] + "input.fastq"
     benchmarkOutputFile = args["output"] + generate_file_name(args["consensusAlgorithm"])
+    print("output folder: " + benchmarkOutputFile)
     referenceFile = args["output"] + "reference.fasta"
     printer = Printer()
     context = ConsensusContext(args["consensusAlgorithm"])
