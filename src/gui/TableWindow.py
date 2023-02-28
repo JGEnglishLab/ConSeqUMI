@@ -14,7 +14,9 @@ from PyQt5.QtWidgets import (
     #QMainWindow,
     QTabWidget,
 )
-from gui.TabWindow import TabWindow
+from gui.UmiTabWindow import UmiTabWindow
+from gui.ConsensusTabWindow import ConsensusTabWindow
+from gui.BenchmarkTabWindow import BenchmarkTabWindow
 
 class TableWindow(QWidget):
     def __init__(self, parent=None):
@@ -22,12 +24,12 @@ class TableWindow(QWidget):
         self.layout = QVBoxLayout(self)
 
         self.tabs = QTabWidget()
-        self.tab1 = TabWindow()
-        self.tab2 = TabWindow()
-        self.tab3 = TabWindow()
-        self.tabs.addTab(self.tab1,'Dummy Tab 1')
-        self.tabs.addTab(self.tab2,'Dummy Tab 2')
-        self.tabs.addTab(self.tab3,'Dummy Tab 3')
+        self.umiTab = UmiTabWindow()
+        self.consTab = ConsensusTabWindow()
+        self.benchmarkTab = BenchmarkTabWindow()
+        self.tabs.addTab(self.umiTab,'UMI Processing')
+        self.tabs.addTab(self.consTab,'Consensus Generation')
+        self.tabs.addTab(self.benchmarkTab,'Benchmarking Consensus')
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
 

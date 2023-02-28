@@ -23,11 +23,3 @@ testsPath = os.getcwd().split("/")[:-1]
 testsPath = "/".join(testsPath) + "/tests"
 sys.path.insert(1, testsPath)
 
-from gui.TabWindow import TabWindow
-
-@pytest.fixture
-def tabWindow():
-    app = QApplication(sys.argv)
-    return TabWindow()
-
-def test__gui_tab_window__initialization(tabWindow): pass

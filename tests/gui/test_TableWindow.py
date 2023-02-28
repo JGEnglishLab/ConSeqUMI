@@ -32,7 +32,7 @@ def tableWindow():
 
 def test__gui_tab_window__initialization(tableWindow):
     assert "tabs" in tableWindow.__dict__
-    assert "tab1" in tableWindow.__dict__
-    assert "tab2" in tableWindow.__dict__
-    assert "tab3" in tableWindow.__dict__
+    assert "umiTab" in tableWindow.__dict__
+    assert "consTab" in tableWindow.__dict__
+    assert "benchmarkTab" in tableWindow.__dict__
 
