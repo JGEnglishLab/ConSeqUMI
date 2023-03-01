@@ -112,4 +112,4 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
             self.p.readyReadStandardOutput.connect(self.handle_stdout)
             self.p.readyReadStandardError.connect(self.handle_stderr)
             self.p.finished.connect(self.process_finished)  # Clean up once complete.
-            self.p.start("python", args)
+            self.p.start("conseq", args)

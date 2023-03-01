@@ -2,11 +2,11 @@ import os
 import subprocess
 from io import StringIO
 import pandas as pd
-from config import SCOMMAND
-from umi.UmiExtractor import UmiExtractor
-from umi import umiBinningFunctions
+from ConSeqUMI.config import SCOMMAND
+from ConSeqUMI.umi.UmiExtractor import UmiExtractor
+from ConSeqUMI.umi import umiBinningFunctions
 from Bio import SeqIO
-from Printer import Printer
+from ConSeqUMI.Printer import Printer
 import pandas as pd
 
 def main(args):

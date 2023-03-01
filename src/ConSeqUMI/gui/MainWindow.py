@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QMainWindow,
 )
 from PyQt5.QtCore import Qt
-from gui.TableWindow import TableWindow
+from ConSeqUMI.gui.TableWindow import TableWindow
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):

@@ -14,9 +14,9 @@ from PyQt5.QtWidgets import (
     #QMainWindow,
     QTabWidget,
 )
-from gui.UmiTabWindow import UmiTabWindow
-from gui.ConsensusTabWindow import ConsensusTabWindow
-from gui.BenchmarkTabWindow import BenchmarkTabWindow
+from ConSeqUMI.gui.UmiTabWindow import UmiTabWindow
+from ConSeqUMI.gui.ConsensusTabWindow import ConsensusTabWindow
+from ConSeqUMI.gui.BenchmarkTabWindow import BenchmarkTabWindow
 
 class TableWindow(QWidget):
     def __init__(self, parent=None):

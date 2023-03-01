@@ -1,9 +1,9 @@
-from consensus.ConsensusStrategy import ConsensusStrategy
+from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy
 import subprocess
 from Bio import SeqIO
 from io import StringIO
 import tempfile
-from consensus.config import LCOMMAND
+from ConSeqUMI.consensus.config import LCOMMAND
 
 class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:

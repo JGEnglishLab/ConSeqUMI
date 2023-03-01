@@ -1,5 +1,5 @@
-from Printer import Printer
-from consensus.ConsensusContext import ConsensusContext
+from ConSeqUMI.Printer import Printer
+from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
 import time
 import os
 from Bio.Seq import Seq

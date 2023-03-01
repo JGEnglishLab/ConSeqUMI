@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     #QWidget,
     #QApplication,
     QFormLayout,
-    #QComboBox,
+    QComboBox,
     #QCheckBox,
     QPushButton,
     #QFileDialog,
@@ -13,14 +13,14 @@ from PyQt5.QtWidgets import (
     #QStyle,
     #QMainWindow,
 )
-from gui.TabWindow import TabWindow
+from ConSeqUMI.gui.TabWindow import TabWindow
 
-class UmiTabWindow(TabWindow):
+class ConsensusTabWindow(TabWindow):
 
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input Directory Path")
         self.inputLabel.setToolTip(
-            "Required. \nPath to folder that only contains input Nanopore read fastq files."
+            "Required. \nPath to directory that only contains fastq files. Note that each individual fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
         )
         self.inputField = QLineEdit()
         self.inputField.setEnabled(False)
@@ -50,34 +50,24 @@ class UmiTabWindow(TabWindow):
         self.outputNameField = QLineEdit()
         fileLayout.addRow(self.outputNameLabel, self.outputNameField)
 
-        self.adapterLabel = QLabel("Adapter File Path")
-        self.adapterLabel.setToolTip(
-            "Required. \nA text file with f, F, r, R adapters listed. \nDefaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively."
-        )
-        self.adapterField = QLineEdit()
-        self.adapterField.setEnabled(False)
-        self.adapterBrowseButton = QPushButton("Browse")
-        self.adapterBrowseButton.clicked.connect(
-            lambda: self.get_file(self.adapterField, isFile=True)
-        )
-
-        fileLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
-        fileLayout.addRow(self.adapterField)
-
     def set_setting_layout(self, settingLayout: QFormLayout) -> None:
-        self.umiLengthTitle = QLabel("UMI Length (optional)")
-        self.umiLengthTitle.setToolTip("The expected length of any UMI found, minimum 10. Providing this option loosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found.")
-        self.umiLengthField = QLineEdit()
-        settingLayout.addRow(self.umiLengthTitle, self.umiLengthField)
+        self.consensusAlgorithmLabel = QLabel("Consensus Algorithm")
+        self.consensusAlgorithmComboBox = QComboBox()
+        self.consensusAlgorithmComboBox.addItems(["pairwise", "lamassemble", "medaka"])
+        settingLayout.addRow(self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox)
+
+        self.minReadsTitle = QLabel("Minimum Reads (optional)")
+        self.minReadsTitle.setToolTip("Minimum number of cluster reads required to generate a consensus sequence. Default is 50.")
+        self.minReadsField = QLineEdit()
+        settingLayout.addRow(self.minReadsTitle, self.minReadsField)
 
     def set_args(self) -> list:
-        args = ["conseq.py", "umi"]
+        args = ["cons"]
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
             args.extend(["-o", self.outputField.text()])
-        if self.adapterField.text():
-            args.extend(["-a", self.adapterField.text()])
-        if self.umiLengthField.text():
-            args.extend(["-u", self.umiLengthField.text()])
+        if self.minReadsField.text():
+            args.extend(["-m", self.minReadsField.text()])
+        args.extend(["-c", self.consensusAlgorithmComboBox.currentText()])
         return args

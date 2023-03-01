@@ -5,7 +5,7 @@ from Bio.SeqRecord import SeqRecord
 import sys
 import os
 srcPath = os.getcwd().split("/")[:-1]
-srcPath = "/".join(srcPath) + "/src"
+srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
 sys.path.insert(1, srcPath)
 testsPath = os.getcwd().split("/")[:-1]
 testsPath = "/".join(testsPath) + "/tests"

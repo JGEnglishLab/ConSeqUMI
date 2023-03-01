@@ -1,4 +1,4 @@
-from consensus.ConsensusStrategy import ConsensusStrategy
+from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy
 import subprocess
 from Bio import SeqIO
 from io import StringIO

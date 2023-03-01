@@ -2,11 +2,10 @@ import argparse
 import os
 from Bio import SeqIO
 import time
-from umi import umi
-from gui import gui
-from consensus import consensus, benchmark
-from copy import deepcopy
-from Printer import Printer
+from ConSeqUMI.umi import umi
+from ConSeqUMI.gui import gui
+from ConSeqUMI.consensus import benchmark, consensus
+from ConSeqUMI.Printer import Printer
 
 def main():
     printer = Printer()

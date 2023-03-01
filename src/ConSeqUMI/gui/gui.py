@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 import sys
 import os
 
-from gui.MainWindow import MainWindow
+from ConSeqUMI.gui.MainWindow import MainWindow
 
 def main():
     app = QApplication(sys.argv)

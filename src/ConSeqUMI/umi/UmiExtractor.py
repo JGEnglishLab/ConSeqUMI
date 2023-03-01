@@ -1,4 +1,4 @@
-from umi import umiExtractionFunctions
+from ConSeqUMI.umi import umiExtractionFunctions
 from cutadapt.parser import FrontAdapter, BackAdapter, LinkedAdapter
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord

@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
     #QStyle,
     #QMainWindow,
 )
-from gui.TabWindow import TabWindow
+from ConSeqUMI.gui.TabWindow import TabWindow
 
 class BenchmarkTabWindow(TabWindow):
 
@@ -81,7 +81,7 @@ class BenchmarkTabWindow(TabWindow):
         settingLayout.addRow(self.iterationsTitle, self.iterationsField)
 
     def set_args(self) -> list:
-        args = ["conseq.py", "benchmark"]
+        args = ["benchmark"]
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():

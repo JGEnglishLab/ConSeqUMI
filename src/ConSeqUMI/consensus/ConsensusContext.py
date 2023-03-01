@@ -1,6 +1,6 @@
-from consensus.ConsensusStrategyPairwise import ConsensusStrategyPairwise as PairwiseStrategy
-from consensus.ConsensusStrategyLamassemble import ConsensusStrategyLamassemble as LamassembleStrategy
-from consensus.ConsensusStrategy import ConsensusStrategy as ConsensusStrategy
+from ConSeqUMI.consensus.ConsensusStrategyPairwise import ConsensusStrategyPairwise as PairwiseStrategy
+from ConSeqUMI.consensus.ConsensusStrategyLamassemble import ConsensusStrategyLamassemble as LamassembleStrategy
+from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy as ConsensusStrategy
 
 class ConsensusContext:
     def __init__(self, strategy: str):
