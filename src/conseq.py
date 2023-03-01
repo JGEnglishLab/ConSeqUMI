@@ -225,7 +225,7 @@ class ConseqInt():
         self.minValue = 1
         if type=="minimumReads":
             self.type="minimumReads"
-            self.conciseType="min"
+            self.conciseType="m"
         elif type == "intervals":
             self.type = "intervals"
             self.conciseType = "int"

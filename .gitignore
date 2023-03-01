@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
-test/data/
+data/
 .DS_Store
 test/.DS_Store
 scratchpaper_code/

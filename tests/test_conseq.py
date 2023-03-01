@@ -298,7 +298,7 @@ def consArgs(consFiles):
 
 @pytest.fixture
 def parsedConsArgs(parser, consArgs):
-    consArgs += ["-min", "10"]
+    consArgs += ["-m", "10"]
     return vars(parser.parse_args(consArgs))
 
 def test__conseq__set_command_line_settings__cons_succeeds_with_cons_args(parsedConsArgs): pass
@@ -343,22 +343,22 @@ def test__conseq__set_command_line_settings__cons_fails_when_consensusAlgorithm_
         args = parser.parse_args(consArgs)
 
 def test__conseq__set_command_line_settings__cons_accepts_minimumReads(parser, consArgs):
-    consArgs += ["-min", "12"]
+    consArgs += ["-m", "12"]
     args = vars(parser.parse_args(consArgs))
     assert args["minimumReads"] == 12
 
 
 def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_not_an_int(parser, consArgs):
     errorValue = "-10.1"
-    consArgs += ["-min", errorValue]
-    errorOutput = f"The -min or --minimumReads argument must be an integer. Offending value: {errorValue}"
+    consArgs += ["-m", errorValue]
+    errorOutput = f"The -m or --minimumReads argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
 def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_negative(parser, consArgs):
     errorValue = "-10"
-    consArgs += ["-min", errorValue]
-    errorOutput = f"The -min or --minimumReads argument must be greater than or equal to 1. Offending value: {errorValue}"
+    consArgs += ["-m", errorValue]
+    errorOutput = f"The -m or --minimumReads argument must be greater than or equal to 1. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
