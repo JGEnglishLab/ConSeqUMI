@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
     QStyle,
 )
 
-from PyQt5.QtCore import QProcess, Qt
+from PyQt5.QtCore import QProcess
 import time
 
 

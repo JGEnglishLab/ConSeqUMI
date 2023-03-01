@@ -88,7 +88,7 @@ def set_command_line_settings():
         help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
     )
     consParser.add_argument(
-        "-min",
+        "-m",
         "--minimumReads",
         type=ConseqInt("minimumReads"),
         default=50,
@@ -103,7 +103,7 @@ def set_command_line_settings():
         "--input",
         type=InputFile("input"),
         required=True,
-        help="Path to a fastq file. Note that the fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be the 'bins' directory in the 'umi' command output."
+        help="Path to a fastq file. Note that the fastq file should contain sequences that contribute to a single consensus. If directing at the 'umi' command output, this will be in the 'bins' directory in the 'umi' command output."
     )
     benchmarkParser.add_argument(
         "-o",
@@ -113,18 +113,18 @@ def set_command_line_settings():
         help="Path for folder output. Folder should not currently exist.",
     )
     benchmarkParser.add_argument(
-        "-c",
-        "--consensusAlgorithm",
-        type=ConsensusAlgorithmText(),
-        default="pairwise",
-        help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
-    )
-    benchmarkParser.add_argument(
         "-r",
         "--reference",
         type=InputFile("reference"),
         default="",
         help="Path to a reference fasta file. The reads in the input file should create a consensus that matches the reference. If no file is provided, the reference consensus sequence will be generated using all of the input reads before benchmarking."
+    )
+    benchmarkParser.add_argument(
+        "-c",
+        "--consensusAlgorithm",
+        type=ConsensusAlgorithmText(),
+        default="pairwise",
+        help="An option between two consensus sequence algorithms. Default is a customized algorithm that relies on pairwise alignment, which can be slow for larger sequences. Options: pairwise (default), lamassemble"
     )
     benchmarkParser.add_argument(
         "-int",
