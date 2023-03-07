@@ -1,22 +1,22 @@
 from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
-    #QWidget,
-    #QApplication,
+    # QWidget,
+    # QApplication,
     QFormLayout,
-    #QComboBox,
-    #QCheckBox,
+    # QComboBox,
+    # QCheckBox,
     QPushButton,
-    #QFileDialog,
-    #QPlainTextEdit,
-    #QVBoxLayout,
-    #QStyle,
-    #QMainWindow,
+    # QFileDialog,
+    # QPlainTextEdit,
+    # QVBoxLayout,
+    # QStyle,
+    # QMainWindow,
 )
 from ConSeqUMI.gui.TabWindow import TabWindow
 
-class UmiTabWindow(TabWindow):
 
+class UmiTabWindow(TabWindow):
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input Directory Path")
         self.inputLabel.setToolTip(
@@ -66,7 +66,9 @@ class UmiTabWindow(TabWindow):
 
     def set_setting_layout(self, settingLayout: QFormLayout) -> None:
         self.umiLengthTitle = QLabel("UMI Length (optional)")
-        self.umiLengthTitle.setToolTip("The expected length of any UMI found, minimum 10. Providing this option loosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found.")
+        self.umiLengthTitle.setToolTip(
+            "The expected length of any UMI found, minimum 10. Providing this option loosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found."
+        )
         self.umiLengthField = QLineEdit()
         settingLayout.addRow(self.umiLengthTitle, self.umiLengthField)
 
@@ -75,7 +77,11 @@ class UmiTabWindow(TabWindow):
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
-            args.extend(["-o", self.outputField.text()])
+            output = self.outputField.text()
+            if output[-1] != "/": output += "/"
+            outputName = self.outputNameField.text()
+            output += outputName
+            args.extend(["-o", output])
         if self.adapterField.text():
             args.extend(["-a", self.adapterField.text()])
         if self.umiLengthField.text():

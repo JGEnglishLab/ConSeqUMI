@@ -1,22 +1,22 @@
 from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
-    #QWidget,
-    #QApplication,
+    # QWidget,
+    # QApplication,
     QFormLayout,
     QComboBox,
-    #QCheckBox,
+    # QCheckBox,
     QPushButton,
-    #QFileDialog,
-    #QPlainTextEdit,
-    #QVBoxLayout,
-    #QStyle,
-    #QMainWindow,
+    # QFileDialog,
+    # QPlainTextEdit,
+    # QVBoxLayout,
+    # QStyle,
+    # QMainWindow,
 )
 from ConSeqUMI.gui.TabWindow import TabWindow
 
-class BenchmarkTabWindow(TabWindow):
 
+class BenchmarkTabWindow(TabWindow):
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input File Path")
         self.inputLabel.setToolTip(
@@ -26,7 +26,9 @@ class BenchmarkTabWindow(TabWindow):
         self.inputField.setEnabled(False)
 
         self.inputBrowseButton = QPushButton("Browse")
-        self.inputBrowseButton.clicked.connect(lambda: self.get_file(self.inputField, isFile=True))
+        self.inputBrowseButton.clicked.connect(
+            lambda: self.get_file(self.inputField, isFile=True)
+        )
 
         fileLayout.addRow(self.inputLabel, self.inputBrowseButton)
         fileLayout.addRow(self.inputField)
@@ -51,9 +53,9 @@ class BenchmarkTabWindow(TabWindow):
         fileLayout.addRow(self.outputNameLabel, self.outputNameField)
 
         self.referenceLabel = QLabel("Reference File Path (optional)")
-        #self.referenceLabel.setToolTip(
+        # self.referenceLabel.setToolTip(
         #    "Required. \nA text file with f, F, r, R references listed. \nDefaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively."
-        #)
+        # )
         self.referenceField = QLineEdit()
         self.referenceField.setEnabled(False)
         self.referenceBrowseButton = QPushButton("Browse")
@@ -68,15 +70,21 @@ class BenchmarkTabWindow(TabWindow):
         self.consensusAlgorithmLabel = QLabel("Consensus Algorithm")
         self.consensusAlgorithmComboBox = QComboBox()
         self.consensusAlgorithmComboBox.addItems(["pairwise", "lamassemble", "medaka"])
-        settingLayout.addRow(self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox)
+        settingLayout.addRow(
+            self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox
+        )
 
         self.intervalsTitle = QLabel("Benchmark Intervals (optional)")
-        self.intervalsTitle.setToolTip("Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc.")
+        self.intervalsTitle.setToolTip(
+            "Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc."
+        )
         self.intervalsField = QLineEdit()
         settingLayout.addRow(self.intervalsTitle, self.intervalsField)
 
         self.iterationsTitle = QLabel("Iteration Number (optional)")
-        self.iterationsTitle.setToolTip("Number of iterations that occur at each interval. Default is 100. For example, at default, the program will generate a consensus sequence 100 times from randomly selecting 10 sequences, then 100 times for 20 sequences etc.")
+        self.iterationsTitle.setToolTip(
+            "Number of iterations that occur at each interval. Default is 100. For example, at default, the program will generate a consensus sequence 100 times from randomly selecting 10 sequences, then 100 times for 20 sequences etc."
+        )
         self.iterationsField = QLineEdit()
         settingLayout.addRow(self.iterationsTitle, self.iterationsField)
 
@@ -85,7 +93,11 @@ class BenchmarkTabWindow(TabWindow):
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
-            args.extend(["-o", self.outputField.text()])
+            output = self.outputField.text()
+            if output[-1] != "/": output += "/"
+            outputName = self.outputNameField.text()
+            output += outputName
+            args.extend(["-o", output])
         if self.referenceField.text():
             args.extend(["-r", self.referenceField.text()])
         if self.intervalsField.text():

@@ -1,22 +1,22 @@
 from PyQt5.QtWidgets import (
     QLabel,
     QLineEdit,
-    #QWidget,
-    #QApplication,
+    # QWidget,
+    # QApplication,
     QFormLayout,
     QComboBox,
-    #QCheckBox,
+    # QCheckBox,
     QPushButton,
-    #QFileDialog,
-    #QPlainTextEdit,
-    #QVBoxLayout,
-    #QStyle,
-    #QMainWindow,
+    # QFileDialog,
+    # QPlainTextEdit,
+    # QVBoxLayout,
+    # QStyle,
+    # QMainWindow,
 )
 from ConSeqUMI.gui.TabWindow import TabWindow
 
-class ConsensusTabWindow(TabWindow):
 
+class ConsensusTabWindow(TabWindow):
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input Directory Path")
         self.inputLabel.setToolTip(
@@ -54,10 +54,14 @@ class ConsensusTabWindow(TabWindow):
         self.consensusAlgorithmLabel = QLabel("Consensus Algorithm")
         self.consensusAlgorithmComboBox = QComboBox()
         self.consensusAlgorithmComboBox.addItems(["pairwise", "lamassemble", "medaka"])
-        settingLayout.addRow(self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox)
+        settingLayout.addRow(
+            self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox
+        )
 
         self.minReadsTitle = QLabel("Minimum Reads (optional)")
-        self.minReadsTitle.setToolTip("Minimum number of cluster reads required to generate a consensus sequence. Default is 50.")
+        self.minReadsTitle.setToolTip(
+            "Minimum number of cluster reads required to generate a consensus sequence. Default is 50."
+        )
         self.minReadsField = QLineEdit()
         settingLayout.addRow(self.minReadsTitle, self.minReadsField)
 
@@ -66,7 +70,11 @@ class ConsensusTabWindow(TabWindow):
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
-            args.extend(["-o", self.outputField.text()])
+            output = self.outputField.text()
+            if output[-1] != "/": output += "/"
+            outputName = self.outputNameField.text()
+            output += outputName
+            args.extend(["-o", output])
         if self.minReadsField.text():
             args.extend(["-m", self.minReadsField.text()])
         args.extend(["-c", self.consensusAlgorithmComboBox.currentText()])

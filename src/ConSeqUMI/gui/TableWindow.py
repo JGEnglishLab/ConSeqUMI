@@ -1,22 +1,23 @@
 from PyQt5.QtWidgets import (
-    #QLabel,
-    #QLineEdit,
+    # QLabel,
+    # QLineEdit,
     QWidget,
-    #QApplication,
-    #QFormLayout,
-    #QComboBox,
-    #QCheckBox,
-    #QPushButton,
-    #QFileDialog,
-    #QPlainTextEdit,
+    # QApplication,
+    # QFormLayout,
+    # QComboBox,
+    # QCheckBox,
+    # QPushButton,
+    # QFileDialog,
+    # QPlainTextEdit,
     QVBoxLayout,
-    #QStyle,
-    #QMainWindow,
+    # QStyle,
+    # QMainWindow,
     QTabWidget,
 )
 from ConSeqUMI.gui.UmiTabWindow import UmiTabWindow
 from ConSeqUMI.gui.ConsensusTabWindow import ConsensusTabWindow
 from ConSeqUMI.gui.BenchmarkTabWindow import BenchmarkTabWindow
+
 
 class TableWindow(QWidget):
     def __init__(self, parent=None):
@@ -27,9 +28,8 @@ class TableWindow(QWidget):
         self.umiTab = UmiTabWindow()
         self.consTab = ConsensusTabWindow()
         self.benchmarkTab = BenchmarkTabWindow()
-        self.tabs.addTab(self.umiTab,'UMI Processing')
-        self.tabs.addTab(self.consTab,'Consensus Generation')
-        self.tabs.addTab(self.benchmarkTab,'Benchmarking Consensus')
+        self.tabs.addTab(self.umiTab, "UMI Processing")
+        self.tabs.addTab(self.consTab, "Consensus Generation")
+        self.tabs.addTab(self.benchmarkTab, "Benchmarking Consensus")
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)
-

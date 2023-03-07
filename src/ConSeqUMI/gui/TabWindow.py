@@ -1,24 +1,26 @@
 from PyQt5.QtWidgets import (
     QLabel,
-    #QLineEdit,
+    # QLineEdit,
     QWidget,
-    #QApplication,
+    # QApplication,
     QFormLayout,
-    #QComboBox,
-    #QCheckBox,
+    # QComboBox,
+    # QCheckBox,
     QPushButton,
     QFileDialog,
     QPlainTextEdit,
     QVBoxLayout,
-    #QStyle,
-    #QMainWindow,
+    # QStyle,
+    # QMainWindow,
 )
 from PyQt5.QtCore import QProcess
 from PyQt5.QtGui import QFont
 from abc import ABC, ABCMeta, abstractmethod
 
+
 class AbstractTabWindow(ABCMeta, type(QWidget)):
     pass
+
 
 class TabWindow(QWidget, metaclass=AbstractTabWindow):
     def __init__(self):
@@ -31,19 +33,19 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
         settingLayout = QFormLayout()
 
         self.set_file_layout(fileLayout)
-        fileInputLabel = QLabel('File Input:')
+        fileInputLabel = QLabel("File Input:")
         fileInputLabel.setFont(QFont("Times", 17, QFont.Bold))
         dlgLayout.addWidget(fileInputLabel)
         dlgLayout.addLayout(fileLayout)
 
         self.set_setting_layout(settingLayout)
-        settingsInputLabel = QLabel('Settings:')
+        settingsInputLabel = QLabel("Settings:")
         settingsInputLabel.setFont(QFont("Times", 17, QFont.Bold))
         dlgLayout.addWidget(settingsInputLabel)
         dlgLayout.addLayout(settingLayout)
 
-        self.runBtn = QPushButton('Execute')
-        self.killBtn = QPushButton('Kill Process')
+        self.runBtn = QPushButton("Execute")
+        self.killBtn = QPushButton("Kill Process")
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
         dlgLayout.addWidget(self.runBtn)

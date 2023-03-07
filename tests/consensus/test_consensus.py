@@ -3,6 +3,7 @@ import re
 from Bio import SeqIO
 import sys
 import os
+
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
 sys.path.insert(1, srcPath)
@@ -13,16 +14,24 @@ sys.path.insert(1, testsPath)
 from consensus import consensus
 from test_conseq import parser, consArgs, consFiles
 from test_conseq import parsedConsArgs as args
-from pytestConsensusFixtures import consensusSequence, targetSequences, targetSequenceRecords, simpleInsert
+from pytestConsensusFixtures import (
+    consensusSequence,
+    targetSequences,
+    targetSequenceRecords,
+    simpleInsert,
+)
+
 
 @pytest.fixture
 def consensusAlgorithm():
     return "pairwise"
 
+
 @pytest.fixture
 def fileNamePattern(consensusAlgorithm):
     pattern = r"-\d{8}-\d{6}\.fasta"
     return "consensus-" + consensusAlgorithm + pattern
+
 
 def test__cons__main(args, consFiles):
     consensus.main(args)
@@ -35,8 +44,14 @@ def test__cons__main(args, consFiles):
     ]
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     for record in consensusRecords:
-        descriptionStart = len(record.id)+1
-        assert record.description[descriptionStart:descriptionStart + len(expectedDescriptionStarts[0])] in expectedDescriptionStarts
+        descriptionStart = len(record.id) + 1
+        assert (
+            record.description[
+                descriptionStart : descriptionStart + len(expectedDescriptionStarts[0])
+            ]
+            in expectedDescriptionStarts
+        )
+
 
 def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     args["minimumReads"] = 20
@@ -46,9 +61,7 @@ def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     assert len(consensusRecords) == 1
 
+
 def test__cons__generate_file_name(consensusAlgorithm, fileNamePattern):
     fileNameOutput = consensus.generate_file_name(consensusAlgorithm)
     assert re.match(fileNamePattern, fileNameOutput)
-
-
-

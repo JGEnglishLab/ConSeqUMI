@@ -3,6 +3,7 @@ import re
 import pandas as pd
 import os
 import sys
+
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
 sys.path.insert(1, srcPath)
@@ -12,18 +13,28 @@ sys.path.insert(1, testsPath)
 
 from consensus import benchmark
 from test_conseq import parser, benchmarkArgs, benchmarkFiles
-from pytestConsensusFixtures import consensusSequence, targetSequences, targetSequenceRecords, simpleInsert
+from pytestConsensusFixtures import (
+    consensusSequence,
+    targetSequences,
+    targetSequenceRecords,
+    simpleInsert,
+)
+
 
 @pytest.fixture
 def consensusAlgorithm():
     return "pairwise"
+
 
 @pytest.fixture
 def fileNamePattern(consensusAlgorithm):
     pattern = r"-\d{8}-\d{6}\.csv"
     return "benchmark-" + consensusAlgorithm + pattern
 
-def test__benchmark__main__defaults(parser, benchmarkArgs, benchmarkFiles, fileNamePattern):
+
+def test__benchmark__main__defaults(
+    parser, benchmarkArgs, benchmarkFiles, fileNamePattern
+):
     benchmarkArgs += ["-iter", "1"]
     args = vars(parser.parse_args(benchmarkArgs))
     benchmark.main(args)
@@ -41,12 +52,15 @@ def test__benchmark__main__defaults(parser, benchmarkArgs, benchmarkFiles, fileN
         "referenceSequence",
         "benchmarkSequence",
         "levenshteinDistance",
-        "originalNumberOfSequences"
+        "originalNumberOfSequences",
     ]
     assert list(benchmarkDf.columns) == columns
     assert len(benchmarkDf) == 2
 
-def test__benchmark__main__works_with_provided_reference_sequence(parser, benchmarkArgs, benchmarkFiles, fileNamePattern):
+
+def test__benchmark__main__works_with_provided_reference_sequence(
+    parser, benchmarkArgs, benchmarkFiles, fileNamePattern
+):
     benchmarkArgs += ["-r", benchmarkFiles.referenceFile.name]
     benchmarkArgs += ["-iter", "1"]
     args = vars(parser.parse_args(benchmarkArgs))
@@ -65,10 +79,11 @@ def test__benchmark__main__works_with_provided_reference_sequence(parser, benchm
         "referenceSequence",
         "benchmarkSequence",
         "levenshteinDistance",
-        "originalNumberOfSequences"
+        "originalNumberOfSequences",
     ]
     assert list(benchmarkDf.columns) == columns
     assert len(benchmarkDf) == 2
+
 
 def test__benchmark__generate_file_name(consensusAlgorithm, fileNamePattern):
     fileNameOutput = benchmark.generate_file_name(consensusAlgorithm)

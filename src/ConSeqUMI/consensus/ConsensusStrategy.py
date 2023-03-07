@@ -2,13 +2,17 @@ from abc import ABC, abstractmethod
 import random
 from Levenshtein import distance
 
-class ConsensusStrategy(ABC):
 
+class ConsensusStrategy(ABC):
     @abstractmethod
-    def generate_consensus_sequence_from_biopython_records(self, binRecords: list) -> str:
+    def generate_consensus_sequence_from_biopython_records(
+        self, binRecords: list
+    ) -> str:
         pass
 
-    def benchmark_sequence_generator(self, referenceSequence: str, binRecords: list, intervals: int, iterations: int):
+    def benchmark_sequence_generator(
+        self, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+    ):
         intervalNumbers = [1]
         for i in range(1, len(binRecords) // intervals + 1):
             intervalNumbers.append(i * intervals)
@@ -20,7 +24,11 @@ class ConsensusStrategy(ABC):
                 if intervalNumber == 1:
                     benchmarkedSequence = str(randomSampleOfRecords[0].seq)
                 else:
-                    benchmarkedSequence = self.generate_consensus_sequence_from_biopython_records(randomSampleOfRecords)
+                    benchmarkedSequence = (
+                        self.generate_consensus_sequence_from_biopython_records(
+                            randomSampleOfRecords
+                        )
+                    )
                 outputList = [
                     str(intervalNumber),
                     str(iteration),
@@ -30,4 +38,3 @@ class ConsensusStrategy(ABC):
                     str(len(binRecords)),
                 ]
                 yield outputList
-

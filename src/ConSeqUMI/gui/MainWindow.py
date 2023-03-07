@@ -1,20 +1,21 @@
 from PyQt5.QtWidgets import (
-    #QLabel,
-    #QLineEdit,
-    #QWidget,
-    #QApplication,
-    #QFormLayout,
-    #QComboBox,
-    #QCheckBox,
-    #QPushButton,
-    #QFileDialog,
-    #QPlainTextEdit,
-    #QVBoxLayout,
-    #QStyle,
+    # QLabel,
+    # QLineEdit,
+    # QWidget,
+    # QApplication,
+    # QFormLayout,
+    # QComboBox,
+    # QCheckBox,
+    # QPushButton,
+    # QFileDialog,
+    # QPlainTextEdit,
+    # QVBoxLayout,
+    # QStyle,
     QMainWindow,
 )
 from PyQt5.QtCore import Qt
 from ConSeqUMI.gui.TableWindow import TableWindow
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
