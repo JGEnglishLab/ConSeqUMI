@@ -1,8 +1,36 @@
-# longread_umi_python
+# ConseqUMI
 
-The package has not been made executable as of yet. The programs are run directly from `python pipeline.py` at this time. 
+## Basic Installation
 
-## Installation Instructions
+### Conda environment
+
+It is recommended you create an [anaconda](https://docs.anaconda.com/anaconda/install/) environment with python for installing all the necessary packages. Presuming you have `anaconda` installed, you can create a python environment with the following commands from the command line:
+
+```
+conda create -n conseq
+conda activate conseq
+conda install python
+```
+
+### Package dependencies
+
+Clone this repository and download the dependencies with the following commands.
+
+```
+git clone https://github.com/JGEnglishLab/ConseqUMI.git
+cd ConseqUMI
+pip install .
+```
+
+## Starcode Installation
+
+You will need to download [starcode](https://github.com/gui11aume/starcode) using the three steps below.
+
+1. Clone the starcode github repository.
+2. `cd` into the repository. Enter `make`. Executables should be available in the repository now.
+3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. 
+
+## Consensus Sequence Instructions
 
 Note that this program offers three alternative methods for consensus sequence generation, `pairwise`, `lamassemble` and `medaka`. `pairwise` is a custom consensus method developed with this package, whereas `lamassemble` and `medaka` were developed elsewhere. A such, the installation instructions will differ depending on which algorithm you plan to use.
 
@@ -10,7 +38,7 @@ Installation instructions assume you have `pip` and `conda` on your computer. If
 
 ### Pairwise Instructions
 
-Required packages can be downloaded using the accompanying requirements file. In your environment enter `pip install -r requirements.txt` to download the necessary dependencies.
+No extra instructions are necessary for the `pairwise` method.
 
 ### Lamassemble Instructions
 
@@ -43,10 +71,6 @@ Complete 'Pairwise Instructions,' as this method will use the same dependencies.
 
 To adjust the default medaka settings used by this program, edit the `medakaCommandLine` variable in the `consensus_generators/config.py` file.
 
-## Finishing Installation
+## Running ConseqUMI
 
-You will need to download [starcode](https://github.com/gui11aume/starcode) using the three steps below.
-
-1. Clone the github repository
-2. `cd` into the repository. Enter `make`. Executables should be available in the repository now.
-3. Move the executables into the necessary `bin` directory, or change your PATH variable to point to these directories. 
+Run `conseq` to start a user-friendly GUI. For command line instructions, run `conseq -h`.
