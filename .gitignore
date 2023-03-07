@@ -2,12 +2,13 @@
 __pycache__/
 *.py[cod]
 *$py.class
-test/data/
+data/
 .DS_Store
 test/.DS_Store
 scratchpaper_code/
 viz/data/differences.csv
 dependencies_download/promethion.mat
+.idea/
 
 # C extensions
 *.so
