@@ -118,7 +118,6 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
         self.killBtn.setEnabled(True)
 
         if self.p is None:  # No process running.
-
             self.message("Executing process")
             self.message("conseq " + " ".join(args))
             self.p = (

@@ -67,7 +67,6 @@ def format_deletion_difference_from_index(index, differentSequenceAlignment):
 
 
 def format_mutation_difference_from_index(index, differentSequenceAlignment):
-
     startIndex = index[0]
     endIndex = index[-1] + 1
     insert = differentSequenceAlignment[index[0] : index[-1] + 1]
