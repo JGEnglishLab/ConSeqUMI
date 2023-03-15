@@ -130,7 +130,7 @@ def compile_chimera_data_analysis_data_frame(
         "bottom UMI",
         "Number of Reads",
         "Read Identifiers",
-        "Not Chimera",
+        "Is A Chimera",
     ]
     chimeraData = pd.DataFrame(data, columns=columns)
     return chimeraData

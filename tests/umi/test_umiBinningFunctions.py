@@ -302,7 +302,7 @@ def test__umi_binning_functions__compile_chimera_data_analysis_data_frame(
         "bottom UMI",
         "Number of Reads",
         "Read Identifiers",
-        "Not Chimera",
+        "Is A Chimera",
     ]
     chimeraData = pd.DataFrame(
         list(zip(*chimeraDataValues)), columns=chimeraDataColumnNames
