@@ -32,6 +32,15 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
         fileLayout = QFormLayout()
         settingLayout = QFormLayout()
 
+        instructionLabel = QLabel("Link to Instruction Wiki:")
+        instructionLabel.setFont(QFont("Times", 17, QFont.Bold))
+        self.instructionLink = QPlainTextEdit()
+        self.instructionLink.setReadOnly(True)
+        self.set_instruction_link(self.instructionLink)
+
+        dlgLayout.addWidget(instructionLabel)
+        dlgLayout.addWidget(self.instructionLink)
+
         self.set_file_layout(fileLayout)
         fileInputLabel = QLabel("File Input:")
         fileInputLabel.setFont(QFont("Times", 17, QFont.Bold))
@@ -57,6 +66,10 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
         self.runBtn.clicked.connect(self.start_process)
 
         self.setLayout(dlgLayout)
+
+    @abstractmethod
+    def set_instruction_link(self, instructionLinkText: type(QFormLayout)) -> None:
+        pass
 
     @abstractmethod
     def set_file_layout(self, fileLayout: type(QFormLayout)) -> None:
@@ -107,7 +120,7 @@ class TabWindow(QWidget, metaclass=AbstractTabWindow):
         if self.p is None:  # No process running.
 
             self.message("Executing process")
-            self.message("python " + " ".join(args))
+            self.message("conseq " + " ".join(args))
             self.p = (
                 QProcess()
             )  # Keep a reference to the QProcess (e.g. on self) while it's running.
