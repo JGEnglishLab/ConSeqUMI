@@ -43,13 +43,12 @@ def identify_differences_from_indices(
 
 
 def format_difference_from_index_function_generator(type):
-    match type:
-        case "insertion":
-            return format_insertion_difference_from_index
-        case "deletion":
-            return format_deletion_difference_from_index
-        case "mutation":
-            return format_mutation_difference_from_index
+    if type == "insertion":
+        return format_insertion_difference_from_index
+    if type == "deletion":
+        return format_deletion_difference_from_index
+    if type == "mutation":
+        return format_mutation_difference_from_index
     return "error"
 
 
@@ -68,7 +67,6 @@ def format_deletion_difference_from_index(index, differentSequenceAlignment):
 
 
 def format_mutation_difference_from_index(index, differentSequenceAlignment):
-
     startIndex = index[0]
     endIndex = index[-1] + 1
     insert = differentSequenceAlignment[index[0] : index[-1] + 1]

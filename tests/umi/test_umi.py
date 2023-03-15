@@ -81,7 +81,7 @@ def test__umi__main(
         "bottom UMI",
         "Number of Reads",
         "Read Identifiers",
-        "Not Chimera",
+        "Is A Chimera",
     ]
     readErrorOutput = pd.read_csv(dataAnalysisPath + "read_error_summary.csv")
     assert list(readErrorOutput.columns) == [

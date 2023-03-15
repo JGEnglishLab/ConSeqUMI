@@ -17,6 +17,11 @@ from ConSeqUMI.gui.TabWindow import TabWindow
 
 
 class UmiTabWindow(TabWindow):
+    def set_instruction_link(self, instructionLinkText) -> None:
+        instructionLinkText.appendPlainText(
+            "https://github.com/JGEnglishLab/ConSeqUMI/wiki/UMI-Processing"
+        )
+
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input Directory Path")
         self.inputLabel.setToolTip(
@@ -52,7 +57,7 @@ class UmiTabWindow(TabWindow):
 
         self.adapterLabel = QLabel("Adapter File Path")
         self.adapterLabel.setToolTip(
-            "Required. \nA text file with f, F, r, R adapters listed. \nDefaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively."
+            "Required. \nA text file with f, F, r, R adapters listed."
         )
         self.adapterField = QLineEdit()
         self.adapterField.setEnabled(False)
@@ -78,7 +83,8 @@ class UmiTabWindow(TabWindow):
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
             output = self.outputField.text()
-            if output[-1] != "/": output += "/"
+            if output[-1] != "/":
+                output += "/"
             outputName = self.outputNameField.text()
             output += outputName
             args.extend(["-o", output])

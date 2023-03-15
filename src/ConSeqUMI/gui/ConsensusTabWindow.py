@@ -17,6 +17,11 @@ from ConSeqUMI.gui.TabWindow import TabWindow
 
 
 class ConsensusTabWindow(TabWindow):
+    def set_instruction_link(self, instructionLinkText) -> None:
+        instructionLinkText.appendPlainText(
+            "https://github.com/JGEnglishLab/ConSeqUMI/wiki/Consensus-Generation"
+        )
+
     def set_file_layout(self, fileLayout: QFormLayout) -> None:
         self.inputLabel = QLabel("Input Directory Path")
         self.inputLabel.setToolTip(
@@ -71,7 +76,8 @@ class ConsensusTabWindow(TabWindow):
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
             output = self.outputField.text()
-            if output[-1] != "/": output += "/"
+            if output[-1] != "/":
+                output += "/"
             outputName = self.outputNameField.text()
             output += outputName
             args.extend(["-o", output])
