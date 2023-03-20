@@ -6,7 +6,7 @@ from ConSeqUMI.umi import umi
 from ConSeqUMI.gui import gui
 from ConSeqUMI.consensus import benchmark, consensus
 from ConSeqUMI.Printer import Printer
-
+from shutil import which
 
 def main():
     printer = Printer()
@@ -243,12 +243,20 @@ class AdapterFile:
 
 class ConsensusAlgorithmText:
     def __init__(self):
-        self.validConsensusArgorithms = set(["pairwise", "lamassemble"])
+        self.validConsensusArgorithms = set(["pairwise", "lamassemble", "medaka"])
 
     def __call__(self, name):
         if name not in self.validConsensusArgorithms:
             raise argparse.ArgumentTypeError(
-                f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {name}"
+                f"The -c or --consensusAlgorithm argument must be 'pairwise', 'lamassemble' or 'medaka'. Offending value: {name}"
+            )
+        if name == "medaka" and not which("medaka_consensus"):
+            raise argparse.ArgumentTypeError(
+                "You must install medaka in order to use the medaka consensus algorithm option."
+            )
+        if name == "lamassemble" and not which("lamassemble"):
+            raise argparse.ArgumentTypeError(
+                "You must install lamassemble in order to use the lamassemble consensus algorithm option."
             )
         return name
 

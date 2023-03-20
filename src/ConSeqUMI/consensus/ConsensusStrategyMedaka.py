@@ -7,8 +7,7 @@ from Bio import SeqIO
 from io import StringIO
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from os.path import exists
-
-# from ConSeqUMI.consensus.config import MCOMMAND
+from ConSeqUMI.consensus.config import MCOMMAND
 
 
 class ConsensusStrategyMedaka(ConsensusStrategy):
@@ -33,15 +32,14 @@ class ConsensusStrategyMedaka(ConsensusStrategy):
                     output_handle,
                     "fasta",
                 )
-            processCommands = [
-                "medaka_consensus",
+            processCommands = MCOMMAND[:]
+            processCommands += [
                 "-i",
                 inputFile.name,
                 "-d",
                 draftFile.name,
                 "-o",
                 outputDir.name,
-                "-f",
             ]
             child = subprocess.Popen(
                 processCommands,
