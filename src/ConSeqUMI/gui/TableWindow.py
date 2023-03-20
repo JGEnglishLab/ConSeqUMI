@@ -29,7 +29,7 @@ class TableWindow(QWidget):
         self.consTab = ConsensusTabWindow()
         self.benchmarkTab = BenchmarkTabWindow()
         self.tabs.addTab(self.umiTab, "UMI Processing")
-        self.tabs.addTab(self.consTab, "Consensus Generation")
         self.tabs.addTab(self.benchmarkTab, "Benchmarking Consensus")
+        self.tabs.addTab(self.consTab, "Consensus Generation")
         self.layout.addWidget(self.tabs)
         self.setLayout(self.layout)

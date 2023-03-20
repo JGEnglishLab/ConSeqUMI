@@ -57,7 +57,7 @@ class BenchmarkTabWindow(TabWindow):
         self.outputNameField = QLineEdit()
         fileLayout.addRow(self.outputNameLabel, self.outputNameField)
 
-        self.referenceLabel = QLabel("Reference File Path (optional)")
+        self.referenceLabel = QLabel("Reference Sequence File Path (optional)")
         # self.referenceLabel.setToolTip(
         #    "Required. \nA text file with f, F, r, R references listed. \nDefaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively."
         # )
@@ -79,7 +79,7 @@ class BenchmarkTabWindow(TabWindow):
             self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox
         )
 
-        self.intervalsTitle = QLabel("Benchmark Intervals (optional)")
+        self.intervalsTitle = QLabel("Benchmark Subsample Step Size (optional)")
         self.intervalsTitle.setToolTip(
             "Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc."
         )
