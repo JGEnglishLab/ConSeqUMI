@@ -9,6 +9,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import sys
 import os
+from shutil import which
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -482,7 +483,8 @@ def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorit
     args = vars(parser.parse_args(consArgs))
     assert args["consensusAlgorithm"] == "pairwise"
 
-
+@pytest.mark.skipif(not which("lamassemble"),
+                    reason="tests that 'lamassemble' works. This will assume that lamassemble is not installed.")
 def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorithm_is_lamassemble(
     parser, consArgs
 ):
@@ -490,13 +492,12 @@ def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorit
     args = vars(parser.parse_args(consArgs))
     assert args["consensusAlgorithm"] == "lamassemble"
 
-
-"""
-def test__conseq__set_command_line_settings__succeeds_when_consensusAlgorithm_is_medaka(parser, consArgs):
+@pytest.mark.skipif(not which("medaka_consensus"),
+                    reason="tests that 'medaka' works. This will assume that medaka is not installed.")
+def test__conseq__set_command_line_settings__cons_succeeds_when_consensusAlgorithm_is_medaka(parser, consArgs):
     consArgs += ["-c", "medaka"]
     args = vars(parser.parse_args(consArgs))
     assert args["consensusAlgorithm"] == "medaka"
-"""
 
 
 def test__conseq__set_command_line_settings__cons_fails_when_consensusAlgorithm_is_not_recognized(
@@ -504,7 +505,7 @@ def test__conseq__set_command_line_settings__cons_fails_when_consensusAlgorithm_
 ):
     errorValue = "unidentified"
     consArgs += ["-c", errorValue]
-    errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {errorValue}"
+    errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise', 'lamassemble' or 'medaka'. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
@@ -710,7 +711,8 @@ def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAl
     args = vars(parser.parse_args(benchmarkArgs))
     assert args["consensusAlgorithm"] == "pairwise"
 
-
+@pytest.mark.skipif(not which("lamassemble"),
+                    reason="tests that 'lamassemble' works. This will assume that lamassemble is not installed.")
 def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAlgorithm_is_lamassemble(
     parser, benchmarkArgs
 ):
@@ -718,13 +720,21 @@ def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAl
     args = vars(parser.parse_args(benchmarkArgs))
     assert args["consensusAlgorithm"] == "lamassemble"
 
+@pytest.mark.skipif(not which("medaka_consensus"),
+                    reason="tests that 'medaka' works. This will assume that medaka_consensus is not installed.")
+def test__conseq__set_command_line_settings__benchmark_succeeds_when_consensusAlgorithm_is_medaka(
+    parser, benchmarkArgs
+):
+    benchmarkArgs += ["-c", "medaka"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["consensusAlgorithm"] == "medaka"
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_consensusAlgorithm_is_not_recognized(
     parser, benchmarkArgs
 ):
     errorValue = "unidentified"
     benchmarkArgs += ["-c", errorValue]
-    errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise' or 'lamassemble'. Offending value: {errorValue}"
+    errorOutput = f"The -c or --consensusAlgorithm argument must be 'pairwise', 'lamassemble' or 'medaka'. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
 
@@ -830,3 +840,22 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_iterations_is_
     errorOutput = f"The -iter or --iterations argument must be greater than or equal to 1. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
+
+# Tests need to be skipped due to an error in 'pytest.mark.skipif' in lower pytest versions (similar error in pytest 7.3.8, these tests in 7.2.2).
+'''
+@pytest.mark.skipif(which("medaka_consensus"),
+                    reason="tests that 'medaka_consensus' is required if medaka consensus option chosen")
+def test__conseq__set_command_line_settings__fails_when_consensusAlgorithm_is_medaka_but_medaka_not_installed(parser, consArgs):
+    consArgs += ["-c", "medaka"]
+    errorOutput = "You must install medaka in order to use the medaka consensus algorithm option."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = vars(parser.parse_args(consArgs))
+
+@pytest.mark.skipif(which("lamassemble"),
+                    reason="tests that 'lamassemble' is required if lamassemble consensus option chosen")
+def test__conseq__set_command_line_settings__fails_when_consensusAlgorithm_is_lamassemble_but_lamassemble_not_installed(parser, consArgs):
+    consArgs += ["-c", "lamassemble"]
+    errorOutput = "You must install lamassemble in order to use the lamassemble consensus algorithm option."
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = vars(parser.parse_args(consArgs))
+'''

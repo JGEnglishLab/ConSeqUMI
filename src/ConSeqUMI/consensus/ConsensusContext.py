@@ -4,6 +4,9 @@ from ConSeqUMI.consensus.ConsensusStrategyPairwise import (
 from ConSeqUMI.consensus.ConsensusStrategyLamassemble import (
     ConsensusStrategyLamassemble as LamassembleStrategy,
 )
+from ConSeqUMI.consensus.ConsensusStrategyMedaka import (
+    ConsensusStrategyMedaka as MedakaStrategy,
+)
 from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy as ConsensusStrategy
 
 
@@ -12,6 +15,7 @@ class ConsensusContext:
         self._strategy_types = {
             "pairwise": PairwiseStrategy(),
             "lamassemble": LamassembleStrategy(),
+            "medaka": MedakaStrategy(),
         }
         self._strategy = self._strategy_types[strategy]
 
