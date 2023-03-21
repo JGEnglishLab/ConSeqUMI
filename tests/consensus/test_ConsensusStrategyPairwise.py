@@ -3,6 +3,8 @@ import random
 from Levenshtein import distance
 import sys
 import os
+import numpy as np
+import pandas as pd
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -265,12 +267,12 @@ def test__consensus_strategy_pairwise__benchmark_sequence_generator(
         assert rowOutput[-1] == row[-1]
 
 
-def test__consensus_strategy_pairwise__benchmark_sequence_generator__max_number_of_intervals_is_100(
+def test__consensus_strategy_pairwise__benchmark_sequence_generator__max_interval_number_is_500(
     consensusStrategyPairwise, consensusSequence, targetSequenceRecords
 ):
-    intervals = 1
+    intervals = 100
     iterations = 1
-    numberOfRecords = 101
+    numberOfRecords = 605
     inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
     rowsOutput = [
         row
@@ -278,4 +280,6 @@ def test__consensus_strategy_pairwise__benchmark_sequence_generator__max_number_
             consensusSequence, inputRecords, intervals, iterations
         )
     ]
-    assert len(rowsOutput) == 100
+    intervalsOutput = set(pd.DataFrame(rowsOutput).iloc[:, 0])
+    intervals = set(["1","100","200","300","400","500"])
+    assert intervalsOutput == intervals

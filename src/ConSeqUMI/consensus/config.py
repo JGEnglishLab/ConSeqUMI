@@ -3,4 +3,3 @@ LCOMMAND = lamassembleCommandLine.split()
 
 medakaCommandLine = "medaka_consensus -f -m r941_min_high_g303"
 MCOMMAND = medakaCommandLine.split()
-
