@@ -15,6 +15,7 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
         )
         with open(inputFile.name, "w") as output_handle:
             SeqIO.write(binRecords, output_handle, "fastq")
+
         processCommands = LCOMMAND[:] + [inputFile.name]
         child = subprocess.Popen(
             processCommands,

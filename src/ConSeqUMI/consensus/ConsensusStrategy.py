@@ -15,9 +15,8 @@ class ConsensusStrategy(ABC):
     ):
         intervalNumbers = [1]
         for i in range(1, len(binRecords) // intervals + 1):
-            intervalNumbers.append(i * intervals)
-        if len(intervalNumbers) > 100:
-            intervalNumbers = intervalNumbers[:100]
+            if i * intervals <= 500:
+                intervalNumbers.append(i * intervals)
         for intervalNumber in intervalNumbers:
             for iteration in range(iterations):
                 randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)

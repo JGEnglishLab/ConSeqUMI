@@ -8,6 +8,7 @@ from ConSeqUMI.consensus import benchmark, consensus
 from ConSeqUMI.Printer import Printer
 from shutil import which
 
+
 def main():
     printer = Printer()
     printer("parsing and loading arguments")
