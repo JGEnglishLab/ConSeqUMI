@@ -131,8 +131,8 @@ def set_command_line_settings():
     benchmarkParser.add_argument(
         "-int",
         "--intervals",
-        type=ConseqInt("intervals"),
-        default=10,
+        type=BenchmarkInterval(),
+        default=[10],
         help="Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc.",
     )
     benchmarkParser.add_argument(
@@ -261,7 +261,6 @@ class ConsensusAlgorithmText:
             )
         return name
 
-
 class ConseqInt:
     def __init__(self, type):
         self.minValue = 1
@@ -292,6 +291,12 @@ class ConseqInt:
             )
         return nameInt
 
+class BenchmarkInterval:
+    def __call__(self, intervalInput):
+        intervalInputs = intervalInput.split(",")
+        conseqInt = ConseqInt("intervals")
+        intervalInputs = [conseqInt(interval) for interval in intervalInputs]
+        return intervalInputs
 
 class InputFile:
     def __init__(self, type):

@@ -56,9 +56,9 @@ class BenchmarkTabWindow(TabWindow):
         fileLayout.addRow(self.outputNameLabel, self.outputNameField)
 
         self.referenceLabel = QLabel("Reference Sequence File Path (optional)")
-        # self.referenceLabel.setToolTip(
-        #    "Required. \nA text file with f, F, r, R references listed. \nDefaults to: GAGTGTGGCTCTTCGGAT, ATCTCTACGGTGGTCCTAAATAGT, AATGATACGGCGACCACCGAGATC, and CGACATCGAGGTGCCAAAC, respectively."
-        # )
+        self.referenceLabel.setToolTip(
+            "Optional. \nA fasta file with the expected reference sequence for evaluating the accuracy of subsample-derived consensus sequences."
+         )
         self.referenceField = QLineEdit()
         self.referenceBrowseButton = QPushButton("Browse")
         self.referenceBrowseButton.clicked.connect(
@@ -76,9 +76,9 @@ class BenchmarkTabWindow(TabWindow):
             self.consensusAlgorithmLabel, self.consensusAlgorithmComboBox
         )
 
-        self.intervalsTitle = QLabel("Benchmark Subsample Step Size (optional)")
+        self.intervalsTitle = QLabel("Benchmark Subsample Sizes (optional)")
         self.intervalsTitle.setToolTip(
-            "Optional. \nIntervals at which benchmarking standards are set. \nDefault is 10. \nFor example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc."
+            "Optional. \nIntervals at which benchmarking standards are set, usually represented as a single integer indicating step size. \nDefault is 10. \nFor example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc. \nUsers can also provide a comma-delimited list of integers to specify specific intervals. \nIf provided '10,25' the program will only evaluate subsamples of sizes 10 and 25."
         )
         self.intervalsField = QLineEdit()
         self.intervalsField.setPlaceholderText("10")

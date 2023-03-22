@@ -49,7 +49,7 @@ def test__consensus_strategy_lamassemble__generate_consensus_sequence_from_biopy
 def test__consensus_strategy_lamassemble__benchmark_sequence_generator(
     consensusStrategyLamassemble, consensusSequence, targetSequenceRecords
 ):
-    intervals = 10
+    intervals = [10]
     iterations = 2
     rows = [
         ["1", "0", consensusSequence, "tempSequence", "distance", "14"],
@@ -76,7 +76,7 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator(
 def test__consensus_strategy_lamassemble__benchmark_sequence_generator__max_interval_number_is_500(
     consensusStrategyLamassemble, consensusSequence, targetSequenceRecords
 ):
-    intervals = 100
+    intervals = [100]
     iterations = 1
     numberOfRecords = 605
     inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
@@ -89,3 +89,31 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator__max_inte
     intervalsOutput = set(pd.DataFrame(rowsOutput).iloc[:, 0])
     intervals = set(["1","100","200","300","400","500"])
     assert intervalsOutput == intervals
+
+def test__consensus_strategy_lamassemble__benchmark_sequence_generator__customized_intervals_also_works(
+    consensusStrategyLamassemble, consensusSequence, targetSequenceRecords
+):
+    intervals = [10,1,12]
+    iterations = 2
+    rows = [
+        ["10", "0", consensusSequence, "tempSequence", "distance", "14"],
+        ["10", "1", consensusSequence, "tempSequence", "distance", "14"],
+        ["1", "0", consensusSequence, "tempSequence", "distance", "14"],
+        ["1", "1", consensusSequence, "tempSequence", "distance", "14"],
+        ["12", "0", consensusSequence, "tempSequence", "distance", "14"],
+        ["12", "1", consensusSequence, "tempSequence", "distance", "14"],
+    ]
+    rowsOutput = [
+        row
+        for row in consensusStrategyLamassemble.benchmark_sequence_generator(
+            consensusSequence, targetSequenceRecords, intervals, iterations
+        )
+    ]
+
+    assert len(rowsOutput) == len(rows)
+    for i in range(len(rows)):
+        row = rows[i]
+        rowOutput = rowsOutput[i]
+        assert rowOutput[:3] == row[:3]
+        assert distance(rowOutput[2], rowOutput[3]) == int(rowOutput[4])
+        assert rowOutput[-1] == row[-1]

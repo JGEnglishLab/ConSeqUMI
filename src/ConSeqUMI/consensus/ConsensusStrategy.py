@@ -11,12 +11,14 @@ class ConsensusStrategy(ABC):
         pass
 
     def benchmark_sequence_generator(
-        self, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+        self, referenceSequence: str, binRecords: list, intervalNumbers: list, iterations: int
     ):
-        intervalNumbers = [1]
-        for i in range(1, len(binRecords) // intervals + 1):
-            if i * intervals <= 500:
-                intervalNumbers.append(i * intervals)
+        if len(intervalNumbers) == 1:
+            intervals = intervalNumbers[0]
+            intervalNumbers = [1]
+            for i in range(1, len(binRecords) // intervals + 1):
+                if i * intervals <= 500:
+                    intervalNumbers.append(i * intervals)
         for intervalNumber in intervalNumbers:
             for iteration in range(iterations):
                 randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)
