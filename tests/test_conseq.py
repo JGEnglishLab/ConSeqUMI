@@ -610,7 +610,7 @@ def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(
     assert len(args["input"]) == 14
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["reference"] == ""
-    assert args["intervals"] == 10
+    assert args["intervals"] == [10]
     assert args["iterations"] == 100
 
 
@@ -806,7 +806,7 @@ def test__conseq__set_command_line_settings__benchmark_accepts_intervals(
 ):
     benchmarkArgs += ["-int", "15"]
     args = vars(parser.parse_args(benchmarkArgs))
-    assert args["intervals"] == 15
+    assert args["intervals"] == [15]
 
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_intervals_is_not_an_int(
@@ -828,6 +828,30 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_intervals_is_n
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
 
+def test__conseq__set_command_line_settings__benchmark_accepts_intervals_in_comma_delimited_format(
+    parser, benchmarkArgs
+):
+    benchmarkArgs += ["-int", "15, 20"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["intervals"] == [15, 20]
+
+def test__conseq__set_command_line_settings__benchmark_intervals_in_comma_delimited_format_fails_when_one_is_negative(
+    parser, benchmarkArgs
+):
+    errorValue = "-20"
+    benchmarkArgs += ["-int", "15,"+errorValue]
+    errorOutput = f"The -int or --intervals argument must be greater than or equal to 1. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__benchmark_intervals_in_comma_delimited_format_fails_when_one_is_not_an_int(
+    parser, benchmarkArgs
+):
+    errorValue = "20.1"
+    benchmarkArgs += ["-int", "15,"+errorValue]
+    errorOutput = f"The -int or --intervals argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
 
 def test__conseq__set_command_line_settings__benchmark_accepts_iterations(
     parser, benchmarkArgs
