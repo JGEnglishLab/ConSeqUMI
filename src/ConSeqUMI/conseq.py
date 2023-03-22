@@ -133,7 +133,7 @@ def set_command_line_settings():
         "--intervals",
         type=BenchmarkInterval(),
         default=[10],
-        help="Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc.",
+        help="Intervals at which benchmarking standards are set. Default is 10. For example, at default, the program will select 10 random target sequences to generate a consensus sequence, then 20 etc. Users can also provide a comma-delimited list of integers to specify specific intervals. If provided '10,25' the program will only evaluate subsamples of sizes 10 and 25.",
     )
     benchmarkParser.add_argument(
         "-iter",
