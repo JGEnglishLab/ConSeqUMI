@@ -41,6 +41,33 @@ def consumer(queue, consensusFilePath):
                 break
             SeqIO.write([consensusRecord], output_handle, "fasta")
 
+class ConsensusProcess(Process):
+    def __init__(self, consensusFilePath, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.consensusFilePath = consensusFilePath
+        self.queue = Queue()
+        self.printer = Printer()
+
+    def send(self, path, records, context):
+        self.printer(f" ***** {len(records)} reads: generating consensus for {path}")
+        id = path.split("/")[-1]
+        description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
+        consensusSequence = (
+            context.generate_consensus_sequence_from_biopython_records(records)
+        )
+        consensusRecord = SeqRecord(
+            Seq(consensusSequence), id=id, description=description
+        )
+        self.queue.put(consensusRecord)
+
+    def run(self):
+        with open(self.consensusFilePath, "w") as output_handle:
+            while True:
+                consensusRecord = self.queue.get()
+                if consensusRecord is None:
+                    break
+                SeqIO.write([consensusRecord], output_handle, "fasta")
+
 def main(args):
 
     printer = Printer()
@@ -56,6 +83,18 @@ def main(args):
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
 
+    process = ConsensusProcess(consensusFilePath=consensusFilePath)
+    process.start()
+    for path in pathsSortedByLength:
+        records = args["input"][path]
+        if len(records) < args["minimumReads"]:
+            printer(
+                f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
+            )
+            break
+        process.send(path, records, context)
+    process.queue.put(None)
+    '''
     queue = Queue()
     consumer_process = Process(target=consumer, args=(queue,consensusFilePath))
     consumer_process.start()
@@ -63,7 +102,7 @@ def main(args):
     producer_process.start()
     producer_process.join()
     consumer_process.join()
-
+    '''
     printer("consensus generation complete")
 
 
