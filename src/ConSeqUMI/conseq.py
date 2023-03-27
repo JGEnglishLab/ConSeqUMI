@@ -179,7 +179,9 @@ class InputDirectory:
         elif self.command == "cons":
             records = {}
             for file in files:
-                records[os.path.join(name, file)] = list(SeqIO.parse(os.path.join(name, file), "fastq"))
+                records[os.path.join(name, file)] = list(
+                    SeqIO.parse(os.path.join(name, file), "fastq")
+                )
             return records
 
 
@@ -261,6 +263,7 @@ class ConsensusAlgorithmText:
             )
         return name
 
+
 class ConseqInt:
     def __init__(self, type):
         self.minValue = 1
@@ -291,12 +294,14 @@ class ConseqInt:
             )
         return nameInt
 
+
 class BenchmarkInterval:
     def __call__(self, intervalInput):
         intervalInputs = intervalInput.split(",")
         conseqInt = ConseqInt("intervals")
         intervalInputs = [conseqInt(interval) for interval in intervalInputs]
         return intervalInputs
+
 
 class InputFile:
     def __init__(self, type):

@@ -87,13 +87,14 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator__max_inte
         )
     ]
     intervalsOutput = set(pd.DataFrame(rowsOutput).iloc[:, 0])
-    intervals = set(["1","100","200","300","400","500"])
+    intervals = set(["1", "100", "200", "300", "400", "500"])
     assert intervalsOutput == intervals
+
 
 def test__consensus_strategy_lamassemble__benchmark_sequence_generator__customized_intervals_also_works(
     consensusStrategyLamassemble, consensusSequence, targetSequenceRecords
 ):
-    intervals = [10,1,12]
+    intervals = [10, 1, 12]
     iterations = 2
     rows = [
         ["10", "0", consensusSequence, "tempSequence", "distance", "14"],

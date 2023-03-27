@@ -11,7 +11,11 @@ class ConsensusStrategy(ABC):
         pass
 
     def benchmark_sequence_generator(
-        self, referenceSequence: str, binRecords: list, intervalNumbers: list, iterations: int
+        self,
+        referenceSequence: str,
+        binRecords: list,
+        intervalNumbers: list,
+        iterations: int,
     ):
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]

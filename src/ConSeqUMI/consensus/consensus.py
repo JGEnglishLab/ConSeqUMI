@@ -44,10 +44,12 @@ def generate_file_name(consensusAlgorithm):
     consensusAlgorithmInsert = consensusAlgorithm
     if consensusAlgorithm == "medaka":
         medakaParser = argparse.ArgumentParser(description="")
-        medakaParser.add_argument("-m",type=str)
+        medakaParser.add_argument("-m", type=str)
         args, unknown = medakaParser.parse_known_args(MCOMMAND)
         args = vars(args)
         if args["m"]:
             consensusAlgorithmInsert += "-" + args["m"]
 
-    return "consensus-" + consensusAlgorithmInsert + time.strftime("-%Y%m%d-%H%M%S.fasta")
+    return (
+        "consensus-" + consensusAlgorithmInsert + time.strftime("-%Y%m%d-%H%M%S.fasta")
+    )

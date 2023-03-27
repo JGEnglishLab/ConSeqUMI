@@ -66,12 +66,14 @@ def test__cons__generate_file_name(consensusAlgorithm, fileNamePattern):
     fileNameOutput = consensus.generate_file_name(consensusAlgorithm)
     assert re.match(fileNamePattern, fileNameOutput)
 
+
 def test__cons__generate_file_name_for_medaka_with_model():
     consensusAlgorithm = "medaka"
     pattern = r"-\d{8}-\d{6}\.fasta"
     medakaFileName = "consensus-medaka-r941_min_high_g303" + pattern
     medakaFileNameOutput = consensus.generate_file_name(consensusAlgorithm)
     assert re.match(medakaFileName, medakaFileNameOutput)
+
 
 @pytest.mark.skipif(
     True,
