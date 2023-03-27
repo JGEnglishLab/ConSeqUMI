@@ -20,6 +20,9 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         aligner.extend_gap_score = -0.5
         self.aligner = aligner
 
+    def generate_consensus_algorithm_path_header_insert(self) -> str:
+        return "pairwise"
+
     def break_down_alignment_to_strings(self, alignment):
         alignmentString = alignment.format()
         if "target" in alignmentString:

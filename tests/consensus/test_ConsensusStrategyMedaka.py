@@ -5,6 +5,7 @@ from shutil import which
 from Levenshtein import distance
 import pandas as pd
 import numpy as np
+import re
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -118,3 +119,29 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator__customized_in
         assert rowOutput[:3] == row[:3]
         assert distance(rowOutput[2], rowOutput[3]) == int(rowOutput[4])
         assert rowOutput[-1] == row[-1]
+
+
+def test__consensus_strategy_medaka__generate_consensus_algorithm_path_header__for_medaka_with_model(
+    consensusStrategyMedaka,
+):
+    processName = "consensus"
+    medakaFileName = processName + r"-medaka-r941_min_high_g303-\d{8}-\d{6}"
+    medakaFileNameOutput = (
+        consensusStrategyMedaka.generate_consensus_algorithm_path_header(processName)
+    )
+    assert re.match(medakaFileName, medakaFileNameOutput)
+
+
+@pytest.mark.skipif(
+    True,
+    reason="Not sure how to test this. I would need to change the MCOMMAND config variable in-code to test separately from '_with_model'",
+)
+def test__consensus_strategy_medaka__generate_consensus_algorithm_path_header__for_medaka_with_no_model(
+    consensusStrategyMedaka,
+):
+    processName = "consensus"
+    medakaFileName = processName + r"-medaka-\d{8}-\d{6}"
+    medakaFileNameOutput = (
+        consensusStrategyMedaka.generate_consensus_algorithm_path_header(processName)
+    )
+    assert re.match(medakaFileName, medakaFileNameOutput)

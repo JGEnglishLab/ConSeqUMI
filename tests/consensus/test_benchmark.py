@@ -83,8 +83,3 @@ def test__benchmark__main__works_with_provided_reference_sequence(
     ]
     assert list(benchmarkDf.columns) == columns
     assert len(benchmarkDf) == 2
-
-
-def test__benchmark__generate_file_name(consensusAlgorithm, fileNamePattern):
-    fileNameOutput = benchmark.generate_file_name(consensusAlgorithm)
-    assert re.match(fileNamePattern, fileNameOutput)

@@ -5,6 +5,7 @@ import sys
 import os
 import numpy as np
 import pandas as pd
+import re
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -312,3 +313,14 @@ def test__consensus_strategy_pairwise__benchmark_sequence_generator__customized_
         assert rowOutput[:3] == row[:3]
         assert distance(rowOutput[2], rowOutput[3]) == int(rowOutput[4])
         assert rowOutput[-1] == row[-1]
+
+
+def test__consensus_strategy_pairwise__generate_consensus_algorithm_path_header(
+    consensusStrategyPairwise,
+):
+    processName = "consensus"
+    medakaFileName = processName + r"-pairwise-\d{8}-\d{6}"
+    medakaFileNameOutput = (
+        consensusStrategyPairwise.generate_consensus_algorithm_path_header(processName)
+    )
+    assert re.match(medakaFileName, medakaFileNameOutput)

@@ -8,9 +8,20 @@ from io import StringIO
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from os.path import exists
 from ConSeqUMI.consensus.config import MCOMMAND
+import argparse
 
 
 class ConsensusStrategyMedaka(ConsensusStrategy):
+    def generate_consensus_algorithm_path_header_insert(self) -> str:
+        consensusAlgorithmInsert = "medaka"
+        medakaParser = argparse.ArgumentParser(description="")
+        medakaParser.add_argument("-m", type=str)
+        args, unknown = medakaParser.parse_known_args(MCOMMAND)
+        args = vars(args)
+        if args["m"]:
+            consensusAlgorithmInsert += "-" + args["m"]
+        return consensusAlgorithmInsert
+
     def generate_consensus_sequence_from_biopython_records(
         self, binRecords: list
     ) -> str:

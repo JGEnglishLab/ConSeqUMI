@@ -7,6 +7,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import time
 import argparse
+import os
 
 
 def main(args):
@@ -16,7 +17,10 @@ def main(args):
     pathsSortedByLength = sorted(
         pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True
     )
-    consensusFilePath = args["output"] + generate_file_name(args["consensusAlgorithm"])
+    consensusFilePath = os.path.join(
+        args["output"],
+        context.generate_consensus_algorithm_path_header("consensus") + ".fasta",
+    )
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
     with open(consensusFilePath, "w") as output_handle:
@@ -38,18 +42,3 @@ def main(args):
             )
             SeqIO.write([consensusRecord], output_handle, "fasta")
     printer("consensus generation complete")
-
-
-def generate_file_name(consensusAlgorithm):
-    consensusAlgorithmInsert = consensusAlgorithm
-    if consensusAlgorithm == "medaka":
-        medakaParser = argparse.ArgumentParser(description="")
-        medakaParser.add_argument("-m", type=str)
-        args, unknown = medakaParser.parse_known_args(MCOMMAND)
-        args = vars(args)
-        if args["m"]:
-            consensusAlgorithmInsert += "-" + args["m"]
-
-    return (
-        "consensus-" + consensusAlgorithmInsert + time.strftime("-%Y%m%d-%H%M%S.fasta")
-    )

@@ -5,6 +5,7 @@ import os
 from shutil import which
 import numpy as np
 import pandas as pd
+import re
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -118,3 +119,16 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator__customiz
         assert rowOutput[:3] == row[:3]
         assert distance(rowOutput[2], rowOutput[3]) == int(rowOutput[4])
         assert rowOutput[-1] == row[-1]
+
+
+def test__consensus_strategy_lamassemble__generate_consensus_algorithm_path_header(
+    consensusStrategyLamassemble,
+):
+    processName = "consensus"
+    medakaFileName = processName + r"-lamassemble-\d{8}-\d{6}"
+    medakaFileNameOutput = (
+        consensusStrategyLamassemble.generate_consensus_algorithm_path_header(
+            processName
+        )
+    )
+    assert re.match(medakaFileName, medakaFileNameOutput)

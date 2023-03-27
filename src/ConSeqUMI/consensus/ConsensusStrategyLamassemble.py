@@ -7,6 +7,9 @@ from ConSeqUMI.consensus.config import LCOMMAND
 
 
 class ConsensusStrategyLamassemble(ConsensusStrategy):
+    def generate_consensus_algorithm_path_header_insert(self) -> str:
+        return "lamassemble"
+
     def generate_consensus_sequence_from_biopython_records(
         self, binRecords: list
     ) -> str:
