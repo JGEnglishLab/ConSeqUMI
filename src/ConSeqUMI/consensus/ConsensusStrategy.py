@@ -1,17 +1,34 @@
 from abc import ABC, abstractmethod
 import random
 from Levenshtein import distance
+import time
 
 
 class ConsensusStrategy(ABC):
+    @abstractmethod
+    def generate_consensus_algorithm_path_header_insert(self) -> str:
+        pass
+
     @abstractmethod
     def generate_consensus_sequence_from_biopython_records(
         self, binRecords: list
     ) -> str:
         pass
 
+    def generate_consensus_algorithm_path_header(self, processName: str):
+        return (
+            processName
+            + "-"
+            + self.generate_consensus_algorithm_path_header_insert()
+            + time.strftime("-%Y%m%d-%H%M%S")
+        )
+
     def benchmark_sequence_generator(
-        self, referenceSequence: str, binRecords: list, intervalNumbers: list, iterations: int
+        self,
+        referenceSequence: str,
+        binRecords: list,
+        intervalNumbers: list,
+        iterations: int,
     ):
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]

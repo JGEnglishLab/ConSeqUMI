@@ -27,6 +27,9 @@ class ConsensusContext:
     def strategy(self, strategy: ConsensusStrategy) -> None:
         self._strategy = strategy
 
+    def generate_consensus_algorithm_path_header(self, processName: str):
+        return self._strategy.generate_consensus_algorithm_path_header(processName)
+
     def generate_consensus_sequence_from_biopython_records(
         self, binRecords: list
     ) -> str:

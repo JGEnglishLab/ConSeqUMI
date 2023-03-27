@@ -60,8 +60,3 @@ def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     consFile = args["output"] + file[0]
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     assert len(consensusRecords) == 1
-
-
-def test__cons__generate_file_name(consensusAlgorithm, fileNamePattern):
-    fileNameOutput = consensus.generate_file_name(consensusAlgorithm)
-    assert re.match(fileNamePattern, fileNameOutput)

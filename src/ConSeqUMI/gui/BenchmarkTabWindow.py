@@ -58,7 +58,7 @@ class BenchmarkTabWindow(TabWindow):
         self.referenceLabel = QLabel("Reference Sequence File Path (optional)")
         self.referenceLabel.setToolTip(
             "Optional. \nA fasta file with the expected reference sequence for evaluating the accuracy of subsample-derived consensus sequences."
-         )
+        )
         self.referenceField = QLineEdit()
         self.referenceBrowseButton = QPushButton("Browse")
         self.referenceBrowseButton.clicked.connect(

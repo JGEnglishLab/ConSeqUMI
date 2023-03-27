@@ -5,6 +5,7 @@ import os
 from shutil import which
 import numpy as np
 import pandas as pd
+import re
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -87,13 +88,14 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator__max_inte
         )
     ]
     intervalsOutput = set(pd.DataFrame(rowsOutput).iloc[:, 0])
-    intervals = set(["1","100","200","300","400","500"])
+    intervals = set(["1", "100", "200", "300", "400", "500"])
     assert intervalsOutput == intervals
+
 
 def test__consensus_strategy_lamassemble__benchmark_sequence_generator__customized_intervals_also_works(
     consensusStrategyLamassemble, consensusSequence, targetSequenceRecords
 ):
-    intervals = [10,1,12]
+    intervals = [10, 1, 12]
     iterations = 2
     rows = [
         ["10", "0", consensusSequence, "tempSequence", "distance", "14"],
@@ -117,3 +119,16 @@ def test__consensus_strategy_lamassemble__benchmark_sequence_generator__customiz
         assert rowOutput[:3] == row[:3]
         assert distance(rowOutput[2], rowOutput[3]) == int(rowOutput[4])
         assert rowOutput[-1] == row[-1]
+
+
+def test__consensus_strategy_lamassemble__generate_consensus_algorithm_path_header(
+    consensusStrategyLamassemble,
+):
+    processName = "consensus"
+    medakaFileName = processName + r"-lamassemble-\d{8}-\d{6}"
+    medakaFileNameOutput = (
+        consensusStrategyLamassemble.generate_consensus_algorithm_path_header(
+            processName
+        )
+    )
+    assert re.match(medakaFileName, medakaFileNameOutput)

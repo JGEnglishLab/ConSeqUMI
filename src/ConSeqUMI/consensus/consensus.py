@@ -1,9 +1,13 @@
 from ConSeqUMI.Printer import Printer
 from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
+from ConSeqUMI.consensus.config import MCOMMAND
+
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import time
+import argparse
+import os
 
 
 def main(args):
@@ -13,7 +17,10 @@ def main(args):
     pathsSortedByLength = sorted(
         pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True
     )
-    consensusFilePath = args["output"] + generate_file_name(args["consensusAlgorithm"])
+    consensusFilePath = os.path.join(
+        args["output"],
+        context.generate_consensus_algorithm_path_header("consensus") + ".fasta",
+    )
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
     with open(consensusFilePath, "w") as output_handle:
@@ -35,7 +42,3 @@ def main(args):
             )
             SeqIO.write([consensusRecord], output_handle, "fasta")
     printer("consensus generation complete")
-
-
-def generate_file_name(consensusAlgorithm):
-    return "consensus-" + consensusAlgorithm + time.strftime("-%Y%m%d-%H%M%S.fasta")

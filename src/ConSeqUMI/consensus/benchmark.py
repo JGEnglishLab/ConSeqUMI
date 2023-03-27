@@ -5,17 +5,19 @@ import os
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
+import os
 
 
 def main(args):
-    inputFile = args["output"] + "input.fastq"
-    benchmarkOutputFile = args["output"] + generate_file_name(
-        args["consensusAlgorithm"]
+    context = ConsensusContext(args["consensusAlgorithm"])
+    inputFile = os.path.join(args["output"], "input.fastq")
+    benchmarkOutputFile = os.path.join(
+        args["output"],
+        context.generate_consensus_algorithm_path_header("benchmark") + ".csv",
     )
     print("output folder: " + benchmarkOutputFile)
-    referenceFile = args["output"] + "reference.fasta"
+    referenceFile = os.path.join(args["output"], "reference.fasta")
     printer = Printer()
-    context = ConsensusContext(args["consensusAlgorithm"])
     print(args["output"])
     printer(f"total number of input reads: {len(args['input'])}")
     columns = [
@@ -56,7 +58,3 @@ def main(args):
                 )
                 previousInterval = currentInterval
             file.write(",".join(outputValue) + os.linesep)
-
-
-def generate_file_name(consensusAlgorithm):
-    return "benchmark-" + consensusAlgorithm + time.strftime("-%Y%m%d-%H%M%S.csv")
