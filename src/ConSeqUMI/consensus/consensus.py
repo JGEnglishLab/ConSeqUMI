@@ -10,28 +10,18 @@ import argparse
 import os
 from multiprocessing import Process, Queue
 
-
-def producer(queue, pathsSortedByLength, args, context):
+def producer(queue, path, records, context):
     printer = Printer()
-    for path in pathsSortedByLength:
-        records = args["input"][path]
-        if len(records) < args["minimumReads"]:
-            printer(
-                f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
-            )
-            break
-        printer(f" ***** {len(records)} reads: generating consensus for {path}")
-        id = path.split("/")[-1]
-        description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
-        consensusSequence = (
-            context.generate_consensus_sequence_from_biopython_records(records)
-        )
-        consensusRecord = SeqRecord(
-            Seq(consensusSequence), id=id, description=description
-        )
-        queue.put(consensusRecord)
-    queue.put(None)
-
+    printer(f" ***** {len(records)} reads: generating consensus for {path}")
+    id = path.split("/")[-1]
+    description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
+    consensusSequence = (
+        context.generate_consensus_sequence_from_biopython_records(records)
+    )
+    consensusRecord = SeqRecord(
+        Seq(consensusSequence), id=id, description=description
+    )
+    queue.put(consensusRecord)
 
 def consumer(queue, consensusFilePath):
     with open(consensusFilePath, "w") as output_handle:
@@ -83,8 +73,10 @@ def main(args):
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
 
-    process = ConsensusProcess(consensusFilePath=consensusFilePath)
-    process.start()
+    queue = Queue()
+    consumer_process = Process(target=consumer, args=(queue,consensusFilePath))
+    consumer_process.start()
+    processes = []
     for path in pathsSortedByLength:
         records = args["input"][path]
         if len(records) < args["minimumReads"]:
@@ -92,17 +84,13 @@ def main(args):
                 f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
             )
             break
-        process.send(path, records, context)
-    process.queue.put(None)
-    '''
-    queue = Queue()
-    consumer_process = Process(target=consumer, args=(queue,consensusFilePath))
-    consumer_process.start()
-    producer_process = Process(target=producer, args=(queue,pathsSortedByLength, args, context))
-    producer_process.start()
-    producer_process.join()
+        processes.append(Process(target=producer, args=(queue,path, records, context)))
+        processes[-1].start()
+    for process in processes:
+        process.join()
+    queue.put(None)
     consumer_process.join()
-    '''
+
     printer("consensus generation complete")
 
 
