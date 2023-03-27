@@ -1,9 +1,12 @@
 from ConSeqUMI.Printer import Printer
 from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
+from ConSeqUMI.consensus.config import MCOMMAND
+
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import time
+import argparse
 
 
 def main(args):
@@ -38,4 +41,13 @@ def main(args):
 
 
 def generate_file_name(consensusAlgorithm):
-    return "consensus-" + consensusAlgorithm + time.strftime("-%Y%m%d-%H%M%S.fasta")
+    consensusAlgorithmInsert = consensusAlgorithm
+    if consensusAlgorithm == "medaka":
+        medakaParser = argparse.ArgumentParser(description="")
+        medakaParser.add_argument("-m",type=str)
+        args, unknown = medakaParser.parse_known_args(MCOMMAND)
+        args = vars(args)
+        if args["m"]:
+            consensusAlgorithmInsert += "-" + args["m"]
+
+    return "consensus-" + consensusAlgorithmInsert + time.strftime("-%Y%m%d-%H%M%S.fasta")

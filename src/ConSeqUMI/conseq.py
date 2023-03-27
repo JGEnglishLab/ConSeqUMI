@@ -174,12 +174,12 @@ class InputDirectory:
         if self.command == "umi":
             records = []
             for file in files:
-                records.extend(list(SeqIO.parse(name + file, "fastq")))
+                records.extend(list(SeqIO.parse(os.path.join(name, file), "fastq")))
             return records
         elif self.command == "cons":
             records = {}
             for file in files:
-                records[name + file] = list(SeqIO.parse(name + file, "fastq"))
+                records[os.path.join(name, file)] = list(SeqIO.parse(os.path.join(name, file), "fastq"))
             return records
 
 
