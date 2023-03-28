@@ -8,6 +8,7 @@ from ConSeqUMI.consensus.ConsensusStrategyMedaka import (
     ConsensusStrategyMedaka as MedakaStrategy,
 )
 from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy as ConsensusStrategy
+from multiprocessing import Queue
 
 
 class ConsensusContext:
@@ -38,9 +39,8 @@ class ConsensusContext:
         )
 
     def benchmark_sequence_generator(
-        self, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+        self, queue: Queue, referenceSequence: str, binRecords: list, intervals: int, iterations: int
     ):
-        for returnValue in self._strategy.benchmark_sequence_generator(
-            referenceSequence, binRecords, intervals, iterations
-        ):
-            yield returnValue
+        self._strategy.benchmark_sequence_generator(
+            queue, referenceSequence, binRecords, intervals, iterations
+        )
