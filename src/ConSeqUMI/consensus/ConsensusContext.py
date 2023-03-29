@@ -31,10 +31,10 @@ class ConsensusContext:
     def generate_consensus_algorithm_path_header(self, processName: str):
         return self._strategy.generate_consensus_algorithm_path_header(processName)
 
-    def generate_consensus_sequence_from_biopython_records(
+    def generate_consensus_record_from_biopython_records(
         self, binRecords: list
     ) -> str:
-        return self._strategy.generate_consensus_sequence_from_biopython_records(
+        return self._strategy.generate_consensus_record_from_biopython_records(
             binRecords
         )
 

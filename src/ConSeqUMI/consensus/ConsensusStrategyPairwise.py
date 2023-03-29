@@ -10,7 +10,8 @@ from ConSeqUMI.consensus.consensusStrategyPairwiseFunctions import (
 from collections import Counter
 import numpy as np
 import re
-
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 class ConsensusStrategyPairwise(ConsensusStrategy):
     def __init__(self):
@@ -119,7 +120,7 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
             allReadSequenceDifferences.extend(readSequenceDifferences)
         return mean(alignedScores), allReadSequenceDifferences
 
-    def generate_consensus_sequence_from_biopython_records(
+    def generate_consensus_record_from_biopython_records(
         self, binRecords: list
     ) -> str:
         binSequences = [str(record.seq) for record in binRecords]
@@ -137,7 +138,8 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
         )
         while currentScore > bestScore:
             if len(currentDifferences) == 0:
-                return candidateSequence
+                candidateRecord = SeqRecord(Seq(candidateSequence), id="candidateRecord")
+                return candidateRecord
             mostCommonDifference = Counter(currentDifferences).most_common(1)[0][0]
             nextSequence = inject_difference_into_sequence(
                 candidateSequence, mostCommonDifference
@@ -151,4 +153,5 @@ class ConsensusStrategyPairwise(ConsensusStrategy):
             )
             if currentScore > bestScore:
                 candidateSequence = nextSequence[:]
-        return candidateSequence
+        candidateRecord = SeqRecord(Seq(candidateSequence),id="candidateRecord")
+        return candidateRecord

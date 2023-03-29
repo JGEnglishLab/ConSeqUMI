@@ -22,7 +22,7 @@ class ConsensusStrategyMedaka(ConsensusStrategy):
             consensusAlgorithmInsert += "-" + args["m"]
         return consensusAlgorithmInsert
 
-    def generate_consensus_sequence_from_biopython_records(
+    def generate_consensus_record_from_biopython_records(
         self, binRecords: list
     ) -> str:
         inputFile = NamedTemporaryFile(prefix="conseq_medaka_delete_", suffix=".fastq")
@@ -35,11 +35,11 @@ class ConsensusStrategyMedaka(ConsensusStrategy):
         referenceSequence = referenceConsensusGenerator.generate_consensus_sequence(
             binSequences
         )
-        consensusSequences = [referenceSequence]
-        while len(consensusSequences) < 5:
+        consensusRecords = [SeqRecord(Seq(referenceSequence), id="medaka_draft")]
+        while len(consensusRecords) < 5:
             with open(draftFile.name, "w") as output_handle:
                 SeqIO.write(
-                    [SeqRecord(Seq(consensusSequences[-1]), id="medaka_draft")],
+                    [consensusRecords[-1]],
                     output_handle,
                     "fasta",
                 )
@@ -59,17 +59,17 @@ class ConsensusStrategyMedaka(ConsensusStrategy):
             )
             child.stdin.close()
             if exists(outputDir.name + "/consensus.fasta"):
-                consensusRecords = [
+                medakaOutputRecords = [
                     record
                     for record in SeqIO.parse(
                         outputDir.name + "/consensus.fasta", "fasta"
                     )
                 ]
-                if len(consensusRecords) == 0:
-                    return consensusSequences[-1]
-                consensusSequences.append(str(consensusRecords[0].seq))
-                if consensusSequences[-1] == consensusSequences[-2]:
-                    return consensusSequences[-1]
+                if len(medakaOutputRecords) == 0:
+                    return consensusRecords[-1]
+                consensusRecords.append(medakaOutputRecords[0])
+                if str(consensusRecords[-1].seq) == str(consensusRecords[-2].seq):
+                    return consensusRecords[-1]
             else:
-                return consensusSequences[-1]
-        return consensusSequences[-1]
+                return consensusRecords[-1]
+        return consensusRecords[-1]

@@ -5,6 +5,7 @@ import time
 from ConSeqUMI.Printer import Printer
 from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 import typing as T
+from Bio.SeqRecord import SeqRecord
 
 class ConsensusStrategy(ABC):
     @abstractmethod
@@ -12,9 +13,9 @@ class ConsensusStrategy(ABC):
         pass
 
     @abstractmethod
-    def generate_consensus_sequence_from_biopython_records(
+    def generate_consensus_record_from_biopython_records(
         self, binRecords: list
-    ) -> str:
+    ) -> SeqRecord:
         pass
 
     def generate_consensus_algorithm_path_header(self, processName: str):
@@ -28,13 +29,14 @@ class ConsensusStrategy(ABC):
     def find_consensus_and_add_to_writing_queue(self, randomSampleOfRecords, intervalNumber, iteration,
                                                 referenceSequence, numBinRecords):
         if intervalNumber == 1:
-            benchmarkedSequence = str(randomSampleOfRecords[0].seq)
+            benchmarkedRecord = randomSampleOfRecords[0]
         else:
-            benchmarkedSequence = (
-                self.generate_consensus_sequence_from_biopython_records(
+            benchmarkedRecord = (
+                self.generate_consensus_record_from_biopython_records(
                     randomSampleOfRecords
                 )
             )
+        benchmarkedSequence = str(benchmarkedRecord.seq)
         outputList = [
             str(intervalNumber),
             str(iteration),

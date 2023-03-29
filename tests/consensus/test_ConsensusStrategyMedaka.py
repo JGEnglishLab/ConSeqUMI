@@ -42,14 +42,14 @@ def test__consensus_strategy_medaka__generate_consensus_sequence_from_biopython_
     consensusSequence, targetSequenceRecords, consensusStrategyMedaka
 ):
     consensusSequenceOutput = (
-        consensusStrategyMedaka.generate_consensus_sequence_from_biopython_records(
+        consensusStrategyMedaka.generate_consensus_record_from_biopython_records(
             targetSequenceRecords
         )
     )
-    assert consensusSequenceOutput == consensusSequence
+    assert str(consensusSequenceOutput.seq) == consensusSequence
 
 
-def test__consensus_strategy_medaka__benchmark_sequence_generator(
+def test__consensus_strategy_medaka__populate_future_processes_with_benchmark_tasks(
     consensusStrategyMedaka, consensusSequence, targetSequenceRecords
 ):
     intervals = [10]
@@ -80,7 +80,7 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator(
         assert rowOutput[-1] == row[-1]
 
 
-def test__consensus_strategy_medaka__benchmark_sequence_generator__max_interval_number_is_500(
+def test__consensus_strategy_medaka__populate_future_processes_with_benchmark_tasks__max_interval_number_is_500(
     consensusStrategyMedaka, consensusSequence, targetSequenceRecords
 ):
     intervals = [100]
@@ -102,7 +102,7 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator__max_interval_
     assert intervalsOutput == intervals
 
 
-def test__consensus_strategy_medaka__benchmark_sequence_generator__customized_intervals_also_works(
+def test__consensus_strategy_medaka__populate_future_processes_with_benchmark_tasks__customized_intervals_also_works(
     consensusStrategyMedaka, consensusSequence, targetSequenceRecords
 ):
     intervals = [7, 10, 12]

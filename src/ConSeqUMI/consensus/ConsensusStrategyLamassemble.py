@@ -10,7 +10,7 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_algorithm_path_header_insert(self) -> str:
         return "lamassemble"
 
-    def generate_consensus_sequence_from_biopython_records(
+    def generate_consensus_record_from_biopython_records(
         self, binRecords: list
     ) -> str:
         inputFile = NamedTemporaryFile(
@@ -30,4 +30,4 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
         seq_ali = list(SeqIO.parse(StringIO(child_out), "fasta"))
         child.stdin.close()
 
-        return str(seq_ali[0].seq).upper()
+        return seq_ali[0].upper()
