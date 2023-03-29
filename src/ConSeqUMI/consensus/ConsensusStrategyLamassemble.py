@@ -28,6 +28,8 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
         # child.stdin.write(stdin.encode())
         child_out = child.communicate()[0].decode("utf8")
         seq_ali = list(SeqIO.parse(StringIO(child_out), "fasta"))
+        if not seq_ali:
+            seq_ali = list(SeqIO.parse(StringIO(child_out), "fastq"))
         child.stdin.close()
 
         return seq_ali[0].upper()

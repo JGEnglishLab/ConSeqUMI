@@ -60,3 +60,22 @@ def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     consFile = args["output"] + file[0]
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     assert len(consensusRecords) == 1
+
+def test__cons__determine_output_file_type__default():
+    consensusAlgorithm = "pairwise"
+    fileType = "fasta"
+    fileTypeOutput = consensus.determine_output_file_type(consensusAlgorithm)
+    assert fileType == fileTypeOutput
+
+@pytest.mark.skipif(
+    True,
+    reason="Not sure how to test this. I would need to change the LCOMMAND config variable in-code to test separately from typical options.",
+)
+def test__cons__determine_output_file_type__lamassemble_with_f_tag_set_to_fastq():
+    consensusAlgorithm = "lamassemble"
+    fileType = "fastq"
+    fileTypeOutput = consensus.determine_output_file_type(consensusAlgorithm)
+    assert fileType == fileTypeOutput
+
+
+
