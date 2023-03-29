@@ -1,6 +1,6 @@
 from ConSeqUMI.Printer import Printer
 from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
-from ConSeqUMI.consensus.config import LCOMMAND
+from ConSeqUMI.consensus.config import MCOMMAND
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -38,10 +38,9 @@ def main(args):
     pathsSortedByLength = sorted(
         pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True
     )
-    outputFileType = determine_output_file_type(args["consensusAlgorithm"])
     consensusFilePath = os.path.join(
         args["output"],
-        context.generate_consensus_algorithm_path_header("consensus") + "." + outputFileType,
+        context.generate_consensus_algorithm_path_header("consensus") + ".fasta",
     )
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
@@ -61,20 +60,10 @@ def main(args):
 
     with open(consensusFilePath, "w") as output_handle:
         for futureProcess in as_completed(futureProcesses):
-            SeqIO.write([futureProcess.result()], output_handle, outputFileType)
+            SeqIO.write([futureProcess.result()], output_handle, "fasta")
 
     printer("consensus generation complete")
 
-def determine_output_file_type(consensusAlgorithm):
-    if consensusAlgorithm == "lamassemble":
-        lamassembleParser = argparse.ArgumentParser(description="")
-        lamassembleParser.add_argument("-f", type=str)
-        lamassembleParser.add_argument("-format", type=str)
-        args, unknown = lamassembleParser.parse_known_args(LCOMMAND)
-        args = vars(args)
-        if args["f"] or args["format"]:
-            return args["f"]
-    return "fasta"
 
 
 
