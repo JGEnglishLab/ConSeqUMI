@@ -70,6 +70,14 @@ class ConsensusTabWindow(TabWindow):
 
         settingLayout.addRow(self.minReadsTitle, self.minReadsField)
 
+        self.processesTitle = QLabel("Process Number (optional)")
+        self.processesTitle.setToolTip(
+            "Optional. \nNumber of processes to run. \nBy default it will only use 1. \nIf you enter a number beyond the number of processes your computer is capable of, \nthe number of processes will automatically be set to the maximum level for your computer."
+        )
+        self.processesField = QLineEdit()
+        self.processesField.setPlaceholderText("1")
+        settingLayout.addRow(self.processesTitle, self.processesField)
+
     def set_args(self) -> list:
         args = ["cons"]
         if self.inputField.text():
@@ -83,5 +91,7 @@ class ConsensusTabWindow(TabWindow):
             args.extend(["-o", output])
         if self.minReadsField.text():
             args.extend(["-m", self.minReadsField.text()])
+        if self.processesField.text():
+            args.extend(["-p", self.processesField.text()])
         args.extend(["-c", self.consensusAlgorithmComboBox.currentText()])
         return args

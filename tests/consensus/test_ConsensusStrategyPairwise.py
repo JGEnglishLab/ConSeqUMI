@@ -248,6 +248,7 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
 ):
     intervals = [10]
     iterations = 2
+    numProcesses = 1
     rows = [
         ["1", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["1", "1", consensusSequence, "tempSequence", "distance", "14"],
@@ -256,7 +257,7 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     ]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):
@@ -278,10 +279,11 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     intervals = [100]
     iterations = 1
     numberOfRecords = 605
+    numProcesses = 1
     inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, consensusSequence, inputRecords, intervals, iterations
+        futureProcesses, numProcesses, consensusSequence, inputRecords, intervals, iterations
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):
@@ -298,6 +300,7 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
 ):
     intervals = [7, 10, 12]
     iterations = 2
+    numProcesses = 1
     rows = [
         ["10", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["10", "1", consensusSequence, "tempSequence", "distance", "14"],
@@ -308,7 +311,7 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     ]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):

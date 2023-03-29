@@ -57,7 +57,7 @@ def main(args):
     printer("beginning benchmark process")
 
     futureProcesses: T.List[Future] = []
-    context.populate_future_processes_with_benchmark_tasks(futureProcesses, referenceSequence, args["input"], args["intervals"], args["iterations"])
+    context.populate_future_processes_with_benchmark_tasks(futureProcesses, args["processNum"], referenceSequence, args["input"], args["intervals"], args["iterations"])
     priorIntervals = set()
     with open(benchmarkOutputFile, "w") as file:
         file.write(",".join(columns) + os.linesep)

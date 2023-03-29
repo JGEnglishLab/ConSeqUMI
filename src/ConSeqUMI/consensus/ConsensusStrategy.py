@@ -48,13 +48,14 @@ class ConsensusStrategy(ABC):
     def populate_future_processes_with_benchmark_tasks(
         self,
         futureProcesses: T.List[Future],
+        processNum: int,
         referenceSequence: str,
         binRecords: list,
         intervalNumbers: list,
         iterations: int,
     ):
 
-        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=4)
+        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=processNum)
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]
             intervalNumbers = [1]

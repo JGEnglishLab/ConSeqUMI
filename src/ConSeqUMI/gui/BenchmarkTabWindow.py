@@ -93,6 +93,14 @@ class BenchmarkTabWindow(TabWindow):
         self.iterationsField.setPlaceholderText("100")
         settingLayout.addRow(self.iterationsTitle, self.iterationsField)
 
+        self.processesTitle = QLabel("Process Number (optional)")
+        self.processesTitle.setToolTip(
+            "Optional. \nNumber of processes to run. \nBy default it will only use 1. \nIf you enter a number beyond the number of processes your computer is capable of, \nthe number of processes will automatically be set to the maximum level for your computer."
+        )
+        self.processesField = QLineEdit()
+        self.processesField.setPlaceholderText("1")
+        settingLayout.addRow(self.processesTitle, self.processesField)
+
     def set_args(self) -> list:
         args = ["benchmark"]
         if self.inputField.text():
@@ -110,5 +118,7 @@ class BenchmarkTabWindow(TabWindow):
             args.extend(["-int", self.intervalsField.text()])
         if self.iterationsField.text():
             args.extend(["-iter", self.iterationsField.text()])
+        if self.processesField.text():
+            args.extend(["-p", self.processesField.text()])
         args.extend(["-c", self.consensusAlgorithmComboBox.currentText()])
         return args

@@ -47,7 +47,7 @@ def main(args):
     printer("beginning consensus sequence generation")
 
 
-    consensusGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=3)
+    consensusGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=args["processNum"])
     futureProcesses: T.List[Future] = []
 
     for path in pathsSortedByLength:
