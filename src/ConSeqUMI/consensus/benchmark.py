@@ -6,8 +6,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import os
-from multiprocessing import Process, Queue
-
+from concurrent.futures import Future, as_completed
+import typing as T
 
 def writing_to_file_from_queue(queue, benchmarkOutputFile):
     with open(benchmarkOutputFile, "w") as file:
@@ -56,10 +56,16 @@ def main(args):
 
     printer("beginning benchmark process")
 
-    queue = Queue()
-    writingProcess = Process(target=writing_to_file_from_queue, args=(queue,benchmarkOutputFile))
-    writingProcess.start()
-    queue.put(columns)
-    context.benchmark_sequence_generator(queue, referenceSequence, args["input"], args["intervals"], args["iterations"])
-    queue.put(None)
-    writingProcess.join()
+    futureProcesses: T.List[Future] = []
+    context.benchmark_sequence_generator(futureProcesses, referenceSequence, args["input"], args["intervals"], args["iterations"])
+    priorIntervals = set()
+    with open(benchmarkOutputFile, "w") as file:
+        file.write(",".join(columns) + os.linesep)
+        for futureProcess in as_completed(futureProcesses):
+            row = futureProcess.result()
+            if row[0] not in priorIntervals:
+                priorIntervals.add(row[0])
+                printer(
+                    f"benchmarking interval: {row[0]} ({args['iterations']} iterations)"
+                )
+            file.write(",".join(row) + os.linesep)

@@ -8,9 +8,10 @@ from Bio import SeqIO
 import time
 import argparse
 import os
-from multiprocessing import Process, Queue
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
+import typing as T
 
-def find_consensus_and_add_to_writing_queue(queue, path, records, context, printer):
+def find_consensus_and_add_to_writing_queue(path, records, context, printer):
     printer(f" ***** {len(records)} reads: generating consensus for {path}")
     id = path.split("/")[-1]
     description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
@@ -20,7 +21,7 @@ def find_consensus_and_add_to_writing_queue(queue, path, records, context, print
     consensusRecord = SeqRecord(
         Seq(consensusSequence), id=id, description=description
     )
-    queue.put(consensusRecord)
+    return consensusRecord
 
 def writing_to_file_from_queue(queue, consensusFilePath):
     with open(consensusFilePath, "w") as output_handle:
@@ -45,10 +46,10 @@ def main(args):
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
 
-    queue = Queue()
-    writingProcess = Process(target=writing_to_file_from_queue, args=(queue,consensusFilePath))
-    writingProcess.start()
-    consensusProcesses = []
+
+    consensusGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=3)
+    futureProcesses: T.List[Future] = []
+
     for path in pathsSortedByLength:
         records = args["input"][path]
         if len(records) < args["minimumReads"]:
@@ -56,12 +57,11 @@ def main(args):
                 f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
             )
             break
-        consensusProcesses.append(Process(target=find_consensus_and_add_to_writing_queue, args=(queue,path, records, context, printer)))
-        consensusProcesses[-1].start()
-    for consensusProcess in consensusProcesses:
-        consensusProcess.join()
-    queue.put(None)
-    writingProcess.join()
+        futureProcesses.append(consensusGenerationProcessPool.submit(find_consensus_and_add_to_writing_queue, path, records, context, printer))
+
+    with open(consensusFilePath, "w") as output_handle:
+        for futureProcess in as_completed(futureProcesses):
+            SeqIO.write([futureProcess.result()], output_handle, "fasta")
 
     printer("consensus generation complete")
 

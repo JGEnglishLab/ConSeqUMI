@@ -3,7 +3,8 @@ import random
 from Levenshtein import distance
 import time
 from ConSeqUMI.Printer import Printer
-from multiprocessing import Process, Queue
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
+import typing as T
 
 class ConsensusStrategy(ABC):
     @abstractmethod
@@ -24,7 +25,7 @@ class ConsensusStrategy(ABC):
             + time.strftime("-%Y%m%d-%H%M%S")
         )
 
-    def find_consensus_and_add_to_writing_queue(self, queue, randomSampleOfRecords, intervalNumber, iteration,
+    def find_consensus_and_add_to_writing_queue(self, randomSampleOfRecords, intervalNumber, iteration,
                                                 referenceSequence, numBinRecords):
         if intervalNumber == 1:
             benchmarkedSequence = str(randomSampleOfRecords[0].seq)
@@ -42,18 +43,18 @@ class ConsensusStrategy(ABC):
             str(distance(referenceSequence, benchmarkedSequence)),
             str(numBinRecords),
         ]
-        queue.put(outputList)
+        return outputList
 
     def benchmark_sequence_generator(
         self,
-        queue: Queue,
+        futureProcesses: T.List[Future],
         referenceSequence: str,
         binRecords: list,
         intervalNumbers: list,
         iterations: int,
     ):
-        printer = Printer()
-        processes = []
+
+        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=4)
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]
             intervalNumbers = [1]
@@ -61,15 +62,8 @@ class ConsensusStrategy(ABC):
                 if i * intervals <= 500:
                     intervalNumbers.append(i * intervals)
         for intervalNumber in intervalNumbers:
-            printer(
-                f"benchmarking interval: {intervalNumber} ({iterations} iterations)"
-            )
             for iteration in range(iterations):
                 randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)
-
-                processes.append(Process(target=self.find_consensus_and_add_to_writing_queue, args=(queue, randomSampleOfRecords, intervalNumber, iteration,
-                                                referenceSequence, len(binRecords))))
-                processes[-1].start()
-
-        for process in processes:
-            process.join()
+                futureProcesses.append(
+                benchmarkGenerationProcessPool.submit(self.find_consensus_and_add_to_writing_queue, randomSampleOfRecords, intervalNumber, iteration,
+                                                referenceSequence, len(binRecords)))
