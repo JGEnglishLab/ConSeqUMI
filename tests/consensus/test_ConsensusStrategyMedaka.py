@@ -6,6 +6,8 @@ from Levenshtein import distance
 import pandas as pd
 import numpy as np
 import re
+from concurrent.futures import Future, as_completed
+import typing as T
 
 srcPath = os.getcwd().split("/")[:-1]
 srcPath = "/".join(srcPath) + "/src/ConSeqUMI"
@@ -52,18 +54,22 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator(
 ):
     intervals = [10]
     iterations = 2
+    numProcesses = 1
     rows = [
         ["1", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["1", "1", consensusSequence, "tempSequence", "distance", "14"],
         ["10", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["10", "1", consensusSequence, "tempSequence", "distance", "14"],
     ]
-    rowsOutput = [
-        row
-        for row in consensusStrategyMedaka.benchmark_sequence_generator(
-            consensusSequence, targetSequenceRecords, intervals, iterations
-        )
-    ]
+    futureProcesses: T.List[Future] = []
+    consensusStrategyMedaka.populate_future_processes_with_benchmark_tasks(
+        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+    )
+    rowsOutput = []
+    for futureProcess in as_completed(futureProcesses):
+        row = futureProcess.result()
+        rowsOutput.append(row)
+    rowsOutput.sort()
 
     assert len(rowsOutput) == len(rows)
     for i in range(len(rows)):
@@ -80,13 +86,17 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator__max_interval_
     intervals = [100]
     iterations = 1
     numberOfRecords = 605
+    numProcesses = 1
     inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
-    rowsOutput = [
-        row
-        for row in consensusStrategyMedaka.benchmark_sequence_generator(
-            consensusSequence, inputRecords, intervals, iterations
-        )
-    ]
+    futureProcesses: T.List[Future] = []
+    consensusStrategyMedaka.populate_future_processes_with_benchmark_tasks(
+        futureProcesses, numProcesses, consensusSequence, inputRecords, intervals, iterations
+    )
+    rowsOutput = []
+    for futureProcess in as_completed(futureProcesses):
+        row = futureProcess.result()
+        rowsOutput.append(row)
+    rowsOutput.sort()
     intervalsOutput = set(pd.DataFrame(rowsOutput).iloc[:, 0])
     intervals = set(["1", "100", "200", "300", "400", "500"])
     assert intervalsOutput == intervals
@@ -95,22 +105,26 @@ def test__consensus_strategy_medaka__benchmark_sequence_generator__max_interval_
 def test__consensus_strategy_medaka__benchmark_sequence_generator__customized_intervals_also_works(
     consensusStrategyMedaka, consensusSequence, targetSequenceRecords
 ):
-    intervals = [10, 1, 12]
+    intervals = [7, 10, 12]
     iterations = 2
+    numProcesses = 1
     rows = [
         ["10", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["10", "1", consensusSequence, "tempSequence", "distance", "14"],
-        ["1", "0", consensusSequence, "tempSequence", "distance", "14"],
-        ["1", "1", consensusSequence, "tempSequence", "distance", "14"],
         ["12", "0", consensusSequence, "tempSequence", "distance", "14"],
         ["12", "1", consensusSequence, "tempSequence", "distance", "14"],
+        ["7", "0", consensusSequence, "tempSequence", "distance", "14"],
+        ["7", "1", consensusSequence, "tempSequence", "distance", "14"],
     ]
-    rowsOutput = [
-        row
-        for row in consensusStrategyMedaka.benchmark_sequence_generator(
-            consensusSequence, targetSequenceRecords, intervals, iterations
-        )
-    ]
+    futureProcesses: T.List[Future] = []
+    consensusStrategyMedaka.populate_future_processes_with_benchmark_tasks(
+        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+    )
+    rowsOutput = []
+    for futureProcess in as_completed(futureProcesses):
+        row = futureProcess.result()
+        rowsOutput.append(row)
+    rowsOutput.sort()
 
     assert len(rowsOutput) == len(rows)
     for i in range(len(rows)):

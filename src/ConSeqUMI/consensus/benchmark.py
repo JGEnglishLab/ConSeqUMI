@@ -6,6 +6,16 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 import os
+from concurrent.futures import Future, as_completed
+import typing as T
+
+def writing_to_file_from_queue(queue, benchmarkOutputFile):
+    with open(benchmarkOutputFile, "w") as file:
+        while True:
+            row = queue.get()
+            if row is None:
+                break
+            file.write(",".join(row) + os.linesep)
 
 
 def main(args):
@@ -45,16 +55,17 @@ def main(args):
         )
 
     printer("beginning benchmark process")
+
+    futureProcesses: T.List[Future] = []
+    context.populate_future_processes_with_benchmark_tasks(futureProcesses, args["processNum"], referenceSequence, args["input"], args["intervals"], args["iterations"])
+    priorIntervals = set()
     with open(benchmarkOutputFile, "w") as file:
         file.write(",".join(columns) + os.linesep)
-        previousInterval = 0
-        for outputValue in context.benchmark_sequence_generator(
-            referenceSequence, args["input"], args["intervals"], args["iterations"]
-        ):
-            currentInterval = int(outputValue[0])
-            if currentInterval > previousInterval:
+        for futureProcess in as_completed(futureProcesses):
+            row = futureProcess.result()
+            if row[0] not in priorIntervals:
+                priorIntervals.add(row[0])
                 printer(
-                    f"benchmarking interval: {currentInterval} ({args['iterations']} iterations)"
+                    f"benchmarking interval: {row[0]} ({args['iterations']} iterations)"
                 )
-                previousInterval = currentInterval
-            file.write(",".join(outputValue) + os.linesep)
+            file.write(",".join(row) + os.linesep)

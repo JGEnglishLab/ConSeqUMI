@@ -96,6 +96,13 @@ def set_command_line_settings():
         default=50,
         help="Minimum number of cluster reads required to generate a consensus sequence. Default is 50.",
     )
+    consParser.add_argument(
+        "-p",
+        "--processNum",
+        type=ConseqInt("processNum"),
+        default=1,
+        help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
+    )
     benchmarkParser = commandParser.add_parser(
         "benchmark",
         help="Creates a benchmarking data analysis file for evaluating the accuracy of a provided consensus sequence algorithm when applied to a given input fastq file.",
@@ -141,6 +148,13 @@ def set_command_line_settings():
         type=ConseqInt("iterations"),
         default=100,
         help="Number of iterations that occur at each interval. Default is 100. For example, at default, the program will generate a consensus sequence 100 times from randomly selecting 10 sequences, then 100 times for 20 sequences etc.",
+    )
+    benchmarkParser.add_argument(
+        "-p",
+        "--processNum",
+        type=ConseqInt("processNum"),
+        default=1,
+        help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
     )
     return parser
 
@@ -280,7 +294,9 @@ class ConseqInt:
             self.minValue = 10
             self.type = "umiLength"
             self.conciseType = "u"
-
+        elif type == "processNum":
+            self.type = "processNum"
+            self.conciseType = "p"
     def __call__(self, name):
         try:
             nameInt = int(name)
@@ -292,6 +308,9 @@ class ConseqInt:
             raise argparse.ArgumentTypeError(
                 f"The -{self.conciseType} or --{self.type} argument must be greater than or equal to {self.minValue}. Offending value: {name}"
             )
+        if nameInt > os.cpu_count() and self.type == "processNum":
+            nameInt = None
+
         return nameInt
 
 

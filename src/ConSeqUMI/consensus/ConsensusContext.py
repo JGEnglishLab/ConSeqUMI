@@ -8,7 +8,8 @@ from ConSeqUMI.consensus.ConsensusStrategyMedaka import (
     ConsensusStrategyMedaka as MedakaStrategy,
 )
 from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy as ConsensusStrategy
-
+from concurrent.futures import Future
+import typing as T
 
 class ConsensusContext:
     def __init__(self, strategy: str):
@@ -37,10 +38,9 @@ class ConsensusContext:
             binRecords
         )
 
-    def benchmark_sequence_generator(
-        self, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+    def populate_future_processes_with_benchmark_tasks(
+        self, futureProcesses: T.List[Future], numProcesses: int, referenceSequence: str, binRecords: list, intervals: int, iterations: int
     ):
-        for returnValue in self._strategy.benchmark_sequence_generator(
-            referenceSequence, binRecords, intervals, iterations
-        ):
-            yield returnValue
+        self._strategy.populate_future_processes_with_benchmark_tasks(
+             futureProcesses, numProcesses, referenceSequence, binRecords, intervals, iterations
+        )

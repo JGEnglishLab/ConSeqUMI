@@ -2,7 +2,9 @@ from abc import ABC, abstractmethod
 import random
 from Levenshtein import distance
 import time
-
+from ConSeqUMI.Printer import Printer
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
+import typing as T
 
 class ConsensusStrategy(ABC):
     @abstractmethod
@@ -23,13 +25,37 @@ class ConsensusStrategy(ABC):
             + time.strftime("-%Y%m%d-%H%M%S")
         )
 
-    def benchmark_sequence_generator(
+    def find_consensus_and_add_to_writing_queue(self, randomSampleOfRecords, intervalNumber, iteration,
+                                                referenceSequence, numBinRecords):
+        if intervalNumber == 1:
+            benchmarkedSequence = str(randomSampleOfRecords[0].seq)
+        else:
+            benchmarkedSequence = (
+                self.generate_consensus_sequence_from_biopython_records(
+                    randomSampleOfRecords
+                )
+            )
+        outputList = [
+            str(intervalNumber),
+            str(iteration),
+            referenceSequence,
+            benchmarkedSequence,
+            str(distance(referenceSequence, benchmarkedSequence)),
+            str(numBinRecords),
+        ]
+        return outputList
+
+    def populate_future_processes_with_benchmark_tasks(
         self,
+        futureProcesses: T.List[Future],
+        processNum: int,
         referenceSequence: str,
         binRecords: list,
         intervalNumbers: list,
         iterations: int,
     ):
+
+        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=processNum)
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]
             intervalNumbers = [1]
@@ -39,20 +65,6 @@ class ConsensusStrategy(ABC):
         for intervalNumber in intervalNumbers:
             for iteration in range(iterations):
                 randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)
-                if intervalNumber == 1:
-                    benchmarkedSequence = str(randomSampleOfRecords[0].seq)
-                else:
-                    benchmarkedSequence = (
-                        self.generate_consensus_sequence_from_biopython_records(
-                            randomSampleOfRecords
-                        )
-                    )
-                outputList = [
-                    str(intervalNumber),
-                    str(iteration),
-                    referenceSequence,
-                    benchmarkedSequence,
-                    str(distance(referenceSequence, benchmarkedSequence)),
-                    str(len(binRecords)),
-                ]
-                yield outputList
+                futureProcesses.append(
+                benchmarkGenerationProcessPool.submit(self.find_consensus_and_add_to_writing_queue, randomSampleOfRecords, intervalNumber, iteration,
+                                                referenceSequence, len(binRecords)))

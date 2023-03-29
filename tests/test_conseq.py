@@ -460,6 +460,7 @@ def test__conseq__set_command_line_settings__cons_defaults_set_correctly(
     assert len(args["input"]) == 2
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["minimumReads"] == 50
+    assert args["processNum"] == 1
 
 
 def test__conseq__set_command_line_settings__consensus_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(
@@ -545,6 +546,38 @@ def test__conseq__set_command_line_settings__cons_fails_when_minimumReads_is_neg
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(consArgs)
 
+def test__conseq__set_command_line_settings__cons_accepts_processNum(
+    parser, consArgs
+):
+    consArgs += ["-p", "3"]
+    args = vars(parser.parse_args(consArgs))
+    assert args["processNum"] == 3
+
+def test__conseq__set_command_line_settings__cons_accepts_processNum__high_process_goes_to_none(
+    parser, consArgs
+):
+    consArgs += ["-p", "1000"]
+    args = vars(parser.parse_args(consArgs))
+    assert args["processNum"] == None
+
+def test__conseq__set_command_line_settings__cons_fails_when_processNum_is_not_an_int(
+    parser, consArgs
+):
+    errorValue = "-3.1"
+    consArgs += ["-p", errorValue]
+    errorOutput = f"The -p or --processNum argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(consArgs)
+
+
+def test__conseq__set_command_line_settings__cons_fails_when_processNum_is_negative(
+    parser, consArgs
+):
+    errorValue = "-3"
+    consArgs += ["-p", errorValue]
+    errorOutput = f"The -p or --processNum argument must be greater than or equal to 1. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(consArgs)
 
 @pytest.fixture
 def benchmarkFiles(consensusSequence, targetSequenceRecords):
@@ -612,6 +645,8 @@ def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(
     assert args["reference"] == ""
     assert args["intervals"] == [10]
     assert args["iterations"] == 100
+    assert args["processNum"] == 1
+
 
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_input_file(
@@ -884,6 +919,28 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_iterations_is_
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
 
+def test__conseq__set_command_line_settings__benchmark_accepts_processNum(
+    parser, benchmarkArgs
+):
+    benchmarkArgs += ["-p", "3"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["processNum"] == 3
+
+def test__conseq__set_command_line_settings__benchmark_accepts_processNum__high_process_goes_to_none(
+    parser, benchmarkArgs
+):
+    benchmarkArgs += ["-p", "1000"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["processNum"] == None
+
+def test__conseq__set_command_line_settings__benchmark_fails_when_processNum_is_not_an_int(
+    parser, benchmarkArgs
+):
+    errorValue = "-3.1"
+    benchmarkArgs += ["-p", errorValue]
+    errorOutput = f"The -p or --processNum argument must be an integer. Offending value: {errorValue}"
+    with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
+        args = parser.parse_args(benchmarkArgs)
 
 # Tests need to be skipped due to an error in 'pytest.mark.skipif' in lower pytest versions (similar error in pytest 7.3.8, these tests in 7.2.2).
 """

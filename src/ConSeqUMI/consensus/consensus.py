@@ -8,9 +8,31 @@ from Bio import SeqIO
 import time
 import argparse
 import os
+from concurrent.futures import ProcessPoolExecutor, Future, as_completed
+import typing as T
 
+def find_consensus_and_add_to_writing_queue(path, records, context, printer):
+    printer(f" ***** {len(records)} reads: generating consensus for {path}")
+    id = path.split("/")[-1]
+    description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
+    consensusSequence = (
+        context.generate_consensus_sequence_from_biopython_records(records)
+    )
+    consensusRecord = SeqRecord(
+        Seq(consensusSequence), id=id, description=description
+    )
+    return consensusRecord
+
+def writing_to_file_from_queue(queue, consensusFilePath):
+    with open(consensusFilePath, "w") as output_handle:
+        while True:
+            consensusRecord = queue.get()
+            if consensusRecord is None:
+                break
+            SeqIO.write([consensusRecord], output_handle, "fasta")
 
 def main(args):
+
     printer = Printer()
     context = ConsensusContext(args["consensusAlgorithm"])
     pathsSortedByLength = sorted(args["input"])
@@ -23,22 +45,26 @@ def main(args):
     )
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
+
+
+    consensusGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=args["processNum"])
+    futureProcesses: T.List[Future] = []
+
+    for path in pathsSortedByLength:
+        records = args["input"][path]
+        if len(records) < args["minimumReads"]:
+            printer(
+                f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
+            )
+            break
+        futureProcesses.append(consensusGenerationProcessPool.submit(find_consensus_and_add_to_writing_queue, path, records, context, printer))
+
     with open(consensusFilePath, "w") as output_handle:
-        for path in pathsSortedByLength:
-            records = args["input"][path]
-            if len(records) < args["minimumReads"]:
-                printer(
-                    f"remaining files have fewer than minimum read number ({args['minimumReads']}), ending program"
-                )
-                break
-            printer(f" ***** {len(records)} reads: generating consensus for {path}")
-            id = path.split("/")[-1]
-            description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
-            consensusSequence = (
-                context.generate_consensus_sequence_from_biopython_records(records)
-            )
-            consensusRecord = SeqRecord(
-                Seq(consensusSequence), id=id, description=description
-            )
-            SeqIO.write([consensusRecord], output_handle, "fasta")
+        for futureProcess in as_completed(futureProcesses):
+            SeqIO.write([futureProcess.result()], output_handle, "fasta")
+
     printer("consensus generation complete")
+
+
+
+
