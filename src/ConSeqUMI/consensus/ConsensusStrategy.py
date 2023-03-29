@@ -45,7 +45,7 @@ class ConsensusStrategy(ABC):
         ]
         return outputList
 
-    def benchmark_sequence_generator(
+    def populate_future_processes_with_benchmark_tasks(
         self,
         futureProcesses: T.List[Future],
         referenceSequence: str,

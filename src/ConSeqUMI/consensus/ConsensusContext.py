@@ -38,9 +38,9 @@ class ConsensusContext:
             binRecords
         )
 
-    def benchmark_sequence_generator(
+    def populate_future_processes_with_benchmark_tasks(
         self, queue: Queue, referenceSequence: str, binRecords: list, intervals: int, iterations: int
     ):
-        self._strategy.benchmark_sequence_generator(
+        self._strategy.populate_future_processes_with_benchmark_tasks(
             queue, referenceSequence, binRecords, intervals, iterations
         )
