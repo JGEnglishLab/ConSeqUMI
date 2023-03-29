@@ -1,6 +1,6 @@
 from ConSeqUMI.Printer import Printer
 from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
-from ConSeqUMI.consensus.config import MCOMMAND
+from ConSeqUMI.consensus.config import LCOMMAND
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -15,12 +15,11 @@ def find_consensus_and_add_to_writing_queue(path, records, context, printer):
     printer(f" ***** {len(records)} reads: generating consensus for {path}")
     id = path.split("/")[-1]
     description = f"Number of Target Sequences used to generate this consensus: {len(records)}, File Path: {path}"
-    consensusSequence = (
-        context.generate_consensus_sequence_from_biopython_records(records)
+    consensusRecord = (
+        context.generate_consensus_record_from_biopython_records(records)
     )
-    consensusRecord = SeqRecord(
-        Seq(consensusSequence), id=id, description=description
-    )
+    consensusRecord.id = id
+    consensusRecord.description = description
     return consensusRecord
 
 def writing_to_file_from_queue(queue, consensusFilePath):
@@ -39,9 +38,10 @@ def main(args):
     pathsSortedByLength = sorted(
         pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True
     )
+    outputFileType = determine_output_file_type(args["consensusAlgorithm"])
     consensusFilePath = os.path.join(
         args["output"],
-        context.generate_consensus_algorithm_path_header("consensus") + ".fasta",
+        context.generate_consensus_algorithm_path_header("consensus") + "." + outputFileType,
     )
     print("output folder: " + consensusFilePath)
     printer("beginning consensus sequence generation")
@@ -61,10 +61,20 @@ def main(args):
 
     with open(consensusFilePath, "w") as output_handle:
         for futureProcess in as_completed(futureProcesses):
-            SeqIO.write([futureProcess.result()], output_handle, "fasta")
+            SeqIO.write([futureProcess.result()], output_handle, outputFileType)
 
     printer("consensus generation complete")
 
+def determine_output_file_type(consensusAlgorithm):
+    if consensusAlgorithm == "lamassemble":
+        lamassembleParser = argparse.ArgumentParser(description="")
+        lamassembleParser.add_argument("-f", type=str)
+        lamassembleParser.add_argument("-format", type=str)
+        args, unknown = lamassembleParser.parse_known_args(LCOMMAND)
+        args = vars(args)
+        if args["f"] or args["format"]:
+            return args["f"]
+    return "fasta"
 
 
 

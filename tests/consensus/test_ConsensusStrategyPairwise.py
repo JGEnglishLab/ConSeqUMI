@@ -214,7 +214,7 @@ def test__consensus_strategy_pairwise__find_average_pairwise_alignment_score_and
     assert targetSequenceDifferencesOutput == targetSequenceDifferences
 
 
-def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopython_records(
+def test__consensus_strategy_pairwise__generate_consensus_record_from_biopython_records(
     consensusSequence, targetSequences, consensusStrategyPairwise, targetSequenceRecords
 ):
     halfwayIndex = len(consensusSequence) // 2
@@ -222,12 +222,12 @@ def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopytho
         consensusSequence[:halfwayIndex] + consensusSequence[halfwayIndex + 4 :]
     )
     consensusSequenceOutput = (
-        consensusStrategyPairwise.generate_consensus_sequence_from_biopython_records(
+        consensusStrategyPairwise.generate_consensus_record_from_biopython_records(
             targetSequenceRecords
         )
     )
-    assert consensusSequenceOutput != referenceSequence
-    assert consensusSequenceOutput == consensusSequence
+    assert str(consensusSequenceOutput.seq) != referenceSequence
+    assert str(consensusSequenceOutput.seq) == consensusSequence
 
 
 def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopython_records__works_when_all_target_sequences_are_the_same(
@@ -236,11 +236,11 @@ def test__consensus_strategy_pairwise__generate_consensus_sequence_from_biopytho
     identicalTargetSequenceRecords = [targetSequenceRecords[0] for _ in range(10)]
     expectedSequence = str(targetSequenceRecords[0].seq)
     expectedSequenceOutput = (
-        consensusStrategyPairwise.generate_consensus_sequence_from_biopython_records(
+        consensusStrategyPairwise.generate_consensus_record_from_biopython_records(
             identicalTargetSequenceRecords
         )
     )
-    assert expectedSequenceOutput == expectedSequence
+    assert str(expectedSequenceOutput.seq) == expectedSequence
 
 
 def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_tasks(

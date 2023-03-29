@@ -8,12 +8,15 @@ import pandas as pd
 import re
 from concurrent.futures import Future, as_completed
 import typing as T
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 
 testsPath = os.getcwd().split("/")[:-1]
 testsPath = "/".join(testsPath) + "/tests"
 sys.path.insert(1, testsPath)
 from pytestConsensusFixtures import (
     consensusSequence,
+    consensusRecord,
     targetSequences,
     targetSequenceRecords,
     simpleInsert,
@@ -21,7 +24,7 @@ from pytestConsensusFixtures import (
     middleInsertIndex,
     targetSequenceDifferences,
 )
-from consensus import ConsensusStrategyLamassemble
+from ConSeqUMI.consensus import ConsensusStrategyLamassemble
 
 if not which("lamassemble"):
     pytest.skip(
@@ -39,11 +42,12 @@ def test__consensus_strategy_lamassemble__generate_consensus_sequence_from_biopy
     consensusSequence, targetSequenceRecords, consensusStrategyLamassemble
 ):
     consensusSequenceOutput = (
-        consensusStrategyLamassemble.generate_consensus_sequence_from_biopython_records(
+        consensusStrategyLamassemble.generate_consensus_record_from_biopython_records(
             targetSequenceRecords
         )
     )
-    assert consensusSequenceOutput == consensusSequence
+    assert isinstance(consensusSequenceOutput, SeqRecord)
+    assert str(consensusSequenceOutput.seq) == consensusSequence
 
 
 def test__consensus_strategy_lamassemble__populate_future_processes_with_benchmark_tasks(

@@ -39,10 +39,10 @@ def main(args):
         "originalNumberOfSequences",
     ]
     if args["reference"]:
-        referenceSequence = str(args["reference"][0].seq)
+        referenceRecord = args["reference"][0]
     else:
         printer("no reference sequence provided. Generating reference sequence")
-        referenceSequence = context.generate_consensus_sequence_from_biopython_records(
+        referenceRecord = context.generate_consensus_record_from_biopython_records(
             args["input"]
         )
 
@@ -51,12 +51,13 @@ def main(args):
         SeqIO.write(args["input"], output_handle, "fastq")
     with open(referenceFile, "w") as output_handle:
         SeqIO.write(
-            SeqRecord(Seq(referenceSequence), id="reference"), output_handle, "fasta"
+            referenceRecord, output_handle, "fasta"
         )
 
     printer("beginning benchmark process")
 
     futureProcesses: T.List[Future] = []
+    referenceSequence = str(referenceRecord.seq)
     context.populate_future_processes_with_benchmark_tasks(futureProcesses, args["processNum"], referenceSequence, args["input"], args["intervals"], args["iterations"])
     priorIntervals = set()
     with open(benchmarkOutputFile, "w") as file:
