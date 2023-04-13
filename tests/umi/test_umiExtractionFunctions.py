@@ -28,16 +28,6 @@ def test__umi_extraction_functions__convert_IUPAC_to_regular_expression(
         == nucleotidesInRegExFormat
     )
 
-
-def test__umi_extraction_functions__is_only_standard_nucleotide():
-    standardNucleotides = "ATCG"
-    nonStandardNucleotides = "ATCGR"
-    assert umiExtractionFunctions.is_only_standard_nucleotide(standardNucleotides)
-    assert not umiExtractionFunctions.is_only_standard_nucleotide(
-        nonStandardNucleotides
-    )
-
-
 def test__umi_extraction_functions__is_IUPAC_nucleotide(allIUPAC_nucleotides):
     assert umiExtractionFunctions.is_IUPAC_nucleotide(allIUPAC_nucleotides)
 

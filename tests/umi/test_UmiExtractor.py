@@ -93,22 +93,6 @@ def test__umi_extractor__set_universal_top_and_bottom_linked_adapters(
     )
     assert umiExtractorBasic.bottomAdapter.name == "bottom"
 
-
-def test__umi_extractor__set_universal_top_and_bottom_linked_adapters_accounts_for_only_standard_nucleotides(
-    umiExtractorBasic, adapterSequences
-):
-    errorOutput = (
-        "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
-    )
-    with pytest.raises(ValueError, match=re.escape(errorOutput)):
-        umiExtractorBasic.set_universal_top_and_bottom_linked_adapters(
-            adapterSequences["topFrontAdapter"] + "R",
-            adapterSequences["topBackAdapter"],
-            adapterSequences["bottomFrontAdapter"],
-            adapterSequences["bottomBackAdapter"],
-        )
-
-
 def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
         umiLength=0,

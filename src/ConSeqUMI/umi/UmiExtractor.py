@@ -41,16 +41,6 @@ class UmiExtractor:
         bottomFrontAdapterSeq,
         bottomBackAdapterSeq,
     ):
-        for seq in [
-            topFrontAdapterSeq,
-            topBackAdapterSeq,
-            bottomFrontAdapterSeq,
-            bottomBackAdapterSeq,
-        ]:
-            if not umiExtractionFunctions.is_only_standard_nucleotide(seq):
-                raise ValueError(
-                    "Provided Adapter Sequences must only contain standard nucleotides (A, T, C, G)"
-                )
 
         self.topAdapter = self.create_linked_adapter(
             topFrontAdapterSeq,

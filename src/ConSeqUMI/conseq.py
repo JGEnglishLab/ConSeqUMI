@@ -230,7 +230,7 @@ class OutputDirectory:
 class AdapterFile:
     def __init__(self):
         self.allowedFileTypes = set(["txt"])
-        self.allowedNucleotides = set([*"ATCG"])
+        self.allowedNucleotides = set([*"ACGTURYKMSWBDHVN"])
 
     def __call__(self, name):
         if not os.path.isfile(name):
@@ -252,7 +252,7 @@ class AdapterFile:
             allAdapterNucleotides.extend([*adapter])
         if len(set(allAdapterNucleotides) - self.allowedNucleotides) > 0:
             raise argparse.ArgumentTypeError(
-                "The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C."
+                f"The -a or --adapters argument adapters can only contain appropriate nucleotide codes. Invalid codes: {set(allAdapterNucleotides) - self.allowedNucleotides}"
             )
 
         return adapters
