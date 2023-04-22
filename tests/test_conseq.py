@@ -372,6 +372,7 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_does_no
 def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_contains_an_adapter_with_non_nucleotide_characters(
     parser, umiArgs, adapterSequences
 ):
+    invalidCode = "X"
     adapterFileWithNonNucleotideAdapter = NamedTemporaryFile(
         prefix="conseq_adapter_test_adapter_file_non_nuc_fail_", suffix=".txt"
     )
@@ -379,13 +380,13 @@ def test__conseq__set_command_line_settings__umi_adapter_file_fails_when_it_cont
         adapterSequences["topFrontAdapter"],
         adapterSequences["topBackAdapter"],
         adapterSequences["bottomFrontAdapter"],
-        adapterSequences["bottomBackAdapter"] + "R",
+        adapterSequences["bottomBackAdapter"] + invalidCode,
     ]
     with open(adapterFileWithNonNucleotideAdapter.name, "w") as f:
         f.write("\n".join(adapters))
     umiArgs[6] = adapterFileWithNonNucleotideAdapter.name
     umiArgsWithAdapterFileWithNonNucleotideAdapter = umiArgs
-    errorOutput = "The -a or --adapters argument adapters can only contain the nucleotides A,T,G, and C."
+    errorOutput = f"The -a or --adapters argument adapters can only contain appropriate nucleotide codes. Invalid codes: {set([invalidCode])}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(umiArgsWithAdapterFileWithNonNucleotideAdapter)
 

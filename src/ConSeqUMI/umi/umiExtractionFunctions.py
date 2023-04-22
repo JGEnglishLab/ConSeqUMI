@@ -25,12 +25,6 @@ def convert_IUPAC_to_regular_expression(nucleotides):
         regEx += iupacToRegExDict[n]
     return regEx
 
-
-def is_only_standard_nucleotide(sequence):
-    standardNucleotides = "ATCG"
-    return set(sequence).issubset([*standardNucleotides])
-
-
 def is_IUPAC_nucleotide(sequence):
     allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
     return set(sequence).issubset([*allIUPAC_nucleotides])
