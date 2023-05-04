@@ -10,9 +10,7 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_algorithm_path_header_insert(self) -> str:
         return "lamassemble"
 
-    def generate_consensus_record_from_biopython_records(
-        self, binRecords: list
-    ) -> str:
+    def generate_consensus_record_from_biopython_records(self, binRecords: list) -> str:
         inputFile = NamedTemporaryFile(
             prefix="conseq_lamassemble_delete_", suffix=".fastq"
         )
@@ -28,8 +26,10 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
         # child.stdin.write(stdin.encode())
         child_out = child.communicate()[0].decode("utf8")
         seq_ali = list(SeqIO.parse(StringIO(child_out), "fasta"))
-        if not seq_ali:
-            seq_ali = list(SeqIO.parse(StringIO(child_out), "fastq"))
-        child.stdin.close()
-
-        return seq_ali[0].upper()
+        if seq_ali:
+            child.stdin.close()
+            return seq_ali[0].upper()
+        seq_ali = list(SeqIO.parse(StringIO(child_out), "fastq"))
+        if seq_ali:
+            child.stdin.close()
+            return seq_ali[0].upper()

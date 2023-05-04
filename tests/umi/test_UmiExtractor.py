@@ -93,6 +93,7 @@ def test__umi_extractor__set_universal_top_and_bottom_linked_adapters(
     )
     assert umiExtractorBasic.bottomAdapter.name == "bottom"
 
+
 def test__umi_extractor__initialization_with_adapter_sequences(adapterSequences):
     umiExtractor = UmiExtractor(
         umiLength=0,

@@ -11,6 +11,7 @@ from ConSeqUMI.consensus.ConsensusStrategy import ConsensusStrategy as Consensus
 from concurrent.futures import Future
 import typing as T
 
+
 class ConsensusContext:
     def __init__(self, strategy: str):
         self._strategy_types = {
@@ -31,16 +32,25 @@ class ConsensusContext:
     def generate_consensus_algorithm_path_header(self, processName: str):
         return self._strategy.generate_consensus_algorithm_path_header(processName)
 
-    def generate_consensus_record_from_biopython_records(
-        self, binRecords: list
-    ) -> str:
+    def generate_consensus_record_from_biopython_records(self, binRecords: list) -> str:
         return self._strategy.generate_consensus_record_from_biopython_records(
             binRecords
         )
 
     def populate_future_processes_with_benchmark_tasks(
-        self, futureProcesses: T.List[Future], numProcesses: int, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+        self,
+        futureProcesses: T.List[Future],
+        numProcesses: int,
+        referenceSequence: str,
+        binRecords: list,
+        intervals: int,
+        iterations: int,
     ):
         self._strategy.populate_future_processes_with_benchmark_tasks(
-             futureProcesses, numProcesses, referenceSequence, binRecords, intervals, iterations
+            futureProcesses,
+            numProcesses,
+            referenceSequence,
+            binRecords,
+            intervals,
+            iterations,
         )

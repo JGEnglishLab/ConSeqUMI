@@ -41,7 +41,6 @@ class UmiExtractor:
         bottomFrontAdapterSeq,
         bottomBackAdapterSeq,
     ):
-
         self.topAdapter = self.create_linked_adapter(
             topFrontAdapterSeq,
             topBackAdapterSeq,

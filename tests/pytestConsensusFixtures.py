@@ -32,11 +32,14 @@ def consensusSequence(simpleInsert):
     )
     return consensusSequence
 
+
 @pytest.fixture
 def consensusRecord(consensusSequence):
     return SeqRecord(
-        consensusSequence, id="consensusRecord",
+        consensusSequence,
+        id="consensusRecord",
     )
+
 
 def generate_read_sequences(sequence):
     insertIndex, deleteIndex, mutateIndex = 20, 30, 40

@@ -22,9 +22,7 @@ class ConsensusStrategyMedaka(ConsensusStrategy):
             consensusAlgorithmInsert += "-" + args["m"]
         return consensusAlgorithmInsert
 
-    def generate_consensus_record_from_biopython_records(
-        self, binRecords: list
-    ) -> str:
+    def generate_consensus_record_from_biopython_records(self, binRecords: list) -> str:
         inputFile = NamedTemporaryFile(prefix="conseq_medaka_delete_", suffix=".fastq")
         outputDir = TemporaryDirectory(prefix="conseq_medaka_delete_")
         draftFile = NamedTemporaryFile(prefix="conseq_medaka_delete_", suffix=".fasta")

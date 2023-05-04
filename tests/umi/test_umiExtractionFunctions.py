@@ -28,6 +28,7 @@ def test__umi_extraction_functions__convert_IUPAC_to_regular_expression(
         == nucleotidesInRegExFormat
     )
 
+
 def test__umi_extraction_functions__is_IUPAC_nucleotide(allIUPAC_nucleotides):
     assert umiExtractionFunctions.is_IUPAC_nucleotide(allIUPAC_nucleotides)
 
