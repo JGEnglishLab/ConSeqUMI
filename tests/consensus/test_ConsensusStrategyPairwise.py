@@ -257,7 +257,12 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     ]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+        futureProcesses,
+        numProcesses,
+        consensusSequence,
+        targetSequenceRecords,
+        intervals,
+        iterations,
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):
@@ -283,7 +288,12 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     inputRecords = [targetSequenceRecords[0] for _ in range(numberOfRecords)]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, numProcesses, consensusSequence, inputRecords, intervals, iterations
+        futureProcesses,
+        numProcesses,
+        consensusSequence,
+        inputRecords,
+        intervals,
+        iterations,
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):
@@ -311,7 +321,12 @@ def test__consensus_strategy_pairwise__populate_future_processes_with_benchmark_
     ]
     futureProcesses: T.List[Future] = []
     consensusStrategyPairwise.populate_future_processes_with_benchmark_tasks(
-        futureProcesses, numProcesses, consensusSequence, targetSequenceRecords, intervals, iterations
+        futureProcesses,
+        numProcesses,
+        consensusSequence,
+        targetSequenceRecords,
+        intervals,
+        iterations,
     )
     rowsOutput = []
     for futureProcess in as_completed(futureProcesses):

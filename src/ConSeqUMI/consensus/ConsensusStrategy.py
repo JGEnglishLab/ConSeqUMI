@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 import typing as T
 from Bio.SeqRecord import SeqRecord
 
+
 class ConsensusStrategy(ABC):
     @abstractmethod
     def generate_consensus_algorithm_path_header_insert(self) -> str:
@@ -26,15 +27,19 @@ class ConsensusStrategy(ABC):
             + time.strftime("-%Y%m%d-%H%M%S")
         )
 
-    def find_consensus_and_add_to_writing_queue(self, randomSampleOfRecords, intervalNumber, iteration,
-                                                referenceSequence, numBinRecords):
+    def find_consensus_and_add_to_writing_queue(
+        self,
+        randomSampleOfRecords,
+        intervalNumber,
+        iteration,
+        referenceSequence,
+        numBinRecords,
+    ):
         if intervalNumber == 1:
             benchmarkedRecord = randomSampleOfRecords[0]
         else:
-            benchmarkedRecord = (
-                self.generate_consensus_record_from_biopython_records(
-                    randomSampleOfRecords
-                )
+            benchmarkedRecord = self.generate_consensus_record_from_biopython_records(
+                randomSampleOfRecords
             )
         benchmarkedSequence = str(benchmarkedRecord.seq)
         outputList = [
@@ -56,8 +61,9 @@ class ConsensusStrategy(ABC):
         intervalNumbers: list,
         iterations: int,
     ):
-
-        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(max_workers=processNum)
+        benchmarkGenerationProcessPool: ProcessPoolExecutor = ProcessPoolExecutor(
+            max_workers=processNum
+        )
         if len(intervalNumbers) == 1:
             intervals = intervalNumbers[0]
             intervalNumbers = [1]
@@ -68,5 +74,12 @@ class ConsensusStrategy(ABC):
             for iteration in range(iterations):
                 randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)
                 futureProcesses.append(
-                benchmarkGenerationProcessPool.submit(self.find_consensus_and_add_to_writing_queue, randomSampleOfRecords, intervalNumber, iteration,
-                                                referenceSequence, len(binRecords)))
+                    benchmarkGenerationProcessPool.submit(
+                        self.find_consensus_and_add_to_writing_queue,
+                        randomSampleOfRecords,
+                        intervalNumber,
+                        iteration,
+                        referenceSequence,
+                        len(binRecords),
+                    )
+                )

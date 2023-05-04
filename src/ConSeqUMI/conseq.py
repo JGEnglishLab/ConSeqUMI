@@ -297,6 +297,7 @@ class ConseqInt:
         elif type == "processNum":
             self.type = "processNum"
             self.conciseType = "p"
+
     def __call__(self, name):
         try:
             nameInt = int(name)

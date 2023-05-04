@@ -25,6 +25,7 @@ def convert_IUPAC_to_regular_expression(nucleotides):
         regEx += iupacToRegExDict[n]
     return regEx
 
+
 def is_IUPAC_nucleotide(sequence):
     allIUPAC_nucleotides = "ACGTWSRYKMBDHVN"
     return set(sequence).issubset([*allIUPAC_nucleotides])

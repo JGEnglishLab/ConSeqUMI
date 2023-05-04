@@ -9,6 +9,7 @@ import os
 from concurrent.futures import Future, as_completed
 import typing as T
 
+
 def writing_to_file_from_queue(queue, benchmarkOutputFile):
     with open(benchmarkOutputFile, "w") as file:
         while True:
@@ -50,15 +51,20 @@ def main(args):
     with open(inputFile, "w") as output_handle:
         SeqIO.write(args["input"], output_handle, "fastq")
     with open(referenceFile, "w") as output_handle:
-        SeqIO.write(
-            referenceRecord, output_handle, "fasta"
-        )
+        SeqIO.write(referenceRecord, output_handle, "fasta")
 
     printer("beginning benchmark process")
 
     futureProcesses: T.List[Future] = []
     referenceSequence = str(referenceRecord.seq)
-    context.populate_future_processes_with_benchmark_tasks(futureProcesses, args["processNum"], referenceSequence, args["input"], args["intervals"], args["iterations"])
+    context.populate_future_processes_with_benchmark_tasks(
+        futureProcesses,
+        args["processNum"],
+        referenceSequence,
+        args["input"],
+        args["intervals"],
+        args["iterations"],
+    )
     priorIntervals = set()
     with open(benchmarkOutputFile, "w") as file:
         file.write(",".join(columns) + os.linesep)

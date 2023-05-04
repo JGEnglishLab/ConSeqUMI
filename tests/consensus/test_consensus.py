@@ -61,11 +61,13 @@ def test__cons__main_quits_when_minimum_read_count_reached(args, consFiles):
     consensusRecords = list(SeqIO.parse(consFile, "fasta"))
     assert len(consensusRecords) == 1
 
+
 def test__cons__determine_output_file_type__default():
     consensusAlgorithm = "pairwise"
     fileType = "fasta"
     fileTypeOutput = consensus.determine_output_file_type(consensusAlgorithm)
     assert fileType == fileTypeOutput
+
 
 @pytest.mark.skipif(
     True,
@@ -76,6 +78,3 @@ def test__cons__determine_output_file_type__lamassemble_with_f_tag_set_to_fastq(
     fileType = "fastq"
     fileTypeOutput = consensus.determine_output_file_type(consensusAlgorithm)
     assert fileType == fileTypeOutput
-
-
-
