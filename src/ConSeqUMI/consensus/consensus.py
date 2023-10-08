@@ -79,14 +79,17 @@ def main(args):
                 break
             futureProcesses.append(
                 consensusGenerationProcessPool.submit(
-                    find_consensus_and_add_to_writing_queue, path, records, context, printer
+                    find_consensus_and_add_to_writing_queue,
+                    path,
+                    records,
+                    context,
+                    printer,
                 )
             )
 
         with open(consensusFilePath, "w") as output_handle:
             for futureProcess in as_completed(futureProcesses):
                 SeqIO.write([futureProcess.result()], output_handle, outputFileType)
-
 
     printer("consensus generation complete")
 

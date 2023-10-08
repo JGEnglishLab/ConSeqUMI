@@ -60,7 +60,7 @@ def main(args):
             file.write(",".join(columns) + os.linesep)
             previousInterval = 0
             for outputValue in context.benchmark_sequence_generator(
-                    referenceSequence, args["input"], args["intervals"], args["iterations"]
+                referenceSequence, args["input"], args["intervals"], args["iterations"]
             ):
                 print(outputValue)
                 currentInterval = int(outputValue[0])

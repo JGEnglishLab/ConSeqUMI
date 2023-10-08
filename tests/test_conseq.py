@@ -591,7 +591,6 @@ def test__conseq__set_command_line_settings__cons_suceeds_when_noProcess_flag_pr
     assert args["noProcess"]
 
 
-
 @pytest.fixture
 def benchmarkFiles(consensusSequence, targetSequenceRecords):
     class fileObj:
@@ -957,6 +956,7 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_processNum_is_
     errorOutput = f"The -p or --processNum argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
+
 
 def test__conseq__set_command_line_settings__benchmark_suceeds_when_noProcess_flag_present(
     parser, benchmarkArgs

@@ -108,7 +108,7 @@ def set_command_line_settings():
         "--noProcess",
         default=False,
         action="store_true",
-        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use."
+        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use.",
     )
     benchmarkParser = commandParser.add_parser(
         "benchmark",
@@ -168,7 +168,7 @@ def set_command_line_settings():
         "--noProcess",
         default=False,
         action="store_true",
-        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use."
+        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use.",
     )
 
     return parser
