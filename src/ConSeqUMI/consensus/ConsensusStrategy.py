@@ -83,3 +83,38 @@ class ConsensusStrategy(ABC):
                         len(binRecords),
                     )
                 )
+
+    def benchmark_sequence_generator(
+        self,
+        referenceSequence: str,
+        binRecords: list,
+        intervalNumbers: list,
+        iterations: int,
+    ):
+        if len(intervalNumbers) == 1:
+            intervals = intervalNumbers[0]
+            intervalNumbers = [1]
+            for i in range(1, len(binRecords) // intervals + 1):
+                if i * intervals <= 500:
+                    intervalNumbers.append(i * intervals)
+        for intervalNumber in intervalNumbers:
+            for iteration in range(iterations):
+                randomSampleOfRecords = random.sample(binRecords, k=intervalNumber)
+                if intervalNumber == 1:
+                    benchmarkedSequence = str(randomSampleOfRecords[0].seq)
+                else:
+                    benchmarkedRecord = (
+                        self.generate_consensus_record_from_biopython_records(
+                            randomSampleOfRecords
+                        )
+                    )
+                    benchmarkedSequence = str(benchmarkedRecord.seq)
+                outputList = [
+                    str(intervalNumber),
+                    str(iteration),
+                    referenceSequence,
+                    benchmarkedSequence,
+                    str(distance(referenceSequence, benchmarkedSequence)),
+                    str(len(binRecords)),
+                ]
+                yield outputList

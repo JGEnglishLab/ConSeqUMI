@@ -54,25 +54,40 @@ def main(args):
         SeqIO.write(referenceRecord, output_handle, "fasta")
 
     printer("beginning benchmark process")
-
-    futureProcesses: T.List[Future] = []
     referenceSequence = str(referenceRecord.seq)
-    context.populate_future_processes_with_benchmark_tasks(
-        futureProcesses,
-        args["processNum"],
-        referenceSequence,
-        args["input"],
-        args["intervals"],
-        args["iterations"],
-    )
-    priorIntervals = set()
-    with open(benchmarkOutputFile, "w") as file:
-        file.write(",".join(columns) + os.linesep)
-        for futureProcess in as_completed(futureProcesses):
-            row = futureProcess.result()
-            if row[0] not in priorIntervals:
-                priorIntervals.add(row[0])
-                printer(
-                    f"benchmarking interval: {row[0]} ({args['iterations']} iterations)"
-                )
-            file.write(",".join(row) + os.linesep)
+    if args["noProcess"]:
+        with open(benchmarkOutputFile, "w") as file:
+            file.write(",".join(columns) + os.linesep)
+            previousInterval = 0
+            for outputValue in context.benchmark_sequence_generator(
+                    referenceSequence, args["input"], args["intervals"], args["iterations"]
+            ):
+                print(outputValue)
+                currentInterval = int(outputValue[0])
+                if currentInterval > previousInterval:
+                    printer(
+                        f"benchmarking interval: {currentInterval} ({args['iterations']} iterations)"
+                    )
+                    previousInterval = currentInterval
+                file.write(",".join(outputValue) + os.linesep)
+    else:
+        futureProcesses: T.List[Future] = []
+        context.populate_future_processes_with_benchmark_tasks(
+            futureProcesses,
+            args["processNum"],
+            referenceSequence,
+            args["input"],
+            args["intervals"],
+            args["iterations"],
+        )
+        priorIntervals = set()
+        with open(benchmarkOutputFile, "w") as file:
+            file.write(",".join(columns) + os.linesep)
+            for futureProcess in as_completed(futureProcesses):
+                row = futureProcess.result()
+                if row[0] not in priorIntervals:
+                    priorIntervals.add(row[0])
+                    printer(
+                        f"benchmarking interval: {row[0]} ({args['iterations']} iterations)"
+                    )
+                file.write(",".join(row) + os.linesep)

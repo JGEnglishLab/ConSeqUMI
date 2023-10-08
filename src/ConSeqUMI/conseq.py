@@ -103,6 +103,13 @@ def set_command_line_settings():
         default=1,
         help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
     )
+    consParser.add_argument(
+        "-n",
+        "--noProcess",
+        default=False,
+        action="store_true",
+        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use."
+    )
     benchmarkParser = commandParser.add_parser(
         "benchmark",
         help="Creates a benchmarking data analysis file for evaluating the accuracy of a provided consensus sequence algorithm when applied to a given input fastq file.",
@@ -156,6 +163,14 @@ def set_command_line_settings():
         default=1,
         help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
     )
+    benchmarkParser.add_argument(
+        "-n",
+        "--noProcess",
+        default=False,
+        action="store_true",
+        help="Disables multi-threading/parallel processing. Given that conseq can apply external consensus generators like medaka, which uses their own parallel processing, this option is provided to avoid complications. \nGenerally not recommended to use."
+    )
+
     return parser
 
 

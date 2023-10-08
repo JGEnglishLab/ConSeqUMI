@@ -54,3 +54,11 @@ class ConsensusContext:
             intervals,
             iterations,
         )
+
+    def benchmark_sequence_generator(
+        self, referenceSequence: str, binRecords: list, intervals: int, iterations: int
+    ):
+        for returnValue in self._strategy.benchmark_sequence_generator(
+            referenceSequence, binRecords, intervals, iterations
+        ):
+            yield returnValue

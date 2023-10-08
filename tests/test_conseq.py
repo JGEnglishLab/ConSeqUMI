@@ -462,6 +462,7 @@ def test__conseq__set_command_line_settings__cons_defaults_set_correctly(
     assert args["consensusAlgorithm"] == "pairwise"
     assert args["minimumReads"] == 50
     assert args["processNum"] == 1
+    assert not args["noProcess"]
 
 
 def test__conseq__set_command_line_settings__consensus_output_directory_parameter_has_program_and_time_tag_when_output_directory_does_not_exist(
@@ -582,6 +583,15 @@ def test__conseq__set_command_line_settings__cons_fails_when_processNum_is_negat
         args = parser.parse_args(consArgs)
 
 
+def test__conseq__set_command_line_settings__cons_suceeds_when_noProcess_flag_present(
+    parser, consArgs
+):
+    consArgs += ["-n"]
+    args = vars(parser.parse_args(consArgs))
+    assert args["noProcess"]
+
+
+
 @pytest.fixture
 def benchmarkFiles(consensusSequence, targetSequenceRecords):
     class fileObj:
@@ -649,6 +659,7 @@ def test__conseq__set_command_line_settings__benchmark_defaults_set_correctly(
     assert args["intervals"] == [10]
     assert args["iterations"] == 100
     assert args["processNum"] == 1
+    assert not args["noProcess"]
 
 
 def test__conseq__set_command_line_settings__benchmark_fails_when_does_not_include_input_file(
@@ -946,6 +957,13 @@ def test__conseq__set_command_line_settings__benchmark_fails_when_processNum_is_
     errorOutput = f"The -p or --processNum argument must be an integer. Offending value: {errorValue}"
     with pytest.raises(argparse.ArgumentTypeError, match=re.escape(errorOutput)):
         args = parser.parse_args(benchmarkArgs)
+
+def test__conseq__set_command_line_settings__benchmark_suceeds_when_noProcess_flag_present(
+    parser, benchmarkArgs
+):
+    benchmarkArgs += ["-n"]
+    args = vars(parser.parse_args(benchmarkArgs))
+    assert args["noProcess"]
 
 
 # Tests need to be skipped due to an error in 'pytest.mark.skipif' in lower pytest versions (similar error in pytest 7.3.8, these tests in 7.2.2).
