@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     # QComboBox,
     # QCheckBox,
-    QPushButton,
+    QPushButton, QRadioButton,
     # QFileDialog,
     # QPlainTextEdit,
     # QVBoxLayout,
@@ -63,10 +63,13 @@ class UmiTabWindow(TabWindow):
             lambda: self.get_file(self.adapterField, isFile=True)
         )
 
+
         fileLayout.addRow(self.adapterLabel, self.adapterBrowseButton)
         fileLayout.addRow(self.adapterField)
 
     def set_setting_layout(self, settingLayout: QFormLayout) -> None:
+
+
         self.umiLengthTitle = QLabel("UMI Length (optional)")
         self.umiLengthTitle.setToolTip(
             "Optional. \nThe expected length of any UMI found, minimum 10. Providing this option \nloosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found."
@@ -74,7 +77,13 @@ class UmiTabWindow(TabWindow):
         self.umiLengthField = QLineEdit()
         self.umiLengthField.setPlaceholderText("None")
 
+
         settingLayout.addRow(self.umiLengthTitle, self.umiLengthField)
+
+        self.chimeraExclusionRadio = QRadioButton("Keep Chimeras")
+        self.chimeraExclusionRadio.setChecked(False)
+        settingLayout.addRow(self.chimeraExclusionRadio)
+
 
     def set_args(self) -> list:
         args = ["umi"]
@@ -91,4 +100,7 @@ class UmiTabWindow(TabWindow):
             args.extend(["-a", self.adapterField.text()])
         if self.umiLengthField.text():
             args.extend(["-u", self.umiLengthField.text()])
+        if self.chimeraExclusionRadio.isChecked():
+            args.extend(["-k"])
+
         return args
