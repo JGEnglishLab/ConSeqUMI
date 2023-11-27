@@ -64,6 +64,12 @@ def set_command_line_settings():
         default=0,
         help="The expected length of any UMI found, minimum 10. Providing this option loosens front adapter requirements and generally results in increased quantity of UMIs and target sequences found.",
     )
+    umiParser.add_argument(
+        "-k",
+        "--keep",
+        action='store_true',
+        help="Set this flag to keep chimeras.",
+    )
     consParser = commandParser.add_parser(
         "cons",
         help="Finds a consensus sequence for each fastq file in a given directory and writes them to a single output fasta file.",

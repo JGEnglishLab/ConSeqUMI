@@ -66,15 +66,22 @@ def main(args):
     ) = umiBinningFunctions.pair_top_and_bottom_umi_by_matching_reads(
         topUmiToReadIndices, bottomUmiToReadIndices
     )
-    printer("identify and remove chimeras")
     chimeraIndices = umiBinningFunctions.identify_chimera_indices(
         starcodeTopUmis, starcodeBottomUmis
     )
+
+    if not args['keep']:
+        printer("identify and remove chimeras")
+        chimeraIndicesToRemove = chimeraIndices
+    else:
+        printer("identify and keep chimeras")
+        chimeraIndicesToRemove = []
+
     pairedUmiToReadRecords = umiBinningFunctions.remove_chimeras_from_umi_pairs_and_return_paired_umi_to_read_records_dict(
         starcodeTopUmis,
         starcodeBottomUmis,
         readIndices,
-        chimeraIndices,
+        chimeraIndicesToRemove,
         targetSequences,
     )
     printer("add chimera analysis file to 'data_analysis' folder")
@@ -84,6 +91,8 @@ def main(args):
     chimeraDataFrame.to_csv(
         dataAnalysisPath + "chimera_summary_of_starcode_matches.csv", index=False
     )
+
+
     printer("create and fill 'bins' folder with target sequences binned by umi pairing")
     binPath = args["output"] + "bins/"
     os.mkdir(binPath)
@@ -126,3 +135,4 @@ def starcode(umis, file=None):
         indices = {int(i) for i in indices}
         umiToReadIndicesDict[umi] = indices
     return umiToReadIndicesDict
+
