@@ -37,6 +37,9 @@ class BenchmarkTabWindow(TabWindow):
         fileLayout.addRow(self.inputLabel, self.inputBrowseButton)
         fileLayout.addRow(self.inputField)
 
+
+
+
         self.outputLabel = QLabel("Output Directory Path")
         self.outputLabel.setToolTip(
             "Required. \nPath where output folder will be saved."
@@ -47,6 +50,8 @@ class BenchmarkTabWindow(TabWindow):
 
         fileLayout.addRow(self.outputLabel, self.outputBrowseButton)
         fileLayout.addRow(self.outputField)
+
+
 
         self.outputNameLabel = QLabel("Output Directory Title (optional)")
         self.outputNameLabel.setToolTip(
@@ -67,6 +72,20 @@ class BenchmarkTabWindow(TabWindow):
 
         fileLayout.addRow(self.referenceLabel, self.referenceBrowseButton)
         fileLayout.addRow(self.referenceField)
+
+        self.inputLastTrainLabel = QLabel("Input Last Train Path For Lamassemble (optional)")
+        self.inputLastTrainLabel.setToolTip(
+            "Optional if you followed the lamassemble installation instructions. \nPath to a last train dat file for Lamassemble. \nIf you already put the path to the dat file in consensus/config.py and updated your conda environment this is not needed."
+        )
+        self.inputLastTrainField = QLineEdit()
+
+        self.inputLastTrainBrowseButton = QPushButton("Browse")
+        self.inputLastTrainBrowseButton.clicked.connect(
+            lambda: self.get_file(self.inputField, isFile=True)
+        )
+
+        fileLayout.addRow(self.inputLastTrainLabel, self.inputLastTrainBrowseButton)
+        fileLayout.addRow(self.inputLastTrainField)
 
     def set_setting_layout(self, settingLayout: QFormLayout) -> None:
         self.consensusAlgorithmLabel = QLabel("Consensus Algorithm")
@@ -112,6 +131,9 @@ class BenchmarkTabWindow(TabWindow):
             outputName = self.outputNameField.text()
             output += outputName
             args.extend(["-o", output])
+
+        if self.inputLastTrainField.text():
+            args.extend(["-l", self.inputLastTrainField.text()])
         if self.referenceField.text():
             args.extend(["-r", self.referenceField.text()])
         if self.intervalsField.text():

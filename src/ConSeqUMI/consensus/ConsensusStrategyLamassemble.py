@@ -4,7 +4,7 @@ from Bio import SeqIO
 from io import StringIO
 from tempfile import NamedTemporaryFile
 from ConSeqUMI.consensus.config import LCOMMAND
-
+from ConSeqUMI.consensus.config import LAST_TRAIN_PATH
 
 class ConsensusStrategyLamassemble(ConsensusStrategy):
     def generate_consensus_algorithm_path_header_insert(self) -> str:
@@ -17,6 +17,7 @@ class ConsensusStrategyLamassemble(ConsensusStrategy):
         with open(inputFile.name, "w") as output_handle:
             SeqIO.write(binRecords, output_handle, "fastq")
 
+        LCOMMAND[1] = LAST_TRAIN_PATH["ltp"]
         processCommands = LCOMMAND[:] + [inputFile.name]
         child = subprocess.Popen(
             processCommands,

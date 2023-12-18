@@ -7,7 +7,7 @@ from ConSeqUMI.umi.UmiExtractor import UmiExtractor
 from ConSeqUMI.umi import umiBinningFunctions
 from Bio import SeqIO
 from ConSeqUMI.Printer import Printer
-import pandas as pd
+import pandas as pd 
 
 
 def main(args):

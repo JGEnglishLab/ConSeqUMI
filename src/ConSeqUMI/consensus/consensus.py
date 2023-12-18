@@ -1,6 +1,7 @@
 from ConSeqUMI.Printer import Printer
 from ConSeqUMI.consensus.ConsensusContext import ConsensusContext
 from ConSeqUMI.consensus.config import LCOMMAND
+from ConSeqUMI.consensus.config import LAST_TRAIN_PATH
 
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -10,6 +11,7 @@ import argparse
 import os
 from concurrent.futures import ProcessPoolExecutor, Future, as_completed
 import typing as T
+
 
 
 def find_consensus_and_add_to_writing_queue(path, records, context, printer):
@@ -38,6 +40,9 @@ def main(args):
     pathsSortedByLength = sorted(
         pathsSortedByLength, key=lambda k: len(args["input"][k]), reverse=True
     )
+    if args["lastTrain"]:
+        LAST_TRAIN_PATH["ltp"] = args["lastTrain"]
+
     outputFileType = determine_output_file_type(args["consensusAlgorithm"])
     consensusFilePath = os.path.join(
         args["output"],
@@ -78,6 +83,8 @@ def determine_output_file_type(consensusAlgorithm):
         lamassembleParser = argparse.ArgumentParser(description="")
         lamassembleParser.add_argument("-f", type=str)
         lamassembleParser.add_argument("-format", type=str)
+
+        LCOMMAND[1] = LAST_TRAIN_PATH["ltp"]
         args, unknown = lamassembleParser.parse_known_args(LCOMMAND)
         args = vars(args)
         if args["f"] or args["format"]:

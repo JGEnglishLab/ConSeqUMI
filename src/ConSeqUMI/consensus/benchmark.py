@@ -8,6 +8,8 @@ from Bio import SeqIO
 import os
 from concurrent.futures import Future, as_completed
 import typing as T
+from ConSeqUMI.consensus.config import LAST_TRAIN_PATH
+
 
 
 def writing_to_file_from_queue(queue, benchmarkOutputFile):
@@ -39,6 +41,9 @@ def main(args):
         "levenshteinDistance",
         "originalNumberOfSequences",
     ]
+    if args["lastTrain"]:
+        LAST_TRAIN_PATH["ltp"] = args["lastTrain"]
+
     if args["reference"]:
         referenceRecord = args["reference"][0]
     else:

@@ -25,6 +25,7 @@ def main():
         benchmark.main(args)
 
 
+
 def set_command_line_settings():
     parser = argparse.ArgumentParser(description="")
     commandParser = parser.add_subparsers(dest="command", help="ConSeq Functions")
@@ -109,6 +110,12 @@ def set_command_line_settings():
         default=1,
         help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
     )
+    consParser.add_argument(
+        "-l",
+        "--lastTrain",
+        type=LastTrainFile(),
+        help="Path to a last-train mat file for lamassemble. If you have already put the path to the desired file in the consensus/config.py file, this flag is unnecessary and should not be used.",
+    )
     benchmarkParser = commandParser.add_parser(
         "benchmark",
         help="Creates a benchmarking data analysis file for evaluating the accuracy of a provided consensus sequence algorithm when applied to a given input fastq file.",
@@ -161,6 +168,12 @@ def set_command_line_settings():
         type=ConseqInt("processNum"),
         default=1,
         help="Number of processes to run. By default it will only use 1. If you enter a number beyond the number of processes your computer is capable of, the number of processes will automatically be set to the maximum level for your computer.",
+    )
+    benchmarkParser.add_argument(
+        "-l",
+        "--lastTrain",
+        type=LastTrainFile(),
+        help="Path to a last-train mat file for lamassemble. If you have already put the path to the desired file in the consensus/config.py file, this flag is unnecessary and should not be used.",
     )
     return parser
 
@@ -280,6 +293,23 @@ class ConsensusAlgorithmText:
         if name == "lamassemble" and not which("lamassemble"):
             raise argparse.ArgumentTypeError(
                 "You must install lamassemble in order to use the lamassemble consensus algorithm option."
+            )
+        return name
+
+class LastTrainFile:
+
+    def __call__(self, name):
+        if os.path.isdir(name):
+            raise argparse.ArgumentTypeError(
+                f"The -l or --lastTrain argument must be a file, not a directory."
+            )
+        if not os.path.isfile(name):
+            raise argparse.ArgumentTypeError(
+                f"The -l or --lastTrain argument must be an existing file."
+            )
+        if name.split(".")[-1] != "mat":
+            raise argparse.ArgumentTypeError(
+                f"The -l or --lastTrain argument must be a .mat file."
             )
         return name
 

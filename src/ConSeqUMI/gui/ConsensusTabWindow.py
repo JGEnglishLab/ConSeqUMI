@@ -53,6 +53,20 @@ class ConsensusTabWindow(TabWindow):
         self.outputNameField = QLineEdit()
         fileLayout.addRow(self.outputNameLabel, self.outputNameField)
 
+        self.inputLastTrainLabel = QLabel("Input Last Train Path For Lamassemble (optional)")
+        self.inputLastTrainLabel.setToolTip(
+            "Optional if you followed the lamassemble installation instructions. \nPath to a last train dat file for Lamassemble. \nIf you already put the path to the dat file in consensus/config.py and updated your conda environment this is not needed."
+        )
+        self.inputLastTrainField = QLineEdit()
+
+        self.inputLastTrainBrowseButton = QPushButton("Browse")
+        self.inputLastTrainBrowseButton.clicked.connect(
+            lambda: self.get_file(self.inputField, isFile=True)
+        )
+
+        fileLayout.addRow(self.inputLastTrainLabel, self.inputLastTrainBrowseButton)
+        fileLayout.addRow(self.inputLastTrainField)
+
     def set_setting_layout(self, settingLayout: QFormLayout) -> None:
         self.consensusAlgorithmLabel = QLabel("Consensus Algorithm")
         self.consensusAlgorithmComboBox = QComboBox()
@@ -80,6 +94,9 @@ class ConsensusTabWindow(TabWindow):
 
     def set_args(self) -> list:
         args = ["cons"]
+
+        if self.inputLastTrainField.text():
+            args.extend(["-l", self.inputLastTrainField.text()])
         if self.inputField.text():
             args.extend(["-i", self.inputField.text()])
         if self.outputField.text():
